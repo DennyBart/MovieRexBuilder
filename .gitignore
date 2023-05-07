@@ -152,6 +152,16 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# VSCode
+.vscode/
+
+# Alembic
+alembic.ini
+alembic/README
+alembic/script.py.mako
+alembic/env.py
+
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
