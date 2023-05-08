@@ -50,15 +50,20 @@ class MovieData(Base):
     poster = Column(String(512), nullable=True)
     ratings = Column(JSON, nullable=True)
     metascore = Column(String(32), nullable=True)
-    imdb_rating = Column(String(16), nullable=True)
-    imdb_votes = Column(String(32), nullable=True)
-    imdb_id = Column(String(16), nullable=False, unique=True)
-    movie_type = Column(String(32), nullable=True)
-    dvd_release = Column(String(32), nullable=True)
-    box_office = Column(String(32), nullable=True)
+    imdbrating = Column(String(16), nullable=True)
+    imdbvotes = Column(String(32), nullable=True)
+    imdbid = Column(String(16), nullable=False, unique=True)
+    type = Column(String(32), nullable=True)
+    dvd = Column(String(32), nullable=True)
+    boxoffice = Column(String(32), nullable=True)
     production = Column(String(256), nullable=True)
     website = Column(String(256), nullable=True)
     cast = relationship('MovieCast', back_populates='movie')
+    def to_dict(self):
+        return {
+            c.name: getattr(self, c.name) for c in self.__table__.columns
+        }
+
 
 class MovieCast(Base):
     __tablename__ = 'movie_cast'
