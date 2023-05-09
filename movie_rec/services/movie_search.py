@@ -100,14 +100,14 @@ def process_request(request_type, identifier, api_key, year=None):
             logging.info(f"Movie_title {identifier} not found in local database")
             movie_data = search_movie_by_title(identifier, year, api_key)
             # TODO Optimiise this DB query
-            title_exists = session.query(MovieData).filter(MovieData.imdbid == movie_data['imdbID']).first()
-            if movie_data and not title_exists:
+            if movie_data and movie_data.get('Type') != 'series':
+                title_exists = session.query(MovieData).filter(MovieData.imdbid == movie_data['imdbID']).first()
+                if title_exists:
+                    return jsonify(title_exists.to_dict())
                 new_movie = process_movie_data(movie_data)
                 session.add(new_movie)
                 session.commit()
                 return jsonify(movie_data)
-            elif title_exists:
-                return jsonify(title_exists.to_dict())
             else:
                 logging.info(f"Movie_title {identifier} not found in OMDB")
                 store_failed_request(identifier, year)
@@ -136,7 +136,6 @@ def search_movie_by_title(title, year, api_key):
     response = requests.get(url)
     data = response.json()
     # print(f"Data received from OMDB API: {data}")
-    # print(f"Title received from OMDB API: {data['Title']}")
 
     if data.get('Response') == 'True':
         return data
