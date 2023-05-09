@@ -161,6 +161,12 @@ alembic/README
 alembic/script.py.mako
 alembic/env.py
 
+# Script Data
+scripts/*.txt
+
+# Logging
+
+
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

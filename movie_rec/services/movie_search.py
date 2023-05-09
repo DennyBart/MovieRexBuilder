@@ -4,6 +4,8 @@ from flask import jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import requests
+import logging
+import urllib.parse
 
 from movie_rec.services.models.model import Base, CastName, MovieCast, MovieData, MoviesNotFound
 
@@ -30,6 +32,8 @@ def create_cast(cast_list, cast_type):
 
 
 def process_movie_data(movie_data):
+    print('Processing movie data')
+    print(movie_data)
     actors = movie_data['Actors'].split(', ')
     directors = movie_data['Director'].split(', ')
     writers = movie_data['Writer'].split(', ')
@@ -67,32 +71,45 @@ def store_failed_request(title, year):
     session.add(not_found_movie)
     session.commit()
 
+from sqlalchemy import or_
+
 
 def process_request(request_type, identifier, api_key, year=None):
     if request_type == 'movie_id':
         movie_data = session.query(MovieData).filter(MovieData.imdbid == identifier).first()
         if not movie_data:
-            movie_data = search_movie_by_id(identifier, api_key) if request_type == 'movie_id' else search_movie_by_title(identifier, year, api_key)
+            logging.info(f"Movie_id {identifier} not found in local database")
+            movie_data = search_movie_by_id(identifier, api_key)
             if movie_data:
                 new_movie = process_movie_data(movie_data)
                 session.add(new_movie)
                 session.commit()
                 return jsonify(movie_data)
             else:
+                logging.info(f"Movie_id {identifier} not found in OMDB")
                 store_failed_request(identifier, None)
                 return jsonify({"error": f"Movie_id {identifier} not found"}), 404
         else:
             return jsonify(movie_data.to_dict())
 
     elif request_type == 'movie_name':
+        # print(f'identifier: {identifier}')
         movie_data = session.query(MovieData).filter(MovieData.title == identifier).first()
+        # print(f'AnD: {movie_data}')
         if not movie_data:
+            logging.info(f"Movie_title {identifier} not found in local database")
             movie_data = search_movie_by_title(identifier, year, api_key)
-            if movie_data:
+            # TODO Optimiise this DB query
+            title_exists = session.query(MovieData).filter(MovieData.imdbid == movie_data['imdbID']).first()
+            if movie_data and not title_exists:
                 new_movie = process_movie_data(movie_data)
+                session.add(new_movie)
                 session.commit()
                 return jsonify(movie_data)
+            elif title_exists:
+                return jsonify(title_exists.to_dict())
             else:
+                logging.info(f"Movie_title {identifier} not found in OMDB")
                 store_failed_request(identifier, year)
                 return jsonify({"error": f"Movie_title {identifier} not found"}), 404
         else:
@@ -100,10 +117,9 @@ def process_request(request_type, identifier, api_key, year=None):
 
 
 def search_movie_by_id(movie_id, api_key):
+    logging.info(f"Searching OMDB movie with id {movie_id}")
     url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}"
-    print(f'URL: {url}')
     response = requests.get(url)
-    print(f'ID_REPSONSE: {response.json()}')
     data = response.json()
 
     if data.get('Response') == 'True':
@@ -113,12 +129,14 @@ def search_movie_by_id(movie_id, api_key):
 
 # "http://127.0.0.1:5000/movies?title=Swallow&year=2019"
 def search_movie_by_title(title, year, api_key):
-    print(f'API_KEY:')
-    url = f"http://www.omdbapi.com/?t={title}&y={year}&apikey={api_key}"
-    print(url)
+    encoded_title = urllib.parse.quote_plus(title)
+    logging.info(f"Searching OMDB for movie with title {title} and year {year}")
+    url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}"
+    # print(url)
     response = requests.get(url)
-    print(response.json())
     data = response.json()
+    # print(f"Data received from OMDB API: {data}")
+    # print(f"Title received from OMDB API: {data['Title']}")
 
     if data.get('Response') == 'True':
         return data
