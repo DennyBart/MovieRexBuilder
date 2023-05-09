@@ -32,8 +32,6 @@ def create_cast(cast_list, cast_type):
 
 
 def process_movie_data(movie_data):
-    print('Processing movie data')
-    print(movie_data)
     actors = movie_data['Actors'].split(', ')
     directors = movie_data['Director'].split(', ')
     writers = movie_data['Writer'].split(', ')
@@ -93,9 +91,7 @@ def process_request(request_type, identifier, api_key, year=None):
             return jsonify(movie_data.to_dict())
 
     elif request_type == 'movie_name':
-        # print(f'identifier: {identifier}')
         movie_data = session.query(MovieData).filter(MovieData.title == identifier).first()
-        # print(f'AnD: {movie_data}')
         if not movie_data:
             logging.info(f"Movie_title {identifier} not found in local database")
             movie_data = search_movie_by_title(identifier, year, api_key)
@@ -132,10 +128,8 @@ def search_movie_by_title(title, year, api_key):
     encoded_title = urllib.parse.quote_plus(title)
     logging.info(f"Searching OMDB for movie with title {title} and year {year}")
     url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}"
-    # print(url)
     response = requests.get(url)
     data = response.json()
-    # print(f"Data received from OMDB API: {data}")
 
     if data.get('Response') == 'True':
         return data
