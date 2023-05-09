@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request
 from dotenv import load_dotenv
+from movie_rec.ai_service.openai_requestor import get_chatgpt_response
 from movie_rec.services.movie_search import process_request
 import logging
 from logging.handlers import RotatingFileHandler
@@ -8,6 +9,8 @@ from logging.handlers import RotatingFileHandler
 
 load_dotenv()
 API_KEY = os.environ['OMDB_API_KEY']
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+APP_MODEL = os.environ['OPENAI_API_MODEL']
 app = Flask(__name__)
 
 
@@ -24,6 +27,13 @@ def movies_name():
     title = request.args.get('title')
     year = request.args.get('year')
     return process_request('movie_name', title, API_KEY, year)
+
+
+@app.route('/ask')
+def ask_chatgpt():
+    prompt = request.args.get('prompt')
+    answer = get_chatgpt_response(prompt, OPENAI_API_KEY, APP_MODEL)
+    return {'answer': answer}
 
 
 def setup_logging():
