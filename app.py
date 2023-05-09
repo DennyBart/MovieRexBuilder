@@ -14,11 +14,12 @@ def movie_id():
     movie_id = request.args.get('id')
     return process_request('movie_id', movie_id, API_KEY)
 
-# Example: http://127.0.0.1:5000/movies?title=Swallow&year=2019"
+# Example: http://127.0.0.1:5000/movies?title=Swallow&year=2019
 @app.route('/movie_name')
 def movies_name():
     title = request.args.get('title')
-    return process_request('movie_name', title, API_KEY)
+    year = request.args.get('year')
+    return process_request('movie_name', title, API_KEY, year)
 
 if __name__ == '__main__':
     app.run(debug=True)

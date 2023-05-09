@@ -30,8 +30,9 @@ def upgrade():
 
     op.create_table(
         'movies_not_found',
-        sa.Column('uuid', sa.String(36), primary_key=True, unique=True, nullable=False),
+        sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
         sa.Column('title', sa.String(256), nullable=False),
+        sa.Column('year', sa.Integer, nullable=True),
         sa.Column('searched_at', sa.DateTime, nullable=False)
     )
 
@@ -46,8 +47,9 @@ def upgrade():
 
     op.create_table(
         'search_history',
-        sa.Column('uuid', sa.String(36), primary_key=True, unique=True, nullable=False),
+        sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
         sa.Column('title', sa.String(256), nullable=False),
+        sa.Column('year', sa.Integer, nullable=True),
         sa.Column('searched_at', sa.DateTime, nullable=False)
     )
 

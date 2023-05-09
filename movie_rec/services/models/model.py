@@ -14,8 +14,9 @@ class CastName(Base):
 
 class MoviesNotFound(Base):
     __tablename__ = 'movies_not_found'
-    uuid = Column(String(36), primary_key=True, unique=True, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(256), nullable=False)
+    year = Column(Integer, nullable=True)
     searched_at = Column(DateTime, nullable=False)
 
 class MovieRecommendations(Base):
@@ -28,8 +29,9 @@ class MovieRecommendations(Base):
 
 class SearchHistory(Base):
     __tablename__ = 'search_history'
-    uuid = Column(String(36), primary_key=True, unique=True, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(256), nullable=False)
+    year = Column(Integer, nullable=True)
     searched_at = Column(DateTime, nullable=False)
 
 class MovieData(Base):

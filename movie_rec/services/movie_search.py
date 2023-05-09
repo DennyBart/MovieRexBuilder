@@ -1,10 +1,11 @@
+from datetime import datetime
 import uuid
 from flask import jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import requests
 
-from movie_rec.services.models.model import Base, CastName, MovieCast, MovieData
+from movie_rec.services.models.model import Base, CastName, MovieCast, MovieData, MoviesNotFound
 
 # Replace with your own database URL
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_database"
@@ -13,119 +14,89 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-def get_cast(name=str, cast_type=str):
+def get_cast(name, cast_type):
     cast_name = session.query(CastName).filter(CastName.name == name, CastName.cast_type == cast_type).first()
     return cast_name if cast_name else None
 
 
-def process_request(request_type=str, identifier=str, year=None, api_key=str):
-    print(f'APIIIIII{api_key}')
+def create_cast(cast_list, cast_type):
+    cast_instances = []
+    for cast_member in cast_list:
+        cast_name = get_cast(cast_member, cast_type)
+        if cast_name is None:
+            cast_name = CastName(name=cast_member, cast_type=cast_type, uuid=uuid.uuid4())
+        cast_instances.append(cast_name)
+    return cast_instances
+
+
+def process_movie_data(movie_data):
+    actors = movie_data['Actors'].split(', ')
+    directors = movie_data['Director'].split(', ')
+    writers = movie_data['Writer'].split(', ')
+    del movie_data['Response']
+
+    movie_data = {
+        key.lower(): value
+        for key, value in movie_data.items()
+        if key.lower() not in ['actors', 'director', 'writer']
+    }
+    movie_data['uuid'] = uuid.uuid4()
+    new_movie = MovieData(**movie_data)
+
+    for actor in create_cast(actors, 'actor'):
+        movie_cast = MovieCast(movie=new_movie, cast=actor)
+        new_movie.cast.append(movie_cast)
+
+    for director in create_cast(directors, 'director'):
+        movie_cast = MovieCast(movie=new_movie, cast=director)
+        new_movie.cast.append(movie_cast)
+
+    for writer in create_cast(writers, 'writer'):
+        movie_cast = MovieCast(movie=new_movie, cast=writer)
+        new_movie.cast.append(movie_cast)
+
+    return new_movie
+
+
+def store_failed_request(title, year):
+    not_found_movie = MoviesNotFound(
+        title=title,
+        year=year,
+        searched_at=datetime.utcnow()
+    )
+    session.add(not_found_movie)
+    session.commit()
+
+
+def process_request(request_type, identifier, api_key, year=None):
     if request_type == 'movie_id':
-        movie = session.query(MovieData).filter(MovieData.imdbid == identifier).first()
-        if not movie:
-            movie_data = search_movie_by_id(identifier, api_key)
+        movie_data = session.query(MovieData).filter(MovieData.imdbid == identifier).first()
+        if not movie_data:
+            movie_data = search_movie_by_id(identifier, api_key) if request_type == 'movie_id' else search_movie_by_title(identifier, year, api_key)
             if movie_data:
-                # Create a list of actors and remove the 'actors' key from the movie_data dictionary
-                actors = movie_data['Actors'].split(', ')
-                directors = movie_data['Director'].split(', ')
-                writers = movie_data['Writer'].split(', ')
-                del movie_data['Response']
-                movie_data = {
-                    key.lower(): value
-                    for key, value in movie_data.items()
-                    if key.lower() != 'actors' and key.lower() != 'director' and key.lower() != 'writer'
-                }
-                movie_data['uuid'] = uuid.uuid4()
-                # print(f'DATA: {movie_data}')
-                # print(f'DIRECTORS: {directors}')
-                # print(f'ACTORS: {actors}')
-                # print(f'Writers: {writers}')
-
-
-
-                # Create a new MovieData instance using the modified movie_data dictionary
-                new_movie = MovieData(**movie_data)
-
-                # Iterate through the actors, create CastName instances, and add them to the new_movie.cast relationship through MovieCast
-                for actor in actors:
-                    cast_name = get_cast(actor, 'actor')
-                    if cast_name is None:
-                        cast_name = CastName(name=actor, cast_type='actor', uuid=uuid.uuid4())
-                    movie_cast = MovieCast(movie=new_movie, cast=cast_name)
-                    new_movie.cast.append(movie_cast)
-                for director in directors:
-                    cast_name = get_cast(director, 'director')
-                    if cast_name is None:
-                        cast_name = CastName(name=director, cast_type='director', uuid=uuid.uuid4())
-                    movie_cast = MovieCast(movie=new_movie, cast=cast_name)
-                    new_movie.cast.append(movie_cast)
-                for writer in writers:
-                    cast_name = get_cast(writer, 'writer')
-                    if cast_name is None:
-                        cast_name = CastName(name=writer, cast_type='writer', uuid=uuid.uuid4())
-                    movie_cast = MovieCast(movie=new_movie, cast=cast_name)
-                    new_movie.cast.append(movie_cast)
-
-                # Add the new_movie instance to the database session and commit the changes
+                new_movie = process_movie_data(movie_data)
                 session.add(new_movie)
                 session.commit()
                 return jsonify(movie_data)
             else:
-                return jsonify({"error": "Movie ID not found"}), 404
-
-        print(f"Movie DICT: {movie.to_dict()}")
-        return jsonify(movie.title)
+                store_failed_request(identifier, None)
+                return jsonify({"error": f"Movie_id {identifier} not found"}), 404
+        else:
+            return jsonify(movie_data.to_dict())
 
     elif request_type == 'movie_name':
-        movie = session.query(MovieData).filter(MovieData.title == identifier).first()
-        print(movie)
-        if not movie:
-            print('Movie not found')
+        movie_data = session.query(MovieData).filter(MovieData.title == identifier).first()
+        if not movie_data:
             movie_data = search_movie_by_title(identifier, year, api_key)
             if movie_data:
-                # Create a list of actors and remove the 'actors' key from the movie_data dictionary
-                actors = movie_data['Actors'].split(', ')
-                directors = movie_data['Director'].split(', ')
-                writers = movie_data['Writer'].split(', ')
-                del movie_data['Response']
-                movie_data = {
-                    key.lower(): value
-                    for key, value in movie_data.items()
-                    if key.lower() != 'actors' and key.lower() != 'director' and key.lower() != 'writer'
-                }
-                movie_data['uuid'] = uuid.uuid4()
-
-                # Create a new MovieData instance using the modified movie_data dictionary
-                new_movie = MovieData(**movie_data)
-
-                # Iterate through the actors, create CastName instances, and add them to the new_movie.cast relationship through MovieCast
-                for actor in actors:
-                    cast_name = get_cast(actor, 'actor')
-                    if cast_name is None:
-                        cast_name = CastName(name=actor, cast_type='actor', uuid=uuid.uuid4())
-                    movie_cast = MovieCast(movie=new_movie, cast=cast_name)
-                    new_movie.cast.append(movie_cast)
-                for director in directors:
-                    cast_name = get_cast(director, 'director')
-                    if cast_name is None:
-                        cast_name = CastName(name=director, cast_type='director', uuid=uuid.uuid4())
-                    movie_cast = MovieCast(movie=new_movie, cast=cast_name)
-                    new_movie.cast.append(movie_cast)
-                for writer in writers:
-                    cast_name = get_cast(writer, 'writer')
-                    if cast_name is None:
-                        cast_name = CastName(name=writer, cast_type='writer', uuid=uuid.uuid4())
-                    movie_cast = MovieCast(movie=new_movie, cast=cast_name)
-                    new_movie.cast.append(movie_cast)
-
-                # Add the new_movie instance to the database session and commit the changes
-                session.add(new_movie)
+                new_movie = process_movie_data(movie_data)
                 session.commit()
                 return jsonify(movie_data)
             else:
-                return jsonify({"error": "Movie Name not found"}), 404
-
-        return jsonify(f'Title:{movie.title} - Year: {movie.year}')
+                store_failed_request(identifier, year)
+                return jsonify({"error": f"Movie_title {identifier} not found"}), 404
+        else:
+            return jsonify(movie_data.to_dict())
 
 
 def search_movie_by_id(movie_id, api_key):
