@@ -72,44 +72,62 @@ def store_failed_request(title, year):
 from sqlalchemy import or_
 
 
+def process_request_by_id(identifier, api_key):
+    movie_data = query_movie_by_id(identifier)
+    if movie_data:
+        logging.info(f"Movie_ID {identifier} found in local database")
+        return jsonify(movie_data.to_dict())
+
+    logging.info(f"Movie_id {identifier} not found in local database")
+    movie_data = search_movie_by_id(identifier, api_key)
+    if movie_data:
+        store_new_movie(movie_data)
+        return jsonify(movie_data)
+
+    logging.info(f"Movie_id {identifier} not found in OMDB")
+    store_failed_request(identifier, None)
+    return jsonify({"error": f"Movie_id {identifier} not found"}), 404
+
+
+def process_request_by_name(identifier, api_key, year):
+    movie_data = query_movie_by_name(identifier)
+    if movie_data:
+        logging.info(f"Movie_title {identifier} {year} found in local database")
+        return jsonify(movie_data.to_dict())
+    logging.info(f"Movie_title {identifier} not found in local database")
+    movie_data = search_movie_by_title(identifier, year, api_key)
+    if movie_data and movie_data.get('Type') != 'series':
+        movie_data = query_movie_by_id(movie_data['imdbID'])
+        if movie_data:
+            return jsonify(movie_data.to_dict())
+        else:
+            store_new_movie(movie_data)
+            return jsonify(movie_data)
+
+    logging.info(f"Movie_title {identifier} not found in OMDB")
+    store_failed_request(identifier, year)
+    return jsonify({"error": f"Movie_title {identifier} not found"}), 404
+
+
 def process_request(request_type, identifier, api_key, year=None):
     if request_type == 'movie_id':
-        movie_data = session.query(MovieData).filter(MovieData.imdbid == identifier).first()
-        if not movie_data:
-            logging.info(f"Movie_id {identifier} not found in local database")
-            movie_data = search_movie_by_id(identifier, api_key)
-            if movie_data:
-                new_movie = process_movie_data(movie_data)
-                session.add(new_movie)
-                session.commit()
-                return jsonify(movie_data)
-            else:
-                logging.info(f"Movie_id {identifier} not found in OMDB")
-                store_failed_request(identifier, None)
-                return jsonify({"error": f"Movie_id {identifier} not found"}), 404
-        else:
-            return jsonify(movie_data.to_dict())
-
+        return process_request_by_id(identifier, api_key)
     elif request_type == 'movie_name':
-        movie_data = session.query(MovieData).filter(MovieData.title == identifier).first()
-        if not movie_data:
-            logging.info(f"Movie_title {identifier} not found in local database")
-            movie_data = search_movie_by_title(identifier, year, api_key)
-            # TODO Optimiise this DB query
-            if movie_data and movie_data.get('Type') != 'series':
-                title_exists = session.query(MovieData).filter(MovieData.imdbid == movie_data['imdbID']).first()
-                if title_exists:
-                    return jsonify(title_exists.to_dict())
-                new_movie = process_movie_data(movie_data)
-                session.add(new_movie)
-                session.commit()
-                return jsonify(movie_data)
-            else:
-                logging.info(f"Movie_title {identifier} not found in OMDB")
-                store_failed_request(identifier, year)
-                return jsonify({"error": f"Movie_title {identifier} not found"}), 404
-        else:
-            return jsonify(movie_data.to_dict())
+        return process_request_by_name(identifier, api_key, year)
+
+
+def query_movie_by_id(identifier):
+    return session.query(MovieData).filter(MovieData.imdbid == identifier).first()
+
+
+def query_movie_by_name(identifier):
+    return session.query(MovieData).filter(MovieData.title == identifier).first()
+
+
+def store_new_movie(movie_data):
+    new_movie = process_movie_data(movie_data)
+    session.add(new_movie)
+    session.commit()
 
 
 def search_movie_by_id(movie_id, api_key):
