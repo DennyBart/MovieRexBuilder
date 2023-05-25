@@ -42,7 +42,7 @@ def ask_chatgpt():
         # if input_value < 5 or input_value > 20:
         #     input_value = 5
     combined_message = f"Top {str(value)} {movie_type} movies"
-    input_message=[{'role': 'system', 'content': 'You are a movie critic bot that responds with top X movies, with ONLY format Movie: movie_name, Year: year.'},
+    input_message=[{'role': 'system', 'content': 'You are a movie critic bot that responds with top movies, with ONLY format Movie: movie_name, Year: year.'},
                  {'role': 'user', 'content': f'List {combined_message} movies'}]
     movie_list = get_chatgpt_response(movie_type, input_value, input_message, OPEN_API_MODEL, OMDB_API_KEY, OPEN_API_KEY)
     return {'movie_list': movie_list}

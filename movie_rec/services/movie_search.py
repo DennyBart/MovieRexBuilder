@@ -10,7 +10,7 @@ import urllib.parse
 from movie_rec.services.models.model import Base, CastName, MovieCast, MovieData, MoviesNotFound
 
 # Replace with your own database URL
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_database"
+DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_rec"
 engine = create_engine(DATABASE_URL)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
@@ -97,12 +97,15 @@ def process_request_by_name(identifier, api_key, year):
     logging.info(f"Movie_title {identifier} not found in local database")
     movie_data = search_movie_by_title(identifier, year, api_key)
     if movie_data and movie_data.get('Type') != 'series':
-        movie_data = query_movie_by_id(movie_data['imdbID'])
-        if movie_data:
-            return jsonify(movie_data.to_dict())
+        is_movie_local = query_movie_by_id(movie_data['imdbID'])
+        if is_movie_local:
+            return jsonify(is_movie_local.to_dict())
         else:
+            # Store movie in local database
             store_new_movie(movie_data)
-            return jsonify(movie_data)
+            # Get movie from local database
+            get_stored_movie = query_movie_by_id(movie_data['imdbID'])
+            return jsonify(get_stored_movie.to_dict())
 
     logging.info(f"Movie_title {identifier} not found in OMDB")
     store_failed_request(identifier, year)
@@ -126,6 +129,7 @@ def query_movie_by_name(identifier):
 
 def store_new_movie(movie_data):
     new_movie = process_movie_data(movie_data)
+    logging.info(f"Storing new movie {new_movie}")
     session.add(new_movie)
     session.commit()
 
@@ -135,6 +139,7 @@ def search_movie_by_id(movie_id, api_key):
     url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}"
     response = requests.get(url)
     data = response.json()
+    logging.info(f"OMDB response: {data}")
 
     if data.get('Response') == 'True':
         return data
@@ -148,6 +153,7 @@ def search_movie_by_title(title, year, api_key):
     url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}"
     response = requests.get(url)
     data = response.json()
+    logging.info(f"OMDB response: {data}")
 
     if data.get('Response') == 'True':
         return data

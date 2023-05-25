@@ -11,11 +11,11 @@ import json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from movie_rec.ai_service.models import Base, OpenAIHistory
-from movie_rec.services.models.model import MovieRecommendations
+from movie_rec.services.models.model import MovieRecommendationRelation, MovieRecommendations
 from movie_rec.services.movie_search import process_request
 
 # Replace with your own database URL
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_database"
+DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_rec"
 engine = create_engine(DATABASE_URL)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
@@ -29,9 +29,7 @@ def create_movie_list(response):
         if "I'm sorry" in line:
             return None
         if 'Movie:' in line and 'Year:' in line:
-            if '. ' in line:
-                _, info = line.split('. ')
-            movie, year = info.split(', ')
+            movie, year = line.split(', ')
             movie = movie.split(': ')[1]
             year = year.split(': ')[1]
             data.append([movie, year])
@@ -40,7 +38,6 @@ def create_movie_list(response):
 
 def fetch_movie_details(movies, omdb_api_key):
     movie_list = []
-    print(f"Movies: {movies}")
     for movie in movies:
         movie_details = process_request('movie_name', movie['Movie'], omdb_api_key, movie['Year'])
         data = json.loads(movie_details.data)
@@ -48,24 +45,29 @@ def fetch_movie_details(movies, omdb_api_key):
         movie_list.append(movie_uuid)
         # TODO - Add movie details to logging
         logging.info(f"Movie Details: {movie_uuid}")
-    print(f"Movie List: {movie_list}")
     return movie_list
 
 
 def store_movie_recommendation(movie_list, combined_message):
     # Check if any of the movies in movie_list are already in the database
-    movie_id_str = ','.join(str(uuid) for uuid in movie_list)
+    # movie_id_str = ','.join(str(uuid) for uuid in movie_list)
 
-    print(f'Movie List: {movie_list}')
     rec_uuid = uuid.uuid4()
-    new_recommendation = MovieRecommendations(
-        uuid=str(rec_uuid),
-        movie_id=movie_id_str,
+    new_recommendations = MovieRecommendations(
+        uuid=rec_uuid,
         topic_name=str(combined_message),
         date_generated=datetime.datetime.now(),
         casting_id=None
     )
-    session.add(new_recommendation)
+    session.add(new_recommendations)
+    session.commit()
+    for movie in movie_list:
+        # add movie uuid and recomendation uuid to MovieRecommendation
+        new_movie_recommendation = MovieRecommendationRelation(
+            recommendation_uuid=rec_uuid,
+            movie_uuid=movie
+        )
+        session.add(new_movie_recommendation)
     session.commit()
 
 
