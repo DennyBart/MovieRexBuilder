@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request
 from dotenv import load_dotenv
+from constants import MOVIE_CRITIC_BOT_MESSAGE, TOP_MOVIES_FORMAT
 from movie_rec.ai_service.openai_requestor import get_chatgpt_response
 from movie_rec.services.movie_search import process_request
 import logging
@@ -35,16 +36,16 @@ def movies_name():
 def ask_chatgpt():
     movie_type = request.args.get('movie_type')
     value = request.args.get('value')
-    if value is None:
+    if value is None or value == 0 or value == ' ':
         input_value = 10
     else:
         input_value = int(value)
-        # if input_value < 5 or input_value > 20:
-        #     input_value = 5
-    combined_message = f"Top {str(value)} {movie_type} movies"
-    input_message=[{'role': 'system', 'content': 'You are a movie critic bot that responds with top movies, with ONLY format Movie: movie_name, Year: year.'},
-                 {'role': 'user', 'content': f'List {combined_message} movies'}]
-    movie_list = get_chatgpt_response(movie_type, input_value, input_message, OPEN_API_MODEL, OMDB_API_KEY, OPEN_API_KEY)
+    combined_message = TOP_MOVIES_FORMAT.format(value, movie_type)
+    input_message = [{'role': 'system', 'content': MOVIE_CRITIC_BOT_MESSAGE},
+                     {'role': 'user', 'content': f'List {combined_message} movies'}]
+    movie_list = get_chatgpt_response(movie_type, input_value, 
+                                      input_message, OPEN_API_MODEL, 
+                                      OMDB_API_KEY, OPEN_API_KEY)
     return {'movie_list': movie_list}
 
 

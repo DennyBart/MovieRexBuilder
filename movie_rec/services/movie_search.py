@@ -103,7 +103,7 @@ def process_request_by_name(identifier, api_key, year):
         else:
             # Store movie in local database
             store_new_movie(movie_data)
-            # Get movie from local database
+            # Get movie from local database since data is now available
             get_stored_movie = query_movie_by_id(movie_data['imdbID'])
             return jsonify(get_stored_movie.to_dict())
 
@@ -121,6 +121,10 @@ def process_request(request_type, identifier, api_key, year=None):
 
 def query_movie_by_id(identifier):
     return session.query(MovieData).filter(MovieData.imdbid == identifier).first()
+
+
+def query_movie_by_uuid(uuid):
+    return session.query(MovieData).filter(MovieData.uuid == uuid).first()
 
 
 def query_movie_by_name(identifier):

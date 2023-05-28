@@ -20,12 +20,14 @@ class MoviesNotFound(Base):
     year = Column(Integer, nullable=True)
     searched_at = Column(DateTime, nullable=False)
 
-class MovieRecommendations(Base):
-    __tablename__ = 'movie_recommendations'
-    uuid = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False)
-    topic_name = Column(String(256), nullable=False)
-    date_generated = Column(DateTime, nullable=True)
-    casting_id = Column(String(256), nullable=True)
+# class MovieRecommendations(Base):
+#     __tablename__ = 'movie_recommendations'
+#     uuid = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False)
+#     count = Column(Integer, nullable=True)
+#     topic_name = Column(String(256), nullable=False)
+#     date_generated = Column(DateTime, nullable=True)
+#     casting_id = Column(String(256), nullable=True)
+
 
 class SearchHistory(Base):
     __tablename__ = 'search_history'
@@ -63,9 +65,18 @@ class MovieData(Base):
     cast = relationship('MovieCast', back_populates='movie')
     def to_dict(self):
         return {
-            c.name: getattr(self, c.name) for c in self.__table__.columns
+            c.name: str(getattr(self, c.name)) if isinstance(getattr(self, c.name), UUID) else getattr(self, c.name)
+            for c in self.__table__.columns
         }
 
+
+class MovieRecommendations(Base):
+    __tablename__ = 'movie_recommendations'
+    uuid = Column(UUID(as_uuid=True), primary_key=True, unique=True, nullable=False)
+    count = Column(Integer, nullable=True)
+    topic_name = Column(String(256), nullable=False)
+    date_generated = Column(DateTime, nullable=True)
+    casting_id = Column(String(256), nullable=True)
 
 class MovieRecommendationRelation(Base):
     __tablename__ = 'movie_recommendation_relation'

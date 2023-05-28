@@ -38,6 +38,7 @@ def upgrade() -> None:
         'movie_recommendations',
         sa.Column('uuid', UUID(as_uuid=True), primary_key=True, unique=True, nullable=False),
         sa.Column('topic_name', sa.String(256), nullable=False),
+        sa.Column('count', sa.Integer, nullable=False, default=0),
         sa.Column('date_generated', sa.DateTime, nullable=True),
         sa.Column('casting_id', sa.String(256), nullable=True)
     )
