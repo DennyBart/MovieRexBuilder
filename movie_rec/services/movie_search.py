@@ -6,7 +6,10 @@ from sqlalchemy import (
     create_engine,
     exists
 )
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import (
+    sessionmaker,
+    joinedload
+)
 import requests
 import logging
 import urllib.parse
@@ -33,6 +36,28 @@ def create_cast(cast_list, cast_type):
             cast_name = CastName(name=cast_member, cast_type=cast_type, uuid=uuid.uuid4())
         cast_instances.append(cast_name)
     return cast_instances
+
+
+def get_movie_cast(movie_uuid):
+    # Fetch the movie by UUID and eager-load the cast
+    movie = session.query(MovieData)\
+        .options(joinedload(MovieData.cast))\
+        .filter(MovieData.uuid == movie_uuid)\
+        .one()
+
+    # Organize the cast by their type
+    cast_by_type = {
+        'actor': [],
+        'director': [],
+        'writer': []
+    }
+
+    for movie_cast in movie.cast:
+        cast_by_type[movie_cast.cast.cast_type].append(movie_cast.cast.name)
+
+    # Return cast_by_type as a Python dictionary
+    return cast_by_type
+
 
 
 def process_movie_data(movie_data):
@@ -80,13 +105,18 @@ def process_request_by_id(identifier, api_key):
     movie_data = query_movie_by_id(identifier)
     if movie_data:
         logging.info(f"Movie_ID {identifier} found in local database")
-        return jsonify(movie_data.to_dict())
+        movie_dict = movie_data.to_dict()
+        movie_dict["cast"] = get_movie_cast(movie_data.uuid)
+        return jsonify(movie_dict)
 
     logging.info(f"Movie_id {identifier} not found in local database")
     movie_data = search_movie_by_id(identifier, api_key)
     if movie_data:
         store_new_movie(movie_data)
-        return jsonify(movie_data)
+        get_stored_movie = query_movie_by_id(movie_data['imdbID'])
+        movie_dict = get_stored_movie.to_dict()
+        movie_dict["cast"] = get_movie_cast(get_stored_movie.uuid)
+        return jsonify(movie_dict)
 
     logging.info(f"Movie_id {identifier} not found in OMDB")
     store_failed_request(identifier, None)
@@ -95,24 +125,32 @@ def process_request_by_id(identifier, api_key):
 
 def process_request_by_name(identifier, api_key, year):
     movie_data = query_movie_by_name(identifier)
+    print(f'Movie data: {identifier}')
     if movie_data:
         logging.info(f"Movie_title {identifier} {year} found in local database")
-        return jsonify(movie_data.to_dict())
+        movie_dict = movie_data.to_dict()
+        movie_dict["cast"] = get_movie_cast(movie_data.uuid)
+        return jsonify(movie_dict)
     logging.info(f"Movie_title {identifier} not found in local database")
     movie_data = search_movie_by_title(identifier, year, api_key)
     if movie_data and movie_data.get('Type') != 'series':
         is_movie_local = query_movie_by_id(movie_data['imdbID'])
         if is_movie_local:
-            return jsonify(is_movie_local.to_dict())
+            movie_dict = is_movie_local.to_dict()
+            movie_dict["cast"] = get_movie_cast(is_movie_local.uuid)
+            return jsonify(movie_dict)
         else:
             # Store movie in local database
             store_new_movie(movie_data)
             # Get movie from local database since data is now available
             get_stored_movie = query_movie_by_id(movie_data['imdbID'])
-            return jsonify(get_stored_movie.to_dict())
+            movie_dict = get_stored_movie.to_dict()
+            movie_dict["cast"] = get_movie_cast(get_stored_movie.uuid)
+            return jsonify(movie_dict)
 
     logging.info(f"Movie_title {identifier} not found in OMDB")
     store_failed_request(identifier, year)
+
 
 
 def process_request(request_type, identifier, api_key, year=None):
@@ -131,7 +169,8 @@ def query_movie_by_uuid(uuid):
 
 
 def query_movie_by_name(identifier):
-    return session.query(MovieData).filter(MovieData.title == identifier).first()
+    return session.query(MovieData).filter(MovieData.title.ilike(identifier)).first()
+
 
 def get_non_generated_movie_topics():
     return session.query(MovieRecommendationsSearchList.title).filter_by(generated=False).all()

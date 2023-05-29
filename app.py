@@ -84,8 +84,7 @@ def provide_movie_recommendation_titles():
 # http://localhost:5000/generate_recs_in_db?limit=2
 @app.route('/generate_recs_in_db')
 def generate_recs_from_list():
-    limit = request.args.get('limit')
-    print(f'limit: {limit}')
+    limit = int(request.args.get('limit'))
     if limit is None or limit == 0 or limit == ' ':
         limit = 10
     count = 0
@@ -95,8 +94,7 @@ def generate_recs_from_list():
     processed_titles = []
     for title in titles:
         if count == limit:
-            break
-        count += 1
+            return {'completed_topic_list': processed_titles}
         processed_titles.append(title[0])
         movie_type = title[0]  # Extract the title from the tuple
         if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower():
@@ -104,13 +102,13 @@ def generate_recs_from_list():
         else:
             combined_message = TOP_MOVIES_FORMAT.format(value, movie_type)
         input_message = [{'role': 'system', 'content': MOVIE_CRITIC_BOT_MESSAGE},
-                     {'role': 'user', 'content': f'List {combined_message} movies'}]
+                    {'role': 'user', 'content': f'List {combined_message} movies'}]
         movie_list = get_chatgpt_movie_rec(movie_type, value, 
-                                      input_message, OPEN_API_MODEL, 
-                                      OMDB_API_KEY, OPEN_API_KEY)
+                                    input_message, OPEN_API_MODEL, 
+                                    OMDB_API_KEY, OPEN_API_KEY)
         set_movie_topic_to_generated(movie_type)
-    
-    return {'movie_list': processed_titles}
+        logging.info(f'Processed {title} with a limit of {limit}')
+        count += 1
 
     
 
