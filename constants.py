@@ -7,3 +7,5 @@ GENERATE_MOVIE_RECOMMENDATION = 'Generate a list of interesting movie top list t
     'Respond with the list in [] brackets title seperated with a comma'
 
 GENERATE_PAGE_BLOB = ''
+
+OMDB_PLOT = 'short'

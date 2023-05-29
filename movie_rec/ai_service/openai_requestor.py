@@ -72,10 +72,10 @@ def create_movie_list(response):
 
 
 
-def fetch_movie_details(movies, omdb_api_key):
+def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
     movie_list = []
     for movie in movies:
-        movie_details = process_request('movie_name', movie['Movie'], omdb_api_key, movie['Year'])
+        movie_details = process_request('movie_name', movie['Movie'], omdb_api_key, movie['Year'], rec_topic)
         if movie_details is not None:
             data = json.loads(movie_details.data)
             movie_uuid = data.get('uuid')
@@ -171,7 +171,7 @@ def process_new_recommendations(movie_data: list, omdb_api_key: str, movie_type:
     resp_json = df.to_json(orient='records')
     movies = json.loads(resp_json)
 
-    movie_list = fetch_movie_details(movies, omdb_api_key)
+    movie_list = fetch_movie_details(movies, omdb_api_key, movie_type)
     store_movie_recommendation(movie_list, movie_type, value)
     return resp_json
 

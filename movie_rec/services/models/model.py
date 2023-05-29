@@ -94,21 +94,10 @@ class MovieRecommendationsSearchList(Base):
     generated_at = Column(DateTime, nullable=False)
 
 
-class MovieRecommendationsNotFound(Base):
-    __tablename__ = 'movie_recommendations_not_found'
-    uuid = Column(UUID(as_uuid=True), primary_key=True, default=UUID, unique=True, nullable=False)
-    title = Column(String(256), nullable=False)
-    generated = Column(Boolean, nullable=False, default=False)
-    generated_at = Column(DateTime, nullable=False)
-    movies_not_found = relationship('MoviesNotFound', back_populates='movie_recommendations_not_found')
-    openai_response = Column(String(1024), nullable=True)
-
-
 class MoviesNotFound(Base):
     __tablename__ = 'movies_not_found'
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(256), nullable=False)
     year = Column(Integer, nullable=True)
     searched_at = Column(DateTime, nullable=False)
-    movie_recommendations_not_found_id = Column(UUID(as_uuid=True), ForeignKey('movie_recommendations_not_found.uuid'))
-    movie_recommendations_not_found = relationship('MovieRecommendationsNotFound', back_populates='movies_not_found')
+    rec_topic = Column(String(256), nullable=True)

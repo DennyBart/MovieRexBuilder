@@ -13,6 +13,7 @@ from sqlalchemy.orm import (
 import requests
 import logging
 import urllib.parse
+from constants import OMDB_PLOT
 
 from movie_rec.services.models.model import Base, CastName, MovieCast, MovieData, MovieRecommendationsSearchList, MoviesNotFound
 
@@ -89,10 +90,11 @@ def process_movie_data(movie_data):
     return new_movie
 
 
-def store_failed_request(title, year):
+def store_failed_request(title, year, rec_topic=None):
     not_found_movie = MoviesNotFound(
         title=title,
         year=year,
+        rec_topic=rec_topic,
         searched_at=datetime.utcnow()
     )
     session.add(not_found_movie)
@@ -123,7 +125,7 @@ def process_request_by_id(identifier, api_key):
     return jsonify({"error": f"Movie_id {identifier} not found"}), 404
 
 
-def process_request_by_name(identifier, api_key, year):
+def process_request_by_name(identifier, api_key, year, rec_topic=None):
     movie_data = query_movie_by_name(identifier)
     print(f'Movie data: {identifier}')
     if movie_data:
@@ -149,15 +151,15 @@ def process_request_by_name(identifier, api_key, year):
             return jsonify(movie_dict)
 
     logging.info(f"Movie_title {identifier} not found in OMDB")
-    store_failed_request(identifier, year)
+    store_failed_request(identifier, year, rec_topic)
 
 
 
-def process_request(request_type, identifier, api_key, year=None):
+def process_request(request_type, identifier, api_key, year=None, rec_topic=None):
     if request_type == 'movie_id':
         return process_request_by_id(identifier, api_key)
     elif request_type == 'movie_name':
-        return process_request_by_name(identifier, api_key, year)
+        return process_request_by_name(identifier, api_key, year, rec_topic)
 
 
 def query_movie_by_id(identifier):
@@ -188,8 +190,12 @@ def store_new_movie(movie_data):
 
 
 def search_movie_by_id(movie_id, api_key):
+    plot = OMDB_PLOT
     logging.info(f"Searching OMDB movie with id {movie_id}")
-    url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}"
+    if plot == 'full':
+        url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}&plot={plot}"
+    else:
+        url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}"
     response = requests.get(url)
     data = response.json()
     logging.info(f"OMDB response: {data}")
@@ -202,9 +208,13 @@ def search_movie_by_id(movie_id, api_key):
 
 # "http://127.0.0.1:5000/movies?title=Swallow&year=2019"
 def search_movie_by_title(title, year, api_key):
+    plot = OMDB_PLOT
     encoded_title = urllib.parse.quote_plus(title)
     logging.info(f"Searching OMDB for movie with title {title} and year {year}")
-    url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}"
+    if plot == 'full':
+        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}&plot={plot}"
+    else:
+        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}"
     response = requests.get(url)
     data = response.json()
     logging.info(f"OMDB response: {data}")

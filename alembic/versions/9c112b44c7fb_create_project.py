@@ -105,9 +105,9 @@ def upgrade() -> None:
         'movies_not_found',
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('title', sa.String(256), nullable=False),
+        sa.Column('rec_topic', sa.String(256), nullable=True),
         sa.Column('year', sa.Integer, nullable=True),
         sa.Column('searched_at', sa.DateTime, nullable=False),
-        sa.Column('movie_recommendations_not_found_id', sa.String(36), sa.ForeignKey('movie_recommendations_not_found.uuid'))
     )
 
     pass
