@@ -27,14 +27,6 @@ def upgrade() -> None:
     )
 
     op.create_table(
-        'movies_not_found',
-        sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column('title', sa.String(256), nullable=False),
-        sa.Column('year', sa.Integer, nullable=True),
-        sa.Column('searched_at', sa.DateTime, nullable=False)
-    )
-
-    op.create_table(
         'movie_recommendations',
         sa.Column('uuid', UUID(as_uuid=True), primary_key=True, unique=True, nullable=False),
         sa.Column('topic_name', sa.String(256), nullable=False),
@@ -91,8 +83,44 @@ def upgrade() -> None:
         sa.Column('movie_uuid', UUID(as_uuid=True), sa.ForeignKey('movie_data.uuid'), primary_key=True)
     )
 
+    op.create_table(
+        'movie_recommendations_search_list',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('title', sa.String(length=256), nullable=False),
+        sa.Column('generated', sa.Boolean(), nullable=False),
+        sa.Column('generated_at', sa.DateTime(), nullable=False),
+        sa.PrimaryKeyConstraint('id')
+    )
+
+    op.create_table(
+        'movie_recommendations_not_found',
+        sa.Column('uuid', sa.String(36), primary_key=True),
+        sa.Column('title', sa.String(256), nullable=False),
+        sa.Column('generated', sa.Boolean, nullable=False, default=False),
+        sa.Column('generated_at', sa.DateTime, nullable=False),
+        sa.Column('openai_response', sa.String(1024), nullable=True)
+    )
+
+    op.create_table(
+        'movies_not_found',
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('title', sa.String(256), nullable=False),
+        sa.Column('year', sa.Integer, nullable=True),
+        sa.Column('searched_at', sa.DateTime, nullable=False),
+        sa.Column('movie_recommendations_not_found_id', sa.String(36), sa.ForeignKey('movie_recommendations_not_found.uuid'))
+    )
+
     pass
 
 
 def downgrade() -> None:
+    op.drop_table('movies_not_found')
+    op.drop_table('movie_recommendations_not_found')
+    op.drop_table('movie_recommendations_search_list')
+    op.drop_table('movie_recommendation_relation')
+    op.drop_table('movie_cast')
+    op.drop_table('movie_data')
+    op.drop_table('search_history')
+    op.drop_table('movie_recommendations')
+    op.drop_table('cast_name')
     pass

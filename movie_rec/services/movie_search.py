@@ -1,13 +1,17 @@
 from datetime import datetime
+from genericpath import exists
 import uuid
 from flask import jsonify
-from sqlalchemy import create_engine
+from sqlalchemy import (
+    create_engine,
+    exists
+)
 from sqlalchemy.orm import sessionmaker
 import requests
 import logging
 import urllib.parse
 
-from movie_rec.services.models.model import Base, CastName, MovieCast, MovieData, MoviesNotFound
+from movie_rec.services.models.model import Base, CastName, MovieCast, MovieData, MovieRecommendationsSearchList, MoviesNotFound
 
 # Replace with your own database URL
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_rec"
@@ -109,7 +113,6 @@ def process_request_by_name(identifier, api_key, year):
 
     logging.info(f"Movie_title {identifier} not found in OMDB")
     store_failed_request(identifier, year)
-    return jsonify({"error": f"Movie_title {identifier} not found"}), 404
 
 
 def process_request(request_type, identifier, api_key, year=None):
@@ -130,10 +133,17 @@ def query_movie_by_uuid(uuid):
 def query_movie_by_name(identifier):
     return session.query(MovieData).filter(MovieData.title == identifier).first()
 
+def get_non_generated_movie_topics():
+    return session.query(MovieRecommendationsSearchList.title).filter_by(generated=False).all()
+
+def set_movie_topic_to_generated(movie_topic):
+    movie_topic = session.query(MovieRecommendationsSearchList).filter_by(title=movie_topic).first()
+    movie_topic.generated = True
+    session.commit()
 
 def store_new_movie(movie_data):
     new_movie = process_movie_data(movie_data)
-    logging.info(f"Storing new movie {new_movie}")
+    logging.info(f"Storing new movie {new_movie.title}")
     session.add(new_movie)
     session.commit()
 
@@ -150,6 +160,7 @@ def search_movie_by_id(movie_id, api_key):
     else:
         return None
 
+
 # "http://127.0.0.1:5000/movies?title=Swallow&year=2019"
 def search_movie_by_title(title, year, api_key):
     encoded_title = urllib.parse.quote_plus(title)
@@ -163,3 +174,18 @@ def search_movie_by_title(title, year, api_key):
         return data
     else:
         return None
+
+
+def store_search_titles(titles):
+    for title in titles:
+        if session.query(exists().where(MovieRecommendationsSearchList.title == title)).scalar():
+            continue
+        logging.info(f"Storing movie topic {title} in database")
+        movie_rec_search = MovieRecommendationsSearchList(
+            title=title,
+            generated=False,
+            generated_at=datetime.now()
+        )
+        session.add(movie_rec_search)
+
+    session.commit()
