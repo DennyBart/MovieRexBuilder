@@ -84,17 +84,32 @@ def provide_movie_recommendation_titles():
 # http://localhost:5000/generate_recs_in_db?limit=2
 @app.route('/generate_recs_in_db')
 def generate_recs_from_list():
-    limit = int(request.args.get('limit'))
-    if limit is None or limit == 0 or limit == ' ':
-        limit = 10
-    count = 0
-    value = 10
-    titles = get_non_generated_movie_topics()
-    print(titles)
+    logging.info('Generating recommendations from list')
+    try:
+        limit = request.args.get('limit')
+        value = request.args.get('value')
+        if value is None or value.strip() == '':
+            value = 10
+        else:
+            value = int(value)
+
+        if limit is None or limit.strip() == '':
+            limit = 100
+        else:
+            limit = int(limit)
+    except ValueError as e:
+        return {'error': str(e)}, 400
+
+    try:
+        titles = get_non_generated_movie_topics()
+    except ValueError as e:
+        return {'error': str(e)}, 400  # Return error message with 400 status code
     processed_titles = []
+    count = 0
     for title in titles:
+        logging.info(f'Generating {value} - {title}')
         if count == limit:
-            return {'completed_topic_list': processed_titles}
+            return {'completed_topic_list - Load more with provide_movie_rec_titles': processed_titles}
         processed_titles.append(title[0])
         movie_type = title[0]  # Extract the title from the tuple
         if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower():
@@ -103,13 +118,20 @@ def generate_recs_from_list():
             combined_message = TOP_MOVIES_FORMAT.format(value, movie_type)
         input_message = [{'role': 'system', 'content': MOVIE_CRITIC_BOT_MESSAGE},
                     {'role': 'user', 'content': f'List {combined_message} movies'}]
-        movie_list = get_chatgpt_movie_rec(movie_type, value, 
+        try:
+            movie_list = get_chatgpt_movie_rec(movie_type, value, 
                                     input_message, OPEN_API_MODEL, 
                                     OMDB_API_KEY, OPEN_API_KEY)
+        except ValueError as e:
+            logging.error(f'Error processing {title} - {str(e)}')
+            continue
         set_movie_topic_to_generated(movie_type)
-        logging.info(f'Processed {title} with a limit of {limit}')
+        logging.info(f'Completed Processing {title}')
         count += 1
-
+    if processed_titles == []:
+        return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'}
+    else:
+        return {'completed_topic_list': processed_titles}
     
 
 def setup_logging():

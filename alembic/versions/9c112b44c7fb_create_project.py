@@ -79,9 +79,12 @@ def upgrade() -> None:
 
     op.create_table(
         'movie_recommendation_relation',
-        sa.Column('recommendation_uuid', UUID(as_uuid=True), sa.ForeignKey('movie_recommendations.uuid'), primary_key=True),
-        sa.Column('movie_uuid', UUID(as_uuid=True), sa.ForeignKey('movie_data.uuid'), primary_key=True)
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('recommendation_uuid', UUID(as_uuid=True), sa.ForeignKey('movie_recommendations.uuid'), nullable=False),
+        sa.Column('movie_uuid', UUID(as_uuid=True), sa.ForeignKey('movie_data.uuid'), nullable=False),
+        sa.UniqueConstraint('recommendation_uuid', 'movie_uuid', name='unique_recommendation_movie'),
     )
+
 
     op.create_table(
         'movie_recommendations_search_list',

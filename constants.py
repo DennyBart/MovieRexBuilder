@@ -8,4 +8,4 @@ GENERATE_MOVIE_RECOMMENDATION = 'Generate a list of interesting movie top list t
 
 GENERATE_PAGE_BLOB = ''
 
-OMDB_PLOT = 'short'
+OMDB_PLOT = 'full'

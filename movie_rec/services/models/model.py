@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Text, DateTime, Boolean, ForeignKey, JSON
+from sqlalchemy import Column, ForeignKeyConstraint, String, Integer, Text, DateTime, Boolean, ForeignKey, JSON, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -72,10 +72,18 @@ class MovieRecommendations(Base):
     date_generated = Column(DateTime, nullable=True)
     casting_id = Column(String(256), nullable=True)
 
+
 class MovieRecommendationRelation(Base):
     __tablename__ = 'movie_recommendation_relation'
-    recommendation_uuid = Column(UUID(as_uuid=True), ForeignKey('movie_recommendations.uuid'), primary_key=True)
-    movie_uuid = Column(UUID(as_uuid=True), ForeignKey('movie_data.uuid'), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    recommendation_uuid = Column(UUID(as_uuid=True), ForeignKey('movie_recommendations.uuid'), nullable=False)
+    movie_uuid = Column(UUID(as_uuid=True), ForeignKey('movie_data.uuid'), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('recommendation_uuid', 'movie_uuid', name='unique_recommendation_movie'),
+    )
+
+
 
 
 class MovieCast(Base):

@@ -20,6 +20,7 @@ def detect_encoding(file_path):
 encoding = detect_encoding(file_path)
 
 # try:
+# TODO - Update the call to a function instead of url and add a TRY EXCEPT
 with open(file_path, "r", encoding=encoding) as file, open(output_file_path, "a", encoding=encoding) as output_file:
     counter = 0  # Initialize the request counter
     for line in file:

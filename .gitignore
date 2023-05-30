@@ -163,6 +163,7 @@ alembic/env.py
 
 # Script Data
 scripts/*.txt
+scripts/*.pgsql
 
 # Logging
 
