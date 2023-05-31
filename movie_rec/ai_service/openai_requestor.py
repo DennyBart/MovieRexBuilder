@@ -1,17 +1,23 @@
 import datetime
+import re
 import pandas as pd
 import uuid
 import openai
-from lib2to3.pytree import Base
-from flask import session
 import logging
 import json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from movie_rec.ai_service.models import Base
-from movie_rec.services.models.model import MovieRecommendationRelation, MovieRecommendations
-from movie_rec.services.movie_search import process_request, query_movie_by_uuid
+from movie_rec.services.models.model import (
+    MovieRecommendationRelation,
+    MovieRecommendations,
+    Base
+)
+from movie_rec.services.movie_search import (
+    process_request,
+    query_movie_by_uuid
+)
 from movie_rec.utils import UUIDEncoder
+import time
 
 # Replace with your own database URL
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_rec"
@@ -20,10 +26,6 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-
-import re
-
-import re
 
 def create_movie_list(response):
     lines = response.split("\n")
@@ -53,31 +55,40 @@ def create_movie_list(response):
                 else:
                     movie, year = movie_with_year.split(": ")
 
-                movie = movie.strip()  # Remove leading and trailing white space
+                # Remove leading and trailing white space
+                movie = movie.strip()
 
                 # Extract only the year as an integer
-                year = re.search(r'\d{4}', year)  # Search for a four digit number representing the year
+                # Search for a four digit number representing the year
+                year = re.search(r'\d{4}', year)
                 if year:
                     year = int(year.group())  # Convert the year to integer
                 else:
                     year = None  # No valid year found
 
                 # Append the movie data as a dictionary
-                movie_data.append({"Index": index, "Movie": movie, "Year": year})
+                movie_data.append({"Index": index,
+                                   "Movie": movie,
+                                   "Year": year})
 
         except ValueError as e:
-            print(f"An error occurred while processing line: {line}. Error: {e}")
+            print(f"An error occurred while processing line: "
+                  f"{line}. Error: {e}")
+            logging.error("An error occurred while processing "
+                          "line: {line}. Error: {e}".format)
     if not movie_data:
         return None
 
     return movie_data
 
 
-
 def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
     movie_list = []
     for movie in movies:
-        movie_details = process_request('movie_name', movie['Movie'], omdb_api_key, movie['Year'], rec_topic)
+        movie_details = process_request('movie_name',
+                                        movie['Movie'],
+                                        omdb_api_key, movie['Year'],
+                                        rec_topic)
         if movie_details is not None:
             data = json.loads(movie_details.data)
             movie_uuid = data.get('uuid')
@@ -112,15 +123,15 @@ def store_movie_recommendation(movie_list, movie_type, total):
 
 
 def get_existing_recommendations(movie_type: str, value: int) -> str:
-    rec_uuid, rec_count  = check_movie_recommendation(movie_type, value)
-    
+    rec_uuid, rec_count = check_movie_recommendation(movie_type, value)
+
     if rec_count == value:
         movie_list = get_related_movies(rec_uuid)
         output_list = []
         for movie_uuid in movie_list:
             movie_details = query_movie_by_uuid(movie_uuid)
             output_list.append(movie_details.to_dict())
-        
+
         logging.info(f"Movie Recommendation UUID: {rec_uuid}")
         logging.info(f"Movie List: {output_list}")
         output_json = json.dumps(output_list, cls=UUIDEncoder)
@@ -129,13 +140,9 @@ def get_existing_recommendations(movie_type: str, value: int) -> str:
     return None
 
 
-import time
-import openai
-
-import time
-import openai
-
-def get_new_recommendations(api_model: str, openai_api_key: str, movie_type: str, value: int, input_message: list) -> str:
+def get_new_recommendations(api_model: str, openai_api_key: str,
+                            movie_type: str, value: int,
+                            input_message: list) -> str:
     openai.api_key = openai_api_key
     logging.info(f"OpenAI Request Message: {input_message}")
     retries = 0
@@ -148,6 +155,7 @@ def get_new_recommendations(api_model: str, openai_api_key: str, movie_type: str
             break  # Break out of the loop if the request is successful
         except openai.error.RateLimitError:
             time.sleep(5)  # Wait for 5 seconds before retrying
+            retries += 1
         except openai.error.Timeout as e:
             logging.error(f"Request timed out: {e}")
             retries += 1
@@ -157,7 +165,8 @@ def get_new_recommendations(api_model: str, openai_api_key: str, movie_type: str
                 return "Request timed out after multiple retries."
 
     combined_message = f"Top {str(value)} {movie_type}"
-    logging.info(f"OpenAI Request Message: {response['choices'][0]['message']}")
+    logging.info(f"OpenAI Request Message: "
+                 f"{response['choices'][0]['message']}")
     resp_message = response['choices'][0]['message']['content']
     # TODO DO MONDAY - Prevent multiple same movie in list
     movie_data = create_movie_list(resp_message)
@@ -175,23 +184,29 @@ def get_new_recommendations(api_model: str, openai_api_key: str, movie_type: str
     new_values = len(unique_combinations)
 
     if len(new_movie_data) < value:
-        logging.info(f'Not all movies were found. Only {len(new_movie_data)} movies were found.')
+        logging.info(f'Not all movies were found. '
+                     f'Only {len(new_movie_data)} movies were found.')
         return f'Only {len(new_movie_data)} movies were found.'
 
     return new_movie_data, new_values
 
 
-def get_recommendation_titles(api_model: str, openai_api_key: str, value: int, input_message: list) -> str:
+def get_recommendation_titles(api_model: str,
+                              openai_api_key: str,
+                              value: int,
+                              input_message: list) -> str:
     openai.api_key = openai_api_key
     response = openai.ChatCompletion.create(
         model=api_model,
         messages=input_message
     )
-    print(response)
     return response['choices'][0]['message']['content']
 
 
-def process_new_recommendations(movie_data: list, omdb_api_key: str, movie_type: str, total: int) -> str:
+def process_new_recommendations(movie_data: list,
+                                omdb_api_key: str,
+                                movie_type: str,
+                                total: int) -> str:
     df = pd.DataFrame(movie_data, columns=['Movie', 'Year'])
     resp_json = df.to_json(orient='records')
     movies = json.loads(resp_json)
@@ -201,7 +216,12 @@ def process_new_recommendations(movie_data: list, omdb_api_key: str, movie_type:
     return resp_json
 
 
-def get_chatgpt_movie_rec(movie_type: str, value: int, input_message: list, api_model: str, omdb_api_key: str, openai_api_key: str) -> str:
+def get_chatgpt_movie_rec(movie_type: str,
+                          value: int,
+                          input_message: list,
+                          api_model: str,
+                          omdb_api_key: str,
+                          openai_api_key: str) -> str:
     movie_list_size_limit = 10
     existing_recommendations = get_existing_recommendations(movie_type, value)
     if existing_recommendations is not None:
@@ -209,12 +229,16 @@ def get_chatgpt_movie_rec(movie_type: str, value: int, input_message: list, api_
     num_attempts = 0
     while num_attempts < 3:
         try:
-            new_recommendations, rec_total = get_new_recommendations(api_model, openai_api_key, movie_type, value, input_message)
+            new_recommendations, rec_total = get_new_recommendations(
+                api_model, openai_api_key, movie_type, value, input_message)
             # Rerun if less than 10 movies found
             if len(new_recommendations) < movie_list_size_limit:
-                raise ValueError(f"Not all movies were found. Only {len(new_recommendations)} movies were found.")
+                raise ValueError(f"Not all movies were found. "
+                                 f"Only {len(new_recommendations)} movies "
+                                 f"were found.")
             elif new_recommendations is not None:
-                return process_new_recommendations(new_recommendations, omdb_api_key, movie_type, rec_total)
+                return process_new_recommendations(
+                    new_recommendations, omdb_api_key, movie_type, rec_total)
         except ValueError:
             num_attempts += 1
 
@@ -238,7 +262,8 @@ def check_movie_recommendation(search_term, value):
 
 def get_related_movies(recommendation_uuid):
     # Query the relation table to get all associated movie UUIDs
-    movie_relations = session.query(MovieRecommendationRelation).filter_by(recommendation_uuid=recommendation_uuid).all()
+    movie_relations = session.query(MovieRecommendationRelation).filter_by(
+        recommendation_uuid=recommendation_uuid).all()
 
     # Create a list to hold all the movie_uuid values
     related_movies = [relation.movie_uuid for relation in movie_relations]

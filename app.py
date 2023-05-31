@@ -1,16 +1,22 @@
 import os
-from flask import Flask, jsonify, request, session
+from flask import (
+    Flask,
+    request
+)
 from dotenv import load_dotenv
 from constants import MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
-from movie_rec.ai_service.openai_requestor import get_chatgpt_movie_rec, get_recommendation_titles
-from movie_rec.services.models.model import MovieRecommendationsSearchList
-from movie_rec.services.movie_search import get_non_generated_movie_topics, process_request, set_movie_topic_to_generated, store_search_titles
+from movie_rec.ai_service.openai_requestor import (
+    get_chatgpt_movie_rec,
+    get_recommendation_titles
+)
+from movie_rec.services.movie_search import (
+    get_non_generated_movie_topics,
+    process_request,
+    set_movie_topic_to_generated,
+    store_search_titles
+)
 import logging
 from logging.handlers import RotatingFileHandler
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import exists
-from sqlalchemy.orm import sessionmaker
-
 
 load_dotenv()
 OMDB_API_KEY = os.environ['OMDB_API_KEY']
@@ -31,7 +37,7 @@ def movie_id():
 def movies_name():
     title = request.args.get('title')
     year = request.args.get('year')
-    # TODO Drop year and search for title and compare to year in request if close then its right
+    # TODO Drop year and search for title and compare to year in request if close then its right # noqa
     return process_request('movie_name', title, OMDB_API_KEY, year)
 
 
@@ -49,10 +55,14 @@ def ask_chatgpt():
     else:
         combined_message = TOP_MOVIES_FORMAT.format(value, movie_type)
     input_message = [{'role': 'system', 'content': MOVIE_CRITIC_BOT_MESSAGE},
-                     {'role': 'user', 'content': f'List {combined_message} movies'}]
-    movie_list = get_chatgpt_movie_rec(movie_type, input_value, 
-                                      input_message, OPEN_API_MODEL, 
-                                      OMDB_API_KEY, OPEN_API_KEY)
+                     {'role': 'user', 'content': f'List {combined_message} '
+                      f'movies'}]
+    movie_list = get_chatgpt_movie_rec(movie_type,
+                                       input_value, 
+                                       input_message,
+                                       OPEN_API_MODEL, 
+                                       OMDB_API_KEY,
+                                       OPEN_API_KEY)
     return {'movie_list': movie_list}
 
 
@@ -64,21 +74,25 @@ def generate_movie_recommendation_titles():
         input_value = 10
     else:
         input_value = int(generate_total)
-    search_titles = get_recommendation_titles(input_value, OPEN_API_MODEL, OPEN_API_KEY)
-    store_search_titles(search_titles)
-    return {'message': 'success'}
+    search_titles = get_recommendation_titles(
+        input_value,
+        OPEN_API_MODEL,
+        OPEN_API_KEY
+    )
+    stored_title = store_search_titles(search_titles)
+    return {'generated_titles': stored_title}
 
 
-# http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST
+# http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa
 @app.route('/provide_movie_rec_titles', methods=['POST'])
 def provide_movie_recommendation_titles():
     search_titles = request.json.get('titles')
 
     if search_titles is None or not isinstance(search_titles, list):
         return 'Invalid search titles data', 400
-    store_search_titles(search_titles)
+    sotred_title = store_search_titles(search_titles)
 
-    return 'Search titles stored successfully'
+    return {'generated_titles': sotred_title}
 
 
 # http://localhost:5000/generate_recs_in_db?limit=2
@@ -103,25 +117,32 @@ def generate_recs_from_list():
     try:
         titles = get_non_generated_movie_topics()
     except ValueError as e:
-        return {'error': str(e)}, 400  # Return error message with 400 status code
+        return {'error': str(e)}, 400  # Return error message with 400 status
     processed_titles = []
     count = 0
     for title in titles:
         logging.info(f'Generating {value} - {title}')
         if count == limit:
-            return {'completed_topic_list - Load more with provide_movie_rec_titles': processed_titles}
-        processed_titles.append(title[0])
+            return {'completed_topic_list Limit': processed_titles}
         movie_type = title[0]  # Extract the title from the tuple
-        if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower():
+        if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower(): # noqa
             combined_message = TOP_FORMAT.format(value, movie_type)
         else:
             combined_message = TOP_MOVIES_FORMAT.format(value, movie_type)
-        input_message = [{'role': 'system', 'content': MOVIE_CRITIC_BOT_MESSAGE},
-                    {'role': 'user', 'content': f'List {combined_message} movies'}]
+        input_message = [
+            {'role': 'system',
+             'content': MOVIE_CRITIC_BOT_MESSAGE}, {'role': 'user',
+                                                    'content':
+                                                    f'List {combined_message}'
+                                                    }]
         try:
-            movie_list = get_chatgpt_movie_rec(movie_type, value, 
-                                    input_message, OPEN_API_MODEL, 
-                                    OMDB_API_KEY, OPEN_API_KEY)
+            get_chatgpt_movie_rec(movie_type, value,
+                                  input_message,
+                                  OPEN_API_MODEL,
+                                  OMDB_API_KEY,
+                                  OPEN_API_KEY
+                                  )
+            processed_titles.append(title[0])
         except ValueError as e:
             logging.error(f'Error processing {title} - {str(e)}')
             continue
@@ -129,10 +150,11 @@ def generate_recs_from_list():
         logging.info(f'Completed Processing {title}')
         count += 1
     if processed_titles == []:
-        return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'}
+        return {'completed_topic_list': processed_titles,
+                'message': 'No topics to process in list'}
     else:
         return {'completed_topic_list': processed_titles}
-    
+
 
 def setup_logging():
     log_file = 'logs/app.log'
@@ -149,7 +171,9 @@ def setup_logging():
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(),
-            RotatingFileHandler(log_file, mode='a', maxBytes=max_log_size, backupCount=backup_count)
+            RotatingFileHandler(log_file, mode='a',
+                                maxBytes=max_log_size,
+                                backupCount=backup_count)
         ]
     )
 

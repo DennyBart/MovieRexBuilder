@@ -8,7 +8,6 @@ Create Date: 2023-05-25 19:10:07.443008
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import text
 
 # revision identifiers, used by Alembic.
 revision = '9c112b44c7fb'
@@ -18,17 +17,25 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # op.create_extension('uuid-ossp') # Uncomment this if your PostgreSQL database doesn't have this extension enabled by default.
+    # Uncomment this if your PostgreSQL database doesn't have this
+    # extension enabled by default.
+    # op.create_extension('uuid-ossp')
     op.create_table(
         'cast_name',
-        sa.Column('uuid', UUID(as_uuid=True), primary_key=True, unique=True, nullable=False),
+        sa.Column('uuid', UUID(as_uuid=True),
+                  primary_key=True,
+                  unique=True,
+                  nullable=False),
         sa.Column('name', sa.String(256), nullable=False),
         sa.Column('cast_type', sa.String(16), nullable=False)
     )
 
     op.create_table(
         'movie_recommendations',
-        sa.Column('uuid', UUID(as_uuid=True), primary_key=True, unique=True, nullable=False),
+        sa.Column('uuid', UUID(as_uuid=True),
+                  primary_key=True,
+                  unique=True,
+                  nullable=False),
         sa.Column('topic_name', sa.String(256), nullable=False),
         sa.Column('count', sa.Integer, nullable=False, default=0),
         sa.Column('date_generated', sa.DateTime, nullable=True),
@@ -45,14 +52,19 @@ def upgrade() -> None:
 
     op.create_table(
         'movie_data',
-        sa.Column('uuid', UUID(as_uuid=True), primary_key=True, unique=True, nullable=False),
+        sa.Column('uuid', UUID(as_uuid=True),
+                  primary_key=True,
+                  unique=True,
+                  nullable=False),
         sa.Column('title', sa.String(256), nullable=False),
         sa.Column('year', sa.Integer, nullable=False),
         sa.Column('rated', sa.String(16), nullable=True),
         sa.Column('released', sa.String(32), nullable=True),
         sa.Column('runtime', sa.String(32), nullable=True),
         sa.Column('genre', sa.String(256), nullable=True),
-        sa.Column('director', UUID(as_uuid=True), sa.ForeignKey('cast_name.uuid'), nullable=True),
+        sa.Column('director', UUID(as_uuid=True),
+                  sa.ForeignKey('cast_name.uuid'),
+                  nullable=True),
         sa.Column('writer', sa.String(512), nullable=True),
         sa.Column('plot', sa.Text, nullable=True),
         sa.Column('language', sa.String(256), nullable=True),
@@ -73,18 +85,28 @@ def upgrade() -> None:
 
     op.create_table(
         'movie_cast',
-        sa.Column('movie_uuid', UUID(as_uuid=True), sa.ForeignKey('movie_data.uuid'), primary_key=True),
-        sa.Column('cast_id', UUID(as_uuid=True), sa.ForeignKey('cast_name.uuid'), primary_key=True)
+        sa.Column('movie_uuid', UUID(as_uuid=True),
+                  sa.ForeignKey('movie_data.uuid'),
+                  primary_key=True),
+        sa.Column('cast_id', UUID(as_uuid=True),
+                  sa.ForeignKey('cast_name.uuid'),
+                  primary_key=True)
     )
 
     op.create_table(
         'movie_recommendation_relation',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('recommendation_uuid', UUID(as_uuid=True), sa.ForeignKey('movie_recommendations.uuid'), nullable=False),
-        sa.Column('movie_uuid', UUID(as_uuid=True), sa.ForeignKey('movie_data.uuid'), nullable=False),
-        sa.UniqueConstraint('recommendation_uuid', 'movie_uuid', name='unique_recommendation_movie'),
+        sa.Column('recommendation_uuid',
+                  UUID(as_uuid=True),
+                  sa.ForeignKey('movie_recommendations.uuid'),
+                  nullable=False),
+        sa.Column('movie_uuid', UUID(as_uuid=True),
+                  sa.ForeignKey('movie_data.uuid'),
+                  nullable=False),
+        sa.UniqueConstraint('recommendation_uuid',
+                            'movie_uuid',
+                            name='unique_recommendation_movie'),
     )
-
 
     op.create_table(
         'movie_recommendations_search_list',

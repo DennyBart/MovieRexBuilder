@@ -1,27 +1,32 @@
 import re
 import requests
 import chardet
-import traceback
 import time
 
-file_path = 'movie_list.txt'  # Replace with the path to your file containing movie names and years
-output_file_path = 'movie_list_output.txt'  # Replace with the path to the output file
+# Replace with the path to your file containing movie names and years
+file_path = 'movie_list.txt'
+# Replace with the path to the output file
+output_file_path = 'movie_list_output.txt'
 
 url = 'http://127.0.0.1:5000/movie_name'
 
 limit = 100  # Set the limit of requests
 wait_time = 2  # Set the waiting period in seconds
 
+
 def detect_encoding(file_path):
     with open(file_path, "rb") as file:
         result = chardet.detect(file.read())
     return result["encoding"]
 
+
 encoding = detect_encoding(file_path)
+
 
 # try:
 # TODO - Update the call to a function instead of url and add a TRY EXCEPT
-with open(file_path, "r", encoding=encoding) as file, open(output_file_path, "a", encoding=encoding) as output_file:
+with open(file_path, "r", encoding=encoding) as file, \
+        open(output_file_path, "a", encoding=encoding) as output_file:
     counter = 0  # Initialize the request counter
     for line in file:
         # Write the original line to the output file
@@ -43,7 +48,7 @@ with open(file_path, "r", encoding=encoding) as file, open(output_file_path, "a"
         # Increment the request counter
         counter += 1
 
-        # Wait for the specified time if the request counter has reached the limit
+        # Wait for the specified time if the request counter has reached limit
         if counter == limit:
             time.sleep(wait_time)
             counter = 0

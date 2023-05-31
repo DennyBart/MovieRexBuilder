@@ -1,11 +1,8 @@
 from datetime import datetime
-from genericpath import exists
+from sqlalchemy.sql import exists
 import uuid
 from flask import jsonify
-from sqlalchemy import (
-    create_engine,
-    exists
-)
+from sqlalchemy import create_engine
 from sqlalchemy.orm import (
     sessionmaker,
     joinedload
@@ -15,7 +12,14 @@ import logging
 import urllib.parse
 from constants import OMDB_PLOT
 
-from movie_rec.services.models.model import Base, CastName, MovieCast, MovieData, MovieRecommendationsSearchList, MoviesNotFound
+from movie_rec.services.models.model import (
+    Base,
+    CastName,
+    MovieCast,
+    MovieData,
+    MovieRecommendationsSearchList,
+    MoviesNotFound
+)
 
 # Replace with your own database URL
 DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_rec"
@@ -24,8 +28,10 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+
 def get_cast(name, cast_type):
-    cast_name = session.query(CastName).filter(CastName.name == name, CastName.cast_type == cast_type).first()
+    cast_name = session.query(CastName).filter(
+        CastName.name == name, CastName.cast_type == cast_type).first()
     return cast_name if cast_name else None
 
 
@@ -34,7 +40,8 @@ def create_cast(cast_list, cast_type):
     for cast_member in cast_list:
         cast_name = get_cast(cast_member, cast_type)
         if cast_name is None:
-            cast_name = CastName(name=cast_member, cast_type=cast_type, uuid=uuid.uuid4())
+            cast_name = CastName(
+                name=cast_member, cast_type=cast_type, uuid=uuid.uuid4())
         cast_instances.append(cast_name)
     return cast_instances
 
@@ -58,7 +65,6 @@ def get_movie_cast(movie_uuid):
 
     # Return cast_by_type as a Python dictionary
     return cast_by_type
-
 
 
 def process_movie_data(movie_data):
@@ -100,8 +106,6 @@ def store_failed_request(title, year, rec_topic=None):
     session.add(not_found_movie)
     session.commit()
 
-from sqlalchemy import or_
-
 
 def process_request_by_id(identifier, api_key):
     movie_data = query_movie_by_id(identifier)
@@ -129,7 +133,8 @@ def process_request_by_name(identifier, api_key, year, rec_topic=None):
     movie_data = query_movie_by_name(identifier)
     print(f'Movie data: {identifier}')
     if movie_data:
-        logging.info(f"Movie_title {identifier} {year} found in local database")
+        logging.info(f"Movie_title {identifier} {year} "
+                     f"found in local database")
         movie_dict = movie_data.to_dict()
         movie_dict["cast"] = get_movie_cast(movie_data.uuid)
         return jsonify(movie_dict)
@@ -154,8 +159,8 @@ def process_request_by_name(identifier, api_key, year, rec_topic=None):
     store_failed_request(identifier, year, rec_topic)
 
 
-
-def process_request(request_type, identifier, api_key, year=None, rec_topic=None):
+def process_request(request_type, identifier,
+                    api_key, year=None, rec_topic=None):
     if request_type == 'movie_id':
         return process_request_by_id(identifier, api_key)
     elif request_type == 'movie_name':
@@ -163,24 +168,31 @@ def process_request(request_type, identifier, api_key, year=None, rec_topic=None
 
 
 def query_movie_by_id(identifier):
-    return session.query(MovieData).filter(MovieData.imdbid == identifier).first()
+    return session.query(MovieData).filter(
+        MovieData.imdbid == identifier).first()
 
 
 def query_movie_by_uuid(uuid):
-    return session.query(MovieData).filter(MovieData.uuid == uuid).first()
+    return session.query(MovieData).filter(
+        MovieData.uuid == uuid).first()
 
 
 def query_movie_by_name(identifier):
-    return session.query(MovieData).filter(MovieData.title.ilike(identifier)).first()
+    return session.query(MovieData).filter(
+        MovieData.title.ilike(identifier)).first()
 
 
 def get_non_generated_movie_topics():
-    return session.query(MovieRecommendationsSearchList.title).filter_by(generated=False).all()
+    return session.query(MovieRecommendationsSearchList.title).filter_by(
+        generated=False).all()
+
 
 def set_movie_topic_to_generated(movie_topic):
-    movie_topic = session.query(MovieRecommendationsSearchList).filter_by(title=movie_topic).first()
+    movie_topic = session.query(MovieRecommendationsSearchList).filter_by(
+        title=movie_topic).first()
     movie_topic.generated = True
     session.commit()
+
 
 def store_new_movie(movie_data):
     new_movie = process_movie_data(movie_data)
@@ -193,7 +205,8 @@ def search_movie_by_id(movie_id, api_key):
     plot = OMDB_PLOT
     logging.info(f"Searching OMDB movie with id {movie_id}")
     if plot == 'full':
-        url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}&plot={plot}"
+        url = f"http://www.omdbapi.com/?i={movie_id}"
+        f"&apikey={api_key}&plot=full"
     else:
         url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}"
     response = requests.get(url)
@@ -210,11 +223,13 @@ def search_movie_by_id(movie_id, api_key):
 def search_movie_by_title(title, year, api_key):
     plot = OMDB_PLOT
     encoded_title = urllib.parse.quote_plus(title)
-    logging.info(f"Searching OMDB for movie with title {title} and year {year}")
+    logging.info(f"Searching OMDB for movie with "
+                 f"title {title} and year {year}")
     if plot == 'full':
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}&plot={plot}"
+        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}&plot={plot}"  # noqa
     else:
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}"
+        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}"
+        f"&apikey={api_key}"
     response = requests.get(url)
     data = response.json()
     logging.info(f"OMDB response: {data}")
@@ -226,8 +241,10 @@ def search_movie_by_title(title, year, api_key):
 
 
 def store_search_titles(titles):
+    processed_title = []
     for title in titles:
-        if session.query(exists().where(MovieRecommendationsSearchList.title == title)).scalar():
+        if session.query(exists().where(
+             MovieRecommendationsSearchList.title == title)).scalar():
             continue
         logging.info(f"Storing movie topic {title} in database")
         movie_rec_search = MovieRecommendationsSearchList(
@@ -236,5 +253,7 @@ def store_search_titles(titles):
             generated_at=datetime.now()
         )
         session.add(movie_rec_search)
+        processed_title.append(title)
 
     session.commit()
+    return processed_title
