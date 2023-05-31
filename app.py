@@ -7,12 +7,14 @@ from dotenv import load_dotenv
 from constants import MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
 from movie_rec.ai_service.openai_requestor import (
     get_chatgpt_movie_rec,
-    get_recommendation_titles
+    get_limit_and_value,
+    get_recommendation_titles,
+    process_titles
 )
 from movie_rec.services.movie_search import (
+    check_db,
     get_non_generated_movie_topics,
     process_request,
-    set_movie_topic_to_generated,
     store_search_titles
 )
 import logging
@@ -20,8 +22,8 @@ from logging.handlers import RotatingFileHandler
 
 load_dotenv()
 OMDB_API_KEY = os.environ['OMDB_API_KEY']
-OPEN_API_KEY = os.environ['OPENAI_API_KEY']
-OPEN_API_MODEL = os.environ['OPENAI_API_MODEL']
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+OPENAI_API_MODEL = os.environ['OPENAI_API_MODEL']
 app = Flask(__name__)
 
 
@@ -60,9 +62,9 @@ def ask_chatgpt():
     movie_list = get_chatgpt_movie_rec(movie_type,
                                        input_value, 
                                        input_message,
-                                       OPEN_API_MODEL, 
+                                       OPENAI_API_MODEL, 
                                        OMDB_API_KEY,
-                                       OPEN_API_KEY)
+                                       OPENAI_API_KEY)
     return {'movie_list': movie_list}
 
 
@@ -76,8 +78,8 @@ def generate_movie_recommendation_titles():
         input_value = int(generate_total)
     search_titles = get_recommendation_titles(
         input_value,
-        OPEN_API_MODEL,
-        OPEN_API_KEY
+        OPENAI_API_MODEL,
+        OPENAI_API_KEY
     )
     stored_title = store_search_titles(search_titles)
     return {'generated_titles': stored_title}
@@ -95,63 +97,27 @@ def provide_movie_recommendation_titles():
     return {'generated_titles': sotred_title}
 
 
-# http://localhost:5000/generate_recs_in_db?limit=2
 @app.route('/generate_recs_in_db')
 def generate_recs_from_list():
     logging.info('Generating recommendations from list')
-    try:
-        limit = request.args.get('limit')
-        value = request.args.get('value')
-        if value is None or value.strip() == '':
-            value = 10
-        else:
-            value = int(value)
-
-        if limit is None or limit.strip() == '':
-            limit = 100
-        else:
-            limit = int(limit)
-    except ValueError as e:
-        return {'error': str(e)}, 400
+    limit, value = get_limit_and_value(request)
 
     try:
         titles = get_non_generated_movie_topics()
     except ValueError as e:
-        return {'error': str(e)}, 400  # Return error message with 400 status
-    processed_titles = []
-    count = 0
-    for title in titles:
-        logging.info(f'Generating {value} - {title}')
-        if count == limit:
-            return {'completed_topic_list Limit': processed_titles}
-        movie_type = title[0]  # Extract the title from the tuple
-        if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower(): # noqa
-            combined_message = TOP_FORMAT.format(value, movie_type)
-        else:
-            combined_message = TOP_MOVIES_FORMAT.format(value, movie_type)
-        input_message = [
-            {'role': 'system',
-             'content': MOVIE_CRITIC_BOT_MESSAGE}, {'role': 'user',
-                                                    'content':
-                                                    f'List {combined_message}'
-                                                    }]
-        try:
-            get_chatgpt_movie_rec(movie_type, value,
-                                  input_message,
-                                  OPEN_API_MODEL,
-                                  OMDB_API_KEY,
-                                  OPEN_API_KEY
-                                  )
-            processed_titles.append(title[0])
-        except ValueError as e:
-            logging.error(f'Error processing {title} - {str(e)}')
-            continue
-        set_movie_topic_to_generated(movie_type)
-        logging.info(f'Completed Processing {title}')
-        count += 1
+        return {'error': str(e)}, 400
+
+    processed_titles = process_titles(
+        titles,
+        limit,
+        value,
+        OPENAI_API_MODEL,
+        OMDB_API_KEY,
+        OPENAI_API_KEY
+    )
+
     if processed_titles == []:
-        return {'completed_topic_list': processed_titles,
-                'message': 'No topics to process in list'}
+        return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'} # noqa
     else:
         return {'completed_topic_list': processed_titles}
 
@@ -179,5 +145,6 @@ def setup_logging():
 
 
 if __name__ == '__main__':
+    check_db()
     setup_logging()
     app.run(debug=True)

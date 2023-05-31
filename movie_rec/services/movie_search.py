@@ -1,4 +1,7 @@
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+from psycopg2 import OperationalError
 from sqlalchemy.sql import exists
 import uuid
 from flask import jsonify
@@ -21,8 +24,8 @@ from movie_rec.services.models.model import (
     MoviesNotFound
 )
 
-# Replace with your own database URL
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_rec"
+load_dotenv()
+DATABASE_URL = os.environ['DATABASE_URL']
 engine = create_engine(DATABASE_URL)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
@@ -172,6 +175,19 @@ def query_movie_by_id(identifier):
         MovieData.imdbid == identifier).first()
 
 
+def check_db():
+    try:
+        # Replace the connection URL with your actual database connection URL
+        engine = create_engine(DATABASE_URL)
+        engine.connect()
+    except OperationalError:
+        raise DBNotFoundError("Database not found or connection refused.")
+
+
+class DBNotFoundError(Exception):
+    pass
+
+
 def query_movie_by_uuid(uuid):
     return session.query(MovieData).filter(
         MovieData.uuid == uuid).first()
@@ -228,15 +244,18 @@ def search_movie_by_title(title, year, api_key):
     if plot == 'full':
         url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}&plot={plot}"  # noqa
     else:
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}"
-        f"&apikey={api_key}"
-    response = requests.get(url)
-    data = response.json()
-    logging.info(f"OMDB response: {data}")
+        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}" # noqa
+    try:
+        response = requests.get(url)
+        data = response.json()
+        logging.info(f"OMDB response: {data}")
 
-    if data.get('Response') == 'True':
-        return data
-    else:
+        if data.get('Response') == 'True':
+            return data
+        else:
+            return None
+    except requests.exceptions.ConnectionError as e:
+        print(f"ConnectionError occurred while searching movie by title: {e}")
         return None
 
 

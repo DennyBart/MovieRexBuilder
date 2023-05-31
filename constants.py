@@ -8,4 +8,5 @@ GENERATE_MOVIE_RECOMMENDATION = 'Generate a list of interesting movie top list t
 
 GENERATE_PAGE_BLOB = ''
 
+# This will trigger the omdb response of the plot of full or short - default is short if not set
 OMDB_PLOT = 'full'

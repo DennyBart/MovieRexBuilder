@@ -12,9 +12,15 @@ from movie_rec.services.models.model import (
     MovieRecommendations,
     Base
 )
+from constants import (
+    MOVIE_CRITIC_BOT_MESSAGE,
+    TOP_FORMAT,
+    TOP_MOVIES_FORMAT
+)
 from movie_rec.services.movie_search import (
     process_request,
-    query_movie_by_uuid
+    query_movie_by_uuid,
+    set_movie_topic_to_generated
 )
 from movie_rec.utils import UUIDEncoder
 import time
@@ -269,3 +275,61 @@ def get_related_movies(recommendation_uuid):
     related_movies = [relation.movie_uuid for relation in movie_relations]
 
     return related_movies
+
+
+def get_limit_and_value(request):
+    try:
+        limit = request.args.get('limit')
+        value = request.args.get('value')
+        if value is None or value.strip() == '':
+            value = 10
+        else:
+            value = int(value)
+
+        if limit is None or limit.strip() == '':
+            limit = 100
+        else:
+            limit = int(limit)
+    except ValueError as e:
+        raise ValueError(str(e)) from None
+
+    return limit, value
+
+
+def process_titles(titles, limit, value, OPENAI_API_MODEL, OMDB_API_KEY, OPENAI_API_KEY):
+    processed_titles = []
+    count = 0
+
+    for title in titles:
+        logging.info(f'Generating {value} - {title}')
+        if count == limit:
+            return processed_titles
+
+        movie_type = title[0]  # Extract the title from the tuple
+        if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower(): # noqa
+            combined_message = TOP_FORMAT.format(value, movie_type)
+        else:
+            combined_message = TOP_MOVIES_FORMAT.format(value, movie_type)
+        input_message = [
+            {'role': 'system', 'content': MOVIE_CRITIC_BOT_MESSAGE},
+            {'role': 'user', 'content': f'List {combined_message}'}
+        ]
+        try:
+            get_chatgpt_movie_rec(
+                movie_type,
+                value,
+                input_message,
+                OPENAI_API_MODEL,
+                OMDB_API_KEY,
+                OPENAI_API_KEY
+            )
+            processed_titles.append(title[0])
+        except ValueError as e:
+            logging.error(f'Error processing {title} - {str(e)}')
+            continue
+
+        set_movie_topic_to_generated(movie_type)
+        logging.info(f'Completed Processing {title}')
+        count += 1
+
+    return processed_titles
