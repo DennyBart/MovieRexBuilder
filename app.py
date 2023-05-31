@@ -1,13 +1,29 @@
 import os
-from flask import Flask, request
+from flask import (
+    Flask,
+    request
+)
 from dotenv import load_dotenv
-from movie_rec.services.movie_search import process_request
+from constants import MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
+from movie_rec.ai_service.openai_requestor import (
+    get_chatgpt_movie_rec,
+    get_limit_and_value,
+    get_recommendation_titles,
+    process_titles
+)
+from movie_rec.services.movie_search import (
+    check_db,
+    get_non_generated_movie_topics,
+    process_request,
+    store_search_titles
+)
 import logging
 from logging.handlers import RotatingFileHandler
 
-
 load_dotenv()
-API_KEY = os.environ['OMDB_API_KEY']
+OMDB_API_KEY = os.environ['OMDB_API_KEY']
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+OPENAI_API_MODEL = os.environ['OPENAI_API_MODEL']
 app = Flask(__name__)
 
 
@@ -15,7 +31,7 @@ app = Flask(__name__)
 @app.route('/movie_id')
 def movie_id():
     movie_id = request.args.get('id')
-    return process_request('movie_id', movie_id, API_KEY)
+    return process_request('movie_id', movie_id, OMDB_API_KEY)
 
 
 # Example: http://127.0.0.1:5000/movie_name?title=Swallow&year=2019
@@ -23,7 +39,87 @@ def movie_id():
 def movies_name():
     title = request.args.get('title')
     year = request.args.get('year')
-    return process_request('movie_name', title, API_KEY, year)
+    # TODO Drop year and search for title and compare to year in request if close then its right # noqa
+    return process_request('movie_name', title, OMDB_API_KEY, year)
+
+
+# http://127.0.0.1:5000/recommendations?movie_type=war&value=10
+@app.route('/recommendations')
+def ask_chatgpt():
+    movie_type = request.args.get('movie_type')
+    value = request.args.get('value')
+    if value is None or value == 0 or value == ' ':
+        input_value = 10
+    else:
+        input_value = int(value)
+    if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower():
+        combined_message = TOP_FORMAT.format(value, movie_type)
+    else:
+        combined_message = TOP_MOVIES_FORMAT.format(value, movie_type)
+    input_message = [{'role': 'system', 'content': MOVIE_CRITIC_BOT_MESSAGE},
+                     {'role': 'user', 'content': f'List {combined_message} '
+                      f'movies'}]
+    movie_list = get_chatgpt_movie_rec(movie_type,
+                                       input_value, 
+                                       input_message,
+                                       OPENAI_API_MODEL, 
+                                       OMDB_API_KEY,
+                                       OPENAI_API_KEY)
+    return {'movie_list': movie_list}
+
+
+# http://localhost:5000/generate_movie_rec_titles?total=10
+@app.route('/generate_movie_rec_titles')
+def generate_movie_recommendation_titles():
+    generate_total = request.args.get('total')
+    if generate_total is None or generate_total == 0 or generate_total == ' ':
+        input_value = 10
+    else:
+        input_value = int(generate_total)
+    search_titles = get_recommendation_titles(
+        input_value,
+        OPENAI_API_MODEL,
+        OPENAI_API_KEY
+    )
+    stored_title = store_search_titles(search_titles)
+    return {'generated_titles': stored_title}
+
+
+# http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa
+@app.route('/provide_movie_rec_titles', methods=['POST'])
+def provide_movie_recommendation_titles():
+    search_titles = request.json.get('titles')
+
+    if search_titles is None or not isinstance(search_titles, list):
+        return 'Invalid search titles data', 400
+    sotred_title = store_search_titles(search_titles)
+
+    return {'generated_titles': sotred_title}
+
+
+@app.route('/generate_recs_in_db')
+def generate_recs_from_list():
+    logging.info('Generating recommendations from list')
+    limit, value = get_limit_and_value(request)
+
+    try:
+        titles = get_non_generated_movie_topics()
+    except ValueError as e:
+        return {'error': str(e)}, 400
+
+    processed_titles = process_titles(
+        titles,
+        limit,
+        value,
+        OPENAI_API_MODEL,
+        OMDB_API_KEY,
+        OPENAI_API_KEY
+    )
+
+    if processed_titles == []:
+        return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'} # noqa
+    else:
+        return {'completed_topic_list': processed_titles}
 
 
 def setup_logging():
@@ -41,11 +137,14 @@ def setup_logging():
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(),
-            RotatingFileHandler(log_file, mode='a', maxBytes=max_log_size, backupCount=backup_count)
+            RotatingFileHandler(log_file, mode='a',
+                                maxBytes=max_log_size,
+                                backupCount=backup_count)
         ]
     )
 
 
 if __name__ == '__main__':
+    check_db()
     setup_logging()
     app.run(debug=True)

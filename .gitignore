@@ -163,9 +163,11 @@ alembic/env.py
 
 # Script Data
 scripts/*.txt
+scripts/*.pgsql
+scripts/*.json
 
 # Logging
-
+logs/*.log
 
 
 # PyCharm
