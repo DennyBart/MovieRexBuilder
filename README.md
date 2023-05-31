@@ -22,6 +22,7 @@ The API provides the following endpoints:
 - Method: GET
 - Parameters: `id` (required) - the ID of the movie to search
 - Description: Retrieves movie information by its ID using the OMDB API.
+- Example: http://127.0.0.1:5000/movie_id?id=tt1392190
 
 ### 2. Search Movie by Name
 
@@ -31,6 +32,7 @@ The API provides the following endpoints:
     - `title` (required) - the title of the movie to search
     - `year` (optional) - the release year of the movie
 - Description: Retrieves movie information by its title using the OMDB API. Optionally, you can provide the year to narrow down the search results.
+- Example: http://127.0.0.1:5000/movie_name?title=Swallow&year=2019
 
 ### 3. Get Movie Recommendations
 
@@ -40,14 +42,16 @@ The API provides the following endpoints:
     - `movie_type` (required) - the type of movie for which recommendations are needed
     - `value` (optional) - the number of recommendations to generate (default is 10)
 - Description: Generates movie recommendations based on the specified movie type using the OpenAI GPT model.
+- Example: http://127.0.0.1:5000/recommendations?movie_type=war&value=10
 
 ### 4. Generate Movie Recommendation Titles
-
+**--UNDER DEVELOPMENT--**
 - Endpoint: `/generate_movie_rec_titles`
 - Method: GET
 - Parameters: 
     - `total` (optional) - the total number of recommendation titles to generate (default is 10)
 - Description: Generates movie recommendation titles using the OpenAI GPT model and stores them in the database.
+- **--UNDER DEVELOPMENT--**
 
 ### 5. Provide Movie Recommendation Titles
 
@@ -55,6 +59,7 @@ The API provides the following endpoints:
 - Method: POST
 - Request Body: JSON object with a list of movie recommendation titles (`titles`)
 - Description: Stores the provided movie recommendation titles in the database.
+- Example: http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST
 
 ### 6. Generate Recommendations from Movie List
 
@@ -66,7 +71,7 @@ The API provides the following endpoints:
 
 To set up and run the Movie Recommendation API locally, follow these steps:
 
-1. Clone the repository: `git clone https://github.com/your-username/movie-recommendation-api.git`
+1. Clone the repository: `https://github.com/DennyBart/MovieRexBuilder.git`
 2. Navigate to the project directory: `cd movie-recommendation-api`
 3. Install the required dependencies: `pip install -r requirements.txt`
 4. Set the required environment variables:
