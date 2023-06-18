@@ -20,6 +20,7 @@ from movie_rec.services.models.model import (
     CastName,
     MovieCast,
     MovieData,
+    MovieRecommendations,
     MovieRecommendationsSearchList,
     MoviesNotFound
 )
@@ -276,3 +277,14 @@ def store_search_titles(titles):
 
     session.commit()
     return processed_title
+
+
+def get_recommendations(search=None, limit=50, offset=0):
+    query = session.query(MovieRecommendations)
+
+    if search:
+        query = query.filter(MovieRecommendations.topic_name.ilike(f'%{search}%'))
+
+    recommendations = query.offset(offset).limit(limit).all()
+
+    return recommendations

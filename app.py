@@ -1,19 +1,23 @@
 import os
 from flask import (
     Flask,
+    jsonify,
     request
 )
 from dotenv import load_dotenv
 from constants import MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
 from movie_rec.ai_service.openai_requestor import (
     get_chatgpt_movie_rec,
+    get_existing_recommendations,
     get_limit_and_value,
     get_recommendation_titles,
+    get_related_movies,
     process_titles
 )
 from movie_rec.services.movie_search import (
     check_db,
     get_non_generated_movie_topics,
+    get_recommendations,
     process_request,
     store_search_titles
 )
@@ -59,13 +63,20 @@ def ask_chatgpt():
     input_message = [{'role': 'system', 'content': MOVIE_CRITIC_BOT_MESSAGE},
                      {'role': 'user', 'content': f'List {combined_message} '
                       f'movies'}]
+    existing_recommendations = get_existing_recommendations(
+        value=value,
+        movie_type=movie_type
+        )
+    print(f"Existing recommendations: {existing_recommendations}")
+    if existing_recommendations:
+        return jsonify(existing_recommendations)
     movie_list = get_chatgpt_movie_rec(movie_type,
                                        input_value, 
                                        input_message,
                                        OPENAI_API_MODEL, 
                                        OMDB_API_KEY,
                                        OPENAI_API_KEY)
-    return {'movie_list': movie_list}
+    return jsonify(movie_list)
 
 
 # http://localhost:5000/generate_movie_rec_titles?total=10
@@ -97,6 +108,7 @@ def provide_movie_recommendation_titles():
     return {'generated_titles': sotred_title}
 
 
+# http://localhost:5000/generate_recs_in_db?limit=10&value=10
 @app.route('/generate_recs_in_db')
 def generate_recs_from_list():
     logging.info('Generating recommendations from list')
@@ -120,6 +132,39 @@ def generate_recs_from_list():
         return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'} # noqa
     else:
         return {'completed_topic_list': processed_titles}
+
+
+# http://localhost:5000/recommendations_list?search=Comedy
+@app.route('/recommendations_list')
+def recommendations_list():
+    search = request.args.get('search')
+    limit = request.args.get('limit', type=int, default=50)
+
+    recommendations = get_recommendations(search=search, limit=limit)
+
+    # Now turn our results into a list of dictionaries so we can return them as JSON
+    results = [recommendation.to_dict() for recommendation in recommendations]
+
+    return jsonify(results)
+
+
+# http://localhost:5000/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10
+@app.route('/get_recommendation')
+def get_recommendations_by_uuid():
+    # Todo add movie_type to search
+    try:
+        uuid = request.args.get('uuid')
+        value = request.args.get('limit', type=int, default=50)
+        existing_recommendations = get_existing_recommendations(
+            value=value,
+            uuid=uuid
+            )
+        if existing_recommendations:
+            return jsonify(existing_recommendations)
+        else:
+            return {'error': 'No recommendations found'}, 400
+    except ValueError as e:
+        return {'error': str(e)}, 400
 
 
 def setup_logging():
