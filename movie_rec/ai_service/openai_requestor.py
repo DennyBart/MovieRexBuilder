@@ -128,22 +128,39 @@ def store_movie_recommendation(movie_list, movie_type, total):
     session.commit()
 
 
-def get_existing_recommendations(movie_type: str, value: int) -> str:
-    rec_uuid, rec_count = check_movie_recommendation(movie_type, value)
+def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
+    # No need to check if value is None, use default parameters in function definition.
+    try:
+        value = int(value)
+    except ValueError as e:
+        logging.error(f"ValueError: {e}")
+        return None
 
-    if rec_count == value:
-        movie_list = get_related_movies(rec_uuid)
-        output_list = []
-        for movie_uuid in movie_list:
-            movie_details = query_movie_by_uuid(movie_uuid)
-            output_list.append(movie_details.to_dict())
+    # Improved readability for uuid and movie_type check.
+    if uuid:
+        rec_uuid, rec_count = check_movie_recommendation(uuid=uuid)
+    elif movie_type:
+        rec_uuid, rec_count = check_movie_recommendation(search_term=movie_type)
+    else:
+        logging.error("Both uuid and movie_type cannot be None.")
+        return None
 
-        logging.info(f"Movie Recommendation UUID: {rec_uuid}")
-        logging.info(f"Movie List: {output_list}")
-        output_json = json.dumps(output_list, cls=UUIDEncoder)
-        return output_json
+    if rec_count is None:
+        # Item not found
+        return None
 
-    return None
+    if value > rec_count:
+        value = rec_count
+
+    # Use list comprehension for output_list.
+    movie_list = get_related_movies(rec_uuid)
+    output_list = [query_movie_by_uuid(movie_uuid).to_dict() 
+                   for i, movie_uuid in enumerate(movie_list) if i < value]
+
+    logging.info(f"Movie Recommendation UUID: {rec_uuid}")
+    logging.info(f"Movie List: {output_list}")
+
+    return output_list
 
 
 def get_new_recommendations(api_model: str, openai_api_key: str,
@@ -219,7 +236,7 @@ def process_new_recommendations(movie_data: list,
 
     movie_list = fetch_movie_details(movies, omdb_api_key, movie_type)
     store_movie_recommendation(movie_list, movie_type, total)
-    return resp_json
+    return movie_list
 
 
 def get_chatgpt_movie_rec(movie_type: str,
@@ -229,7 +246,10 @@ def get_chatgpt_movie_rec(movie_type: str,
                           omdb_api_key: str,
                           openai_api_key: str) -> str:
     movie_list_size_limit = 10
-    existing_recommendations = get_existing_recommendations(movie_type, value)
+    existing_recommendations = get_existing_recommendations(
+        value=value,
+        movie_type=movie_type
+        )
     if existing_recommendations is not None:
         return existing_recommendations
     num_attempts = 0
@@ -251,14 +271,29 @@ def get_chatgpt_movie_rec(movie_type: str,
     return "Error: Failed to retrieve movie recommendations."
 
 
-def check_movie_recommendation(search_term, value):
-    # Use '%' as a wildcard to find similar topic names
-    movie_recommendation = (
-        session.query(MovieRecommendations)
-        .filter(MovieRecommendations.topic_name.like(f"%{search_term}%"))
-        .filter(MovieRecommendations.count == value)
-        .first()
-    )
+def check_movie_recommendation(search_term=None, uuid=None, value=None):
+    # Raise an exception if both search_term and uuid are None
+    if search_term is None and uuid is None:
+        raise ValueError("At least one of search_term or uuid must be provided.")
+
+    # Initialize movie_recommendation
+    movie_recommendation = None
+
+    # If uuid is provided, prioritize it over search_term
+    if uuid is not None:
+        movie_recommendation = (
+            session.query(MovieRecommendations)
+            .filter(MovieRecommendations.uuid == uuid)
+            .first()
+        )
+    else:
+        # Use '%' as a wildcard to find similar topic names
+        movie_recommendation = (
+            session.query(MovieRecommendations)
+            .filter(MovieRecommendations.topic_name.ilike(f"%{search_term}%"))
+            # .filter(MovieRecommendations.count == value)
+            .first()
+        )
 
     if movie_recommendation is None:
         return None, None

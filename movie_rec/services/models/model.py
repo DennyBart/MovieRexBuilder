@@ -85,6 +85,9 @@ class MovieRecommendations(Base):
     date_generated = Column(DateTime, nullable=True)
     casting_id = Column(String(256), nullable=True)
 
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 
 class MovieRecommendationRelation(Base):
     __tablename__ = 'movie_recommendation_relation'
