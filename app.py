@@ -139,16 +139,16 @@ def generate_recs_from_list():
 def recommendations_list():
     search = request.args.get('search')
     limit = request.args.get('limit', type=int, default=50)
+    offset = request.args.get('offset', type=int, default=0)
 
-    recommendations = get_recommendations(search=search, limit=limit)
+    recommendations = get_recommendations(search=search, limit=limit, offset=offset)
 
-    # Now turn our results into a list of dictionaries so we can return them as JSON
     results = [recommendation.to_dict() for recommendation in recommendations]
 
     return jsonify(results)
 
 
-# http://localhost:5000/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10
+# http://localhost:5000/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10 # noqa
 @app.route('/get_recommendation')
 def get_recommendations_by_uuid():
     # Todo add movie_type to search
