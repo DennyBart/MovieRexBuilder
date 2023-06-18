@@ -1,4 +1,5 @@
 import datetime
+import os
 import re
 import pandas as pd
 import uuid
@@ -22,11 +23,10 @@ from movie_rec.services.movie_search import (
     query_movie_by_uuid,
     set_movie_topic_to_generated
 )
-from movie_rec.utils import UUIDEncoder
 import time
 
 # Replace with your own database URL
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movie_rec"
+DATABASE_URL = os.environ['DATABASE_URL']
 engine = create_engine(DATABASE_URL)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
@@ -129,7 +129,8 @@ def store_movie_recommendation(movie_list, movie_type, total):
 
 
 def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
-    # No need to check if value is None, use default parameters in function definition.
+    # No need to check if value is None, use 
+    # default parameters in function definition.
     try:
         value = int(value)
     except ValueError as e:
@@ -140,7 +141,9 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
     if uuid:
         rec_uuid, rec_count = check_movie_recommendation(uuid=uuid)
     elif movie_type:
-        rec_uuid, rec_count = check_movie_recommendation(search_term=movie_type)
+        rec_uuid, rec_count = check_movie_recommendation(
+            search_term=movie_type
+            )
     else:
         logging.error("Both uuid and movie_type cannot be None.")
         return None
@@ -166,32 +169,16 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
 def get_new_recommendations(api_model: str, openai_api_key: str,
                             movie_type: str, value: int,
                             input_message: list) -> str:
-    openai.api_key = openai_api_key
     logging.info(f"OpenAI Request Message: {input_message}")
-    retries = 0
-    while retries < 3:
-        try:
-            response = openai.ChatCompletion.create(
-                model=api_model,
-                messages=input_message
-            )
-            break  # Break out of the loop if the request is successful
-        except openai.error.RateLimitError:
-            time.sleep(5)  # Wait for 5 seconds before retrying
-            retries += 1
-        except openai.error.Timeout as e:
-            logging.error(f"Request timed out: {e}")
-            retries += 1
-            if retries < 3:
-                time.sleep(5)  # Wait for 5 seconds before retrying
-            else:
-                return "Request timed out after multiple retries."
-
+    response = generate_openai_response(api_model=api_model,
+                                        openai_api_key=openai_api_key,
+                                        input_message=input_message
+                                        )
     combined_message = f"Top {str(value)} {movie_type}"
     logging.info(f"OpenAI Request Message: "
                  f"{response['choices'][0]['message']}")
     resp_message = response['choices'][0]['message']['content']
-    # TODO DO MONDAY - Prevent multiple same movie in list
+    # TODO Prevent multiple same movie in list
     movie_data = create_movie_list(resp_message)
     # Check if duplicate data in movie_data
     if movie_data is None:
@@ -214,16 +201,28 @@ def get_new_recommendations(api_model: str, openai_api_key: str,
     return new_movie_data, new_values
 
 
-def get_recommendation_titles(api_model: str,
-                              openai_api_key: str,
-                              value: int,
-                              input_message: list) -> str:
+def generate_openai_response(api_model: str, openai_api_key: str,
+                             input_message=str, retry_limit=3):
     openai.api_key = openai_api_key
-    response = openai.ChatCompletion.create(
-        model=api_model,
-        messages=input_message
-    )
-    return response['choices'][0]['message']['content']
+    retries = 0
+    while retries < retry_limit:
+        try:
+            response = openai.ChatCompletion.create(
+                model=api_model,
+                messages=input_message
+            )
+            break  # Break out of the loop if the request is successful
+        except openai.error.RateLimitError:
+            time.sleep(5)  # Wait for 5 seconds before retrying
+            retries += 1
+        except openai.error.Timeout as e:
+            logging.error(f"Request timed out: {e}")
+            retries += 1
+            if retries < 3:
+                time.sleep(5)  # Wait for 5 seconds before retrying
+            else:
+                return "Request timed out after multiple retries."
+    return response
 
 
 def process_new_recommendations(movie_data: list,
@@ -245,6 +244,7 @@ def get_chatgpt_movie_rec(movie_type: str,
                           api_model: str,
                           omdb_api_key: str,
                           openai_api_key: str) -> str:
+    # TODO Remove value and set to a global variable int
     movie_list_size_limit = 10
     existing_recommendations = get_existing_recommendations(
         value=value,
@@ -274,7 +274,9 @@ def get_chatgpt_movie_rec(movie_type: str,
 def check_movie_recommendation(search_term=None, uuid=None, value=None):
     # Raise an exception if both search_term and uuid are None
     if search_term is None and uuid is None:
-        raise ValueError("At least one of search_term or uuid must be provided.")
+        raise ValueError(
+            "At least one of search_term or uuid must be provided."
+        )
 
     # Initialize movie_recommendation
     movie_recommendation = None
@@ -331,7 +333,8 @@ def get_limit_and_value(request):
     return limit, value
 
 
-def process_titles(titles, limit, value, OPENAI_API_MODEL, OMDB_API_KEY, OPENAI_API_KEY):
+def process_titles(titles, limit, value, OPENAI_API_MODEL,
+                   OMDB_API_KEY, OPENAI_API_KEY):
     processed_titles = []
     count = 0
 

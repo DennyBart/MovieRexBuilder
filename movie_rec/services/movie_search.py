@@ -284,7 +284,10 @@ def get_recommendations(search=None, limit=50, offset=0):
 
     if search:
         query = query.filter(MovieRecommendations.topic_name.ilike(f'%{search}%'))
-
     recommendations = query.offset(offset).limit(limit).all()
-
     return recommendations
+
+
+def get_recommendation_name(uuid):
+    return session.query(MovieRecommendations).filter_by(
+        uuid=uuid).first().topic_name

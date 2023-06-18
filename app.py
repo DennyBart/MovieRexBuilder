@@ -5,18 +5,18 @@ from flask import (
     request
 )
 from dotenv import load_dotenv
-from constants import MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
+from constants import GENERATE_PAGE_BLURB, MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
 from movie_rec.ai_service.openai_requestor import (
+    generate_openai_response,
     get_chatgpt_movie_rec,
     get_existing_recommendations,
     get_limit_and_value,
-    get_recommendation_titles,
-    get_related_movies,
     process_titles
 )
 from movie_rec.services.movie_search import (
     check_db,
     get_non_generated_movie_topics,
+    get_recommendation_name,
     get_recommendations,
     process_request,
     store_search_titles
@@ -56,6 +56,24 @@ def ask_chatgpt():
         input_value = 10
     else:
         input_value = int(value)
+    return generate_rec_movie_list(
+        movie_type=movie_type,
+        value=input_value)
+
+
+def generate_rec_movie_list(value, uuid=None, movie_type=None):
+    if movie_type is None and uuid is None:
+        return {'error': 'Movie type or uuid arg missing'}, 400
+    if movie_type and uuid:
+        return {'error': 'Movie type and uuid arg present'}, 400
+    if uuid:
+        print(f"UUID: {uuid}")
+        existing_recommendations = get_existing_recommendations(
+            uuid=uuid)
+        if existing_recommendations:
+            return jsonify(existing_recommendations)
+        else:
+            return {'error': 'UUID not found'}, 400
     if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower():
         combined_message = TOP_FORMAT.format(value, movie_type)
     else:
@@ -71,29 +89,66 @@ def ask_chatgpt():
     if existing_recommendations:
         return jsonify(existing_recommendations)
     movie_list = get_chatgpt_movie_rec(movie_type,
-                                       input_value, 
+                                       value,
                                        input_message,
-                                       OPENAI_API_MODEL, 
+                                       OPENAI_API_MODEL,
                                        OMDB_API_KEY,
                                        OPENAI_API_KEY)
     return jsonify(movie_list)
 
 
-# http://localhost:5000/generate_movie_rec_titles?total=10
-@app.route('/generate_movie_rec_titles')
+# # http://localhost:5000/generate_movie_rec_titles?total=10
+# @app.route('/generate_movie_rec_titles')
+# def generate_movie_recommendation_titles():
+#     generate_total = request.args.get('total')
+#     if generate_total is None or generate_total == 0 or generate_total == ' ':
+#         input_value = 10
+#     else:
+#         input_value = int(generate_total)
+#     search_titles = make_openai_api_request(
+#         input_value,
+#         OPENAI_API_MODEL,
+#         OPENAI_API_KEY
+#     )
+#     stored_title = store_search_titles(search_titles)
+#     return {'generated_titles': stored_title}
+
+
+# http://localhost:5000/generate_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131&limit=10 # noqa
+@app.route('/generate_blurb')
 def generate_movie_recommendation_titles():
-    generate_total = request.args.get('total')
-    if generate_total is None or generate_total == 0 or generate_total == ' ':
-        input_value = 10
-    else:
-        input_value = int(generate_total)
-    search_titles = get_recommendation_titles(
-        input_value,
-        OPENAI_API_MODEL,
-        OPENAI_API_KEY
-    )
-    stored_title = store_search_titles(search_titles)
-    return {'generated_titles': stored_title}
+    uuid = request.args.get('uuid')
+    limit = request.args.get('limit')
+
+    if uuid is None:
+        return 'Invalid uuid', 400
+    item_list = []
+    try:
+        recommendation_title = get_recommendation_name(
+            uuid=uuid
+        )
+        if recommendation_title is None:
+            return {'error': 'No titles found'}, 400
+        existing_recommendation = get_existing_recommendations(
+            uuid=uuid)
+        for recommendation in existing_recommendation:
+            item_list.append(recommendation['title'])
+    except ValueError as e:
+        return {'error': str(e)}, 400
+    if item_list is None:
+        return {'error': 'No titles found'}, 400
+    limited_item_list = item_list[:limit]
+    ai_question = f'Why are the following {recommendation_title} ({", ".join(limited_item_list)})'
+    openai_message = [
+            {'role': 'system', 'content': GENERATE_PAGE_BLURB},
+            {'role': 'user', 'content': ai_question}
+        ]
+    blurb_message = generate_openai_response(
+        api_model=OPENAI_API_MODEL,
+        openai_api_key=OPENAI_API_KEY,
+        input_message=openai_message
+        )
+    return {'generated_blurb': blurb_message['choices'][0]['message']['content']}
 
 
 # http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa
