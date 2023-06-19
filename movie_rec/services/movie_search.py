@@ -291,3 +291,17 @@ def get_recommendations(search=None, limit=50, offset=0):
 def get_recommendation_name(uuid):
     return session.query(MovieRecommendations).filter_by(
         uuid=uuid).first().topic_name
+
+
+def store_blurb_to_recommendation(uuid, blurb):
+    recommendation = session.query(MovieRecommendations).filter_by(
+        uuid=uuid).first()
+    recommendation.blurb = blurb
+    session.commit()
+
+
+def get_recommendation_blurb(uuid):
+    # Get the blurb for the given uuid.
+    # Return None if no matching record found.
+    record = session.query(MovieRecommendations).filter_by(uuid=uuid).first()
+    return record.blurb if record else None
