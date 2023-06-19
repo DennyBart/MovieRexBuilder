@@ -84,6 +84,7 @@ class MovieRecommendations(Base):
     topic_name = Column(String(256), nullable=False)
     date_generated = Column(DateTime, nullable=True)
     casting_id = Column(String(256), nullable=True)
+    blurb = Column(Text)
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

@@ -1,4 +1,5 @@
 import os
+import uuid
 from flask import (
     Flask,
     jsonify,
@@ -16,9 +17,11 @@ from movie_rec.ai_service.openai_requestor import (
 from movie_rec.services.movie_search import (
     check_db,
     get_non_generated_movie_topics,
+    get_recommendation_blurb,
     get_recommendation_name,
     get_recommendations,
     process_request,
+    store_blurb_to_recommendation,
     store_search_titles
 )
 import logging
@@ -31,10 +34,20 @@ OPENAI_API_MODEL = os.environ['OPENAI_API_MODEL']
 app = Flask(__name__)
 
 
+def is_valid_uuid(val):
+    try:
+        uuid.UUID(str(val))
+        return True
+    except ValueError:
+        return False
+
+
 # Example: http://127.0.0.1:5000/movie_id?id=tt1392190
 @app.route('/movie_id')
 def movie_id():
     movie_id = request.args.get('id')
+    if movie_id is None or not is_valid_uuid(movie_id):
+        return jsonify({'error': 'Invalid movie id'}), 400
     return process_request('movie_id', movie_id, OMDB_API_KEY)
 
 
@@ -43,6 +56,10 @@ def movie_id():
 def movies_name():
     title = request.args.get('title')
     year = request.args.get('year')
+    if title is None:
+        return jsonify({'error': 'Invalid movie title'}), 400
+    if year is None:
+        return jsonify({'error': 'Invalid movie year'}), 400
     # TODO Drop year and search for title and compare to year in request if close then its right # noqa
     return process_request('movie_name', title, OMDB_API_KEY, year)
 
@@ -52,6 +69,8 @@ def movies_name():
 def ask_chatgpt():
     movie_type = request.args.get('movie_type')
     value = request.args.get('value')
+    if movie_type is None or value is None:
+        return jsonify({'error': 'Invalid movie type or value'}), 400
     if value is None or value == 0 or value == ' ':
         input_value = 10
     else:
@@ -116,39 +135,52 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
 
 # http://localhost:5000/generate_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131&limit=10 # noqa
 @app.route('/generate_blurb')
-def generate_movie_recommendation_titles():
+def generate_blurb():
     uuid = request.args.get('uuid')
     limit = request.args.get('limit')
 
+    # check if uuid is valid
     if uuid is None:
+        return 'Missing uuid', 400
+    if not is_valid_uuid(uuid):
         return 'Invalid uuid', 400
+    if limit is None or limit == 0 or limit == ' ':
+        limit = 10
+
+    return generate_movie_recommendation_titles(uuid, (limit))
+
+
+def generate_movie_recommendation_titles(uuid, limit: int):
     item_list = []
     try:
-        recommendation_title = get_recommendation_name(
-            uuid=uuid
-        )
+        recommendation_title = get_recommendation_name(uuid=uuid)
         if recommendation_title is None:
             return {'error': 'No titles found'}, 400
-        existing_recommendation = get_existing_recommendations(
-            uuid=uuid)
+        existing_recommendation = get_existing_recommendations(uuid=uuid)
         for recommendation in existing_recommendation:
             item_list.append(recommendation['title'])
     except ValueError as e:
         return {'error': str(e)}, 400
-    if item_list is None:
+    if not item_list:
         return {'error': 'No titles found'}, 400
+    if item_list and len(item_list) < limit:
+        limit = len(item_list)
     limited_item_list = item_list[:limit]
     ai_question = f'Why are the following {recommendation_title} ({", ".join(limited_item_list)})'
     openai_message = [
-            {'role': 'system', 'content': GENERATE_PAGE_BLURB},
-            {'role': 'user', 'content': ai_question}
-        ]
-    blurb_message = generate_openai_response(
+        {'role': 'system', 'content': GENERATE_PAGE_BLURB},
+        {'role': 'user', 'content': ai_question}
+    ]
+    blurb = generate_openai_response(
         api_model=OPENAI_API_MODEL,
         openai_api_key=OPENAI_API_KEY,
         input_message=openai_message
-        )
-    return {'generated_blurb': blurb_message['choices'][0]['message']['content']}
+    )
+    blurb_message = blurb['choices'][0]['message']['content']
+    store_blurb_to_recommendation(uuid, blurb_message)
+    logging.info(f"{recommendation_title} {uuid} - Blurb message stored: {blurb_message}")
+    return {'recommendation_title': recommendation_title,
+            'blurb_heading': blurb_message}
 
 
 # http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa
@@ -209,6 +241,11 @@ def get_recommendations_by_uuid():
     # Todo add movie_type to search
     try:
         uuid = request.args.get('uuid')
+        # check if uuid is valid
+        if uuid is None:
+            return 'Missing uuid', 400
+        if not is_valid_uuid(uuid):
+            return 'Invalid uuid', 400
         value = request.args.get('limit', type=int, default=50)
         existing_recommendations = get_existing_recommendations(
             value=value,
@@ -220,6 +257,32 @@ def get_recommendations_by_uuid():
             return {'error': 'No recommendations found'}, 400
     except ValueError as e:
         return {'error': str(e)}, 400
+
+
+# http://localhost:5000/get_recommendation_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131 # noqa
+@app.route('/get_recommendation_blurb')
+def get_recommendations_blurb():
+    # get uuid from the request
+    uuid = request.args.get('uuid')
+
+    # check if uuid is valid
+    if uuid is None:
+        return 'Missing uuid', 400
+    if not is_valid_uuid(uuid):
+        return 'Invalid uuid', 400
+
+    # remove leading and trailing whitespace from uuid
+    uuid = uuid.strip()
+
+    # get recommendation from the database
+    recommendation_blurb = get_recommendation_blurb(uuid=uuid)
+
+    # check if recommendation is found
+    if recommendation_blurb is not None:
+        print(recommendation_blurb)
+        return jsonify({'blurb': recommendation_blurb})
+    else:
+        return 'No recommendation found for this UUID', 404
 
 
 def setup_logging():
