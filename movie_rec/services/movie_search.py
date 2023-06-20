@@ -261,22 +261,26 @@ def search_movie_by_title(title, year, api_key):
 
 
 def store_search_titles(titles):
+    # Fetch all titles from the database
+    existing_titles_query = session.query(MovieRecommendationsSearchList.title)
+    existing_titles = {row[0] for row in existing_titles_query}
+
+    # Process titles
     processed_title = []
     for title in titles:
-        if session.query(exists().where(
-             MovieRecommendationsSearchList.title == title)).scalar():
-            continue
-        logging.info(f"Storing movie topic {title} in database")
-        movie_rec_search = MovieRecommendationsSearchList(
-            title=title,
-            generated=False,
-            generated_at=datetime.now()
-        )
-        session.add(movie_rec_search)
-        processed_title.append(title)
+        if title not in existing_titles:
+            logging.info(f"Storing movie topic {title} in database")
+            movie_rec_search = MovieRecommendationsSearchList(
+                title=title,
+                generated=False,
+                generated_at=datetime.now()
+            )
+            session.add(movie_rec_search)
+            processed_title.append(title)
 
     session.commit()
     return processed_title
+
 
 
 def get_recommendations(search=None, limit=50, offset=0):
