@@ -1,12 +1,13 @@
 import os
 import uuid
+import math
 from flask import (
     Flask,
     jsonify,
     request
 )
 from dotenv import load_dotenv
-from constants import GENERATE_PAGE_BLURB, MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
+from constants import GENERATE_PAGE_BLURB, GENERATION_REC_TITLES, MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
 from movie_rec.ai_service.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
@@ -64,8 +65,8 @@ def movies_name():
     return process_request('movie_name', title, OMDB_API_KEY, year)
 
 
-# http://127.0.0.1:5000/recommendations?movie_type=war&value=10
-@app.route('/recommendations')
+# http://127.0.0.1:5000/create_recommendation?movie_type=war&value=10
+@app.route('/create_recommendation')
 def ask_chatgpt():
     movie_type = request.args.get('movie_type')
     value = request.args.get('value')
@@ -116,21 +117,38 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
     return jsonify(movie_list)
 
 
-# # http://localhost:5000/generate_movie_rec_titles?total=10
-# @app.route('/generate_movie_rec_titles')
-# def generate_movie_recommendation_titles():
-#     generate_total = request.args.get('total')
-#     if generate_total is None or generate_total == 0 or generate_total == ' ':
-#         input_value = 10
-#     else:
-#         input_value = int(generate_total)
-#     search_titles = make_openai_api_request(
-#         input_value,
-#         OPENAI_API_MODEL,
-#         OPENAI_API_KEY
-#     )
-#     stored_title = store_search_titles(search_titles)
-#     return {'generated_titles': stored_title}
+# http://localhost:5000/generate_movie_rec_titles?total=10
+@app.route('/generate_movie_rec_titles')
+def generate_movie_recommendation_titles():
+    generate_total = int(request.args.get('total'))
+    if generate_total is None or generate_total < 25 or generate_total == ' ':
+        return {'error': 'Invalid total - minimium is 25'}, 400
+    else:
+        total_request = math.ceil(generate_total / 25)
+        if total_request > 10:
+            return {'error': 'Total request cannot be more than 250'}, 400
+    ai_question = f'Generate 25 catchy movie recomendation titles like - Movies with the Most Memorable Soundtracks'
+    openai_message = [
+        {'role': 'system', 'content': GENERATION_REC_TITLES},
+        {'role': 'user', 'content': ai_question}
+    ]
+    total_generated_titles = []
+    for i in range(total_request):
+        generated_titles = generate_openai_response(
+            api_model=OPENAI_API_MODEL,
+            openai_api_key=OPENAI_API_KEY,
+            input_message=openai_message
+        )
+        generated_message = generated_titles['choices'][0]['message']['content']
+        gen_lines = generated_message.split("\n")
+        gen_items = [line.split(". ")[1] for line in gen_lines if ". " in line]
+        if gen_items is None:
+            logging.info("No titles generated")
+        else:
+            store_search_titles(gen_items)
+            total_generated_titles.extend(gen_items)
+            logging.info(f"Total generated titles: {len(total_generated_titles)}")
+    return {'generated_titles': total_generated_titles}
 
 
 # http://localhost:5000/generate_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131&limit=10 # noqa
