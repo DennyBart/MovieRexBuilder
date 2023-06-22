@@ -15,12 +15,13 @@ Once you have obtained the OpenAI API key, OMDB API key, and set up the PSQL dat
 ## Endpoints
 
 The API provides the following endpoints:
+## API Overview
 
 ### 1. Search Movie by ID
 
 - Endpoint: `/movie_id`
 - Method: GET
-- Parameters: `id` (required) - the ID of the movie to search
+- Parameters: `id` (required) - the IMDBID of the movie to search
 - Description: Retrieves movie information by its ID using the OMDB API.
 - Example: http://127.0.0.1:5000/movie_id?id=tt1392190
 
@@ -28,44 +29,74 @@ The API provides the following endpoints:
 
 - Endpoint: `/movie_name`
 - Method: GET
-- Parameters: 
-    - `title` (required) - the title of the movie to search
-    - `year` (optional) - the release year of the movie
-- Description: Retrieves movie information by its title using the OMDB API. Optionally, you can provide the year to narrow down the search results.
+- Parameters: `title` (required), `year` (required) - the title and the year of the movie to search
+- Description: Retrieves movie information by its name and year using the OMDB API.
 - Example: http://127.0.0.1:5000/movie_name?title=Swallow&year=2019
 
-### 3. Get Movie Recommendations
+### 3. Create Movie Recommendation
 
-- Endpoint: `/recommendations`
+- Endpoint: `/create_recommendation`
 - Method: GET
-- Parameters: 
-    - `movie_type` (required) - the type of movie for which recommendations are needed
-    - `value` (optional) - the number of recommendations to generate (default is 10)
-- Description: Generates movie recommendations based on the specified movie type using the OpenAI GPT model.
-- Example: http://127.0.0.1:5000/recommendations?movie_type=war&value=10
+- Parameters: `movie_type` (required), `value` (required) - the type of the movie and a value for how many movies will be in the reccomendation
+- Description: Generates a list of recommended movies based on the type.
+- Example: http://127.0.0.1:5000/create_recommendation?movie_type=war&value=10
 
 ### 4. Generate Movie Recommendation Titles
-**--UNDER DEVELOPMENT--**
+
 - Endpoint: `/generate_movie_rec_titles`
 - Method: GET
-- Parameters: 
-    - `total` (optional) - the total number of recommendation titles to generate (default is 10)
-- Description: Generates movie recommendation titles using the OpenAI GPT model and stores them in the database.
-- **--UNDER DEVELOPMENT--**
+- Parameters: `total` (required) - the total number of movie recommendation titles to generate
+- Description: Generates a specified number of movie recommendation titles.
+- Example: http://localhost:5000/generate_movie_rec_titles?total=10
 
-### 5. Provide Movie Recommendation Titles
+### 5. Generate Blurb for Recommendations
+
+- Endpoint: `/generate_blurb`
+- Method: GET
+- Parameters: `uuid` (required), `limit` (optional, default=10) - the UUID of the recommendation and the number of movies to generate blurbs for
+- Description: Generates a blurb for the movie recommendations associated with the provided UUID.
+- Example: http://localhost:5000/generate_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131&limit=10 
+
+### 6. Provide Movie Recommendation Titles
 
 - Endpoint: `/provide_movie_rec_titles`
 - Method: POST
-- Request Body: JSON object with a list of movie recommendation titles (`titles`)
-- Description: Stores the provided movie recommendation titles in the database.
+- Data: `{ "titles": ["title1", "title2"] }` - a JSON array of titles
+- Description: Store provided movie recommendation titles to the database.
 - Example: http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST
 
-### 6. Generate Recommendations from Movie List
+### 7. Generate Recommendations from Database
 
 - Endpoint: `/generate_recs_in_db`
 - Method: GET
-- Description: Generates recommendations from the list of movie topics stored in the database.
+- Parameters: `limit` (optional), `value` (optional, default=20) - the number of recommendations to generate from the DB and the value parameter for how many movies in the recomendation
+- Description: Generates movie recommendations from existing data in the database.
+- Example: http://localhost:5000/generate_recs_in_db?limit=10&value=20
+
+### 8. Recommendations List
+
+- Endpoint: `/recommendations_list`
+- Method: GET
+- Parameters: `search` (optional), `limit` (optional), `offset` (optional) - search keyword, number of recommendations to retrieve, and offset for pagination
+- Description: Retrieves a list of movie recommendations from the database.
+- Example: http://localhost:5000/recommendations_list?search=Comedy
+
+### 9. Get Recommendations by UUID
+
+- Endpoint: `/get_recommendation`
+- Method: GET
+- Parameters: `uuid` (required), `limit` (optional) - the UUID of the recomendation and the number of movies to retrieve
+- Description: Retrieves a list of movie recommendations by UUID.
+- Example: http://localhost:5000/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10
+
+### 10. Get Recommendation Blurb
+
+- Endpoint: `/get_recommendation_blurb`
+- Method: GET
+- Parameters: `uuid` (required) - the UUID of the recomendation uuid
+- Description: Retrieves the blurb of a movie recommendation.
+- Example: http://localhost:5000/get_recommendation_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131
+
 
 ## Setup
 
@@ -90,7 +121,6 @@ The application logs are stored in the `logs/app.log` file. The log file is rota
 
 ## TODO
 Improved logging of Errors
-Add endpoints to return recomendation information
 
 ## License
 
