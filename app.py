@@ -17,6 +17,9 @@ from movie_rec.ai_service.openai_requestor import (
 )
 from movie_rec.services.movie_search import (
     check_db,
+    get_and_store_images,
+    get_and_store_videos,
+    get_movie_imdb_id_from_uuid,
     get_non_generated_movie_topics,
     get_recommendation_blurb,
     get_recommendation_name,
@@ -277,7 +280,7 @@ def get_recommendations_by_uuid():
         return {'error': str(e)}, 400
 
 
-# http://localhost:5000/get_recommendation_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131 # noqa
+# http://localhost:5000/get_recommendation_blurb?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f # noqa
 @app.route('/get_recommendation_blurb')
 def get_recommendations_blurb():
     # get uuid from the request
@@ -299,6 +302,62 @@ def get_recommendations_blurb():
     if recommendation_blurb is not None:
         print(recommendation_blurb)
         return jsonify({'blurb': recommendation_blurb})
+    else:
+        return 'No recommendation found for this UUID', 404
+
+
+# http://localhost:5000/get_movie_videos?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True # noqa
+@app.route('/get_movie_videos')
+def get_movie_videos():
+    # get uuid from the request
+    uuid = request.args.get('uuid')
+    overwrite = request.args.get('overwrite', default=False, type=bool)
+    if overwrite is None:
+        overwrite = False
+
+    # check if uuid is valid
+    if uuid is None:
+        return 'Missing uuid', 400
+    if not is_valid_uuid(uuid):
+        return 'Invalid uuid', 400
+
+    # remove leading and trailing whitespace from uuid
+    uuid = uuid.strip()
+
+    movie_imdb_id = get_movie_imdb_id_from_uuid(uuid=uuid)
+
+    # check if recommendation is found
+    if movie_imdb_id is not None:
+        response = get_and_store_videos(movie_imdb_id, overwrite=overwrite)
+        return jsonify({'message': f'{response}'})
+    else:
+        return 'No recommendation found for this UUID', 404
+
+
+# http://localhost:5000/get_movie_images?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=true # noqa
+@app.route('/get_movie_images')
+def get_movie_images():
+    # get uuid from the request
+    uuid = request.args.get('uuid')
+    overwrite = request.args.get('overwrite', default=False, type=bool)
+    if overwrite is None:
+        overwrite = False
+
+    # check if uuid is valid
+    if uuid is None:
+        return 'Missing uuid', 400
+    if not is_valid_uuid(uuid):
+        return 'Invalid uuid', 400
+
+    # remove leading and trailing whitespace from uuid
+    uuid = uuid.strip()
+
+    movie_imdb_id = get_movie_imdb_id_from_uuid(uuid=uuid)
+
+    # check if recommendation is found
+    if movie_imdb_id is not None:
+        response = get_and_store_images(movie_imdb_id, overwrite=overwrite)
+        return jsonify({'message': f'{response}'})
     else:
         return 'No recommendation found for this UUID', 404
 

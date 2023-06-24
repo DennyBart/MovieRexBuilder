@@ -1,5 +1,6 @@
 from sqlalchemy import (
     Column,
+    Float,
     String,
     Integer,
     Text,
@@ -59,6 +60,8 @@ class MovieData(Base):
     imdbrating = Column(String(16), nullable=True)
     imdbvotes = Column(String(32), nullable=True)
     imdbid = Column(String(16), nullable=False, unique=True)
+    images = relationship('MovieImage', back_populates='movie_data')
+    videos = relationship('MovieVideo', back_populates='movie_data')
     type = Column(String(32), nullable=True)
     dvd = Column(String(32), nullable=True)
     boxoffice = Column(String(32), nullable=True)
@@ -134,3 +137,33 @@ class MoviesNotFound(Base):
     year = Column(Integer, nullable=True)
     searched_at = Column(DateTime, nullable=False)
     rec_topic = Column(String(256), nullable=True)
+
+
+class MovieImage(Base):
+    __tablename__ = 'movie_images'
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    aspect_ratio = Column(Float, nullable=True)
+    height = Column(Integer, nullable=True)
+    iso_639_1 = Column(String(length=2), nullable=True)
+    file_path = Column(String(length=100), nullable=True)
+    vote_average = Column(Float, nullable=True)
+    vote_count = Column(Integer, nullable=True)
+    width = Column(Integer, nullable=True)
+    movie_imdbid = Column(String(16), ForeignKey('movie_data.imdbid'))
+    movie_data = relationship("MovieData", back_populates="images")
+
+
+class MovieVideo(Base):
+    __tablename__ = 'movie_videos'
+    id = Column(String(length=24), primary_key=True)
+    iso_639_1 = Column(String(length=2), nullable=True)
+    iso_3166_1 = Column(String(length=2), nullable=True)
+    name = Column(String(length=200), nullable=True)
+    key = Column(String(length=200), nullable=True)
+    site = Column(String(length=100), nullable=True)
+    size = Column(Integer, nullable=True)
+    type = Column(String(length=200), nullable=True)
+    official = Column(Boolean, nullable=True)
+    published_at = Column(DateTime, nullable=True)
+    movie_imdbid = Column(String(16), ForeignKey('movie_data.imdbid'))
+    movie_data = relationship("MovieData", back_populates="videos")
