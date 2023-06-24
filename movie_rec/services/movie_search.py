@@ -20,12 +20,16 @@ from movie_rec.services.models.model import (
     CastName,
     MovieCast,
     MovieData,
+    MovieImage,
     MovieRecommendations,
     MovieRecommendationsSearchList,
+    MovieVideo,
     MoviesNotFound
 )
+from dateutil import parser
 
 load_dotenv()
+THEMOVIEDB_API_KEY = os.environ['THEMOVIEDB_API_KEY']
 DATABASE_URL = os.environ['DATABASE_URL']
 engine = create_engine(DATABASE_URL)
 Base.metadata.bind = engine
@@ -282,7 +286,6 @@ def store_search_titles(titles):
     return processed_title
 
 
-
 def get_recommendations(search=None, limit=50, offset=0):
     query = session.query(MovieRecommendations)
 
@@ -309,3 +312,122 @@ def get_recommendation_blurb(uuid):
     # Return None if no matching record found.
     record = session.query(MovieRecommendations).filter_by(uuid=uuid).first()
     return record.blurb if record else None
+
+
+def get_movie_imdb_id_from_uuid(uuid):
+    result = session.query(MovieData.imdbid).filter_by(uuid=uuid).first()
+    if result is not None:
+        return result[0]
+    else:
+        return None
+
+
+def get_and_store_images(imdbid: str,
+                         include_image_language: str = 'en,null',
+                         overwrite: bool = False):
+    # Check if movie images are already stored in the DB
+    movie_exists = session.query(MovieImage).filter_by(movie_imdbid=imdbid).first() is not None
+
+    # If images are already stored and overwrite is False, skip the request
+    if movie_exists and not overwrite:
+        print(f"Images for movie with IMDB ID {imdbid} are already stored. Skipping request...")
+        return "Images already stored."
+
+    url = f"https://api.themoviedb.org/3/movie/{imdbid}/images?" \
+        f"include_image_language={include_image_language}"
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {THEMOVIEDB_API_KEY}"
+    }
+
+    response = requests.get(url, headers=headers)
+    hard_limit = 5
+    counter = 0
+    if response.status_code == 200:
+        data = response.json()
+
+        # If overwrite is True, delete existing records before adding new ones
+        if movie_exists and overwrite:
+            session.query(MovieImage).filter_by(movie_imdbid=imdbid).delete()
+
+        for backdrop in data['backdrops']:
+            if counter == hard_limit:
+                break
+            movie_data = session.query(MovieData).filter_by(imdbid=imdbid).first()
+            if movie_data:
+                movie_image = MovieImage(
+                    aspect_ratio=backdrop['aspect_ratio'],
+                    height=backdrop['height'],
+                    iso_639_1=backdrop['iso_639_1'],
+                    file_path=backdrop['file_path'],
+                    vote_average=backdrop['vote_average'],
+                    vote_count=backdrop['vote_count'],
+                    width=backdrop['width'],
+                    movie_imdbid=movie_data.imdbid
+                )
+                session.add(movie_image)
+                counter += 1
+        session.commit()
+    else:
+        logging.info("Image Request failed with status code", response.status_code)
+        return "Image Request Not Found"
+    session.close()
+    return "Image Request Generated and Stored."
+
+
+def get_and_store_videos(imdbid: str,
+                         language: str = 'en-US',
+                         overwrite: bool = False):
+    # Check if movie videos are already stored in the DB
+    movie_exists = session.query(MovieVideo).filter_by(movie_imdbid=imdbid).first() is not None
+
+    # If videos are already stored and overwrite is False, skip the request
+    if movie_exists and not overwrite:
+        print(f"Videos for movie with IMDB ID {imdbid} are already stored. Skipping request...")
+        return "Videos already stored."
+    url = f"https://api.themoviedb.org/3/movie/{imdbid}/videos?" \
+        f"language={language}"
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {THEMOVIEDB_API_KEY}"
+    }
+
+    hard_limit = 10
+    counter = 0
+    response = requests.get(url, headers=headers)
+    movie_data = session.query(MovieData).filter_by(imdbid=imdbid).first()
+    if not movie_data:
+        return "Movie not found in database"
+    if response.status_code == 200:
+        data = response.json()
+
+        # If overwrite is True, delete existing records before adding new ones
+        if movie_exists and overwrite:
+            session.query(MovieVideo).filter_by(movie_imdbid=imdbid).delete()
+
+        for video in data['results']:
+            if counter == hard_limit:
+                break
+            if movie_data and video['name']:
+                if 'trailer' in video['name'].lower():
+                    movie_video = MovieVideo(
+                        id=video['id'],
+                        iso_639_1=video['iso_639_1'],
+                        iso_3166_1=video['iso_3166_1'],
+                        name=video['name'],
+                        key=video['key'],
+                        site=video['site'],
+                        size=video['size'],
+                        type=video['type'],
+                        official=video['official'],
+                        published_at=parser.parse(video['published_at']),
+                        movie_imdbid=movie_data.imdbid
+                    )
+                    session.add(movie_video)
+                    counter += 1
+        session.commit()
+    else:
+        logging.info("Video Request failed with status code", response.status_code)
+        return "Video Request not found"
+    session.close()
+    return "Video Request Generated and Stored."
