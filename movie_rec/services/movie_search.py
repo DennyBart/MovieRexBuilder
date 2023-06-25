@@ -133,6 +133,7 @@ def process_request_by_id(identifier, api_key):
         return jsonify(movie_dict)
 
     logging.info(f"Movie_id {identifier} not found in OMDB")
+    # TODO 
     store_failed_request(identifier, None)
     return jsonify({"error": f"Movie_id {identifier} not found"}), 404
 
@@ -226,8 +227,7 @@ def search_movie_by_id(movie_id, api_key):
     plot = OMDB_PLOT
     logging.info(f"Searching OMDB movie with id {movie_id}")
     if plot == 'full':
-        url = f"http://www.omdbapi.com/?i={movie_id}"
-        f"&apikey={api_key}&plot=full"
+        url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}&plot=full" # noqa
     else:
         url = f"http://www.omdbapi.com/?i={movie_id}&apikey={api_key}"
     response = requests.get(url)
@@ -409,7 +409,7 @@ def get_and_store_videos(imdbid: str,
             if counter == hard_limit:
                 break
             if movie_data and video['name']:
-                if 'trailer' in video['name'].lower():
+                if 'trailer' == video['type'].lower():
                     movie_video = MovieVideo(
                         id=video['id'],
                         iso_639_1=video['iso_639_1'],

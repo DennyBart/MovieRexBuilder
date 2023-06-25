@@ -24,7 +24,9 @@ from movie_rec.services.movie_search import (
     get_recommendation_blurb,
     get_recommendation_name,
     get_recommendations,
+    overwrite_movie_data,
     process_request,
+    remove_movie_and_update_recommendations,
     store_blurb_to_recommendation,
     store_search_titles
 )
@@ -50,7 +52,7 @@ def is_valid_uuid(val):
 @app.route('/movie_id')
 def movie_id():
     movie_id = request.args.get('id')
-    if movie_id is None or not is_valid_uuid(movie_id):
+    if movie_id is None:
         return jsonify({'error': 'Invalid movie id'}), 400
     return process_request('movie_id', movie_id, OMDB_API_KEY)
 
