@@ -38,8 +38,6 @@ def upgrade() -> None:
         sa.Column('vote_average', sa.Float(), nullable=True),
         sa.Column('vote_count', sa.Integer(), nullable=True),
         sa.Column('width', sa.Integer(), nullable=True),
-        sa.Column('movie_uuid', sa.UUID(as_uuid=True),
-                  sa.ForeignKey('movie_data.uuid')),
         sa.Column('movie_imdbid', sa.String(16),
                   sa.ForeignKey('movie_data.imdbid')),
     )
@@ -56,8 +54,6 @@ def upgrade() -> None:
         sa.Column('type', sa.String(length=200), nullable=True),
         sa.Column('official', sa.Boolean(), nullable=True),
         sa.Column('published_at', sa.DateTime(), nullable=True),
-        sa.Column('movie_uuid', sa.UUID(as_uuid=True),
-                  sa.ForeignKey('movie_data.uuid')),
         sa.Column('movie_imdbid', sa.String(16),
                   sa.ForeignKey('movie_data.imdbid')),
         sa.PrimaryKeyConstraint('id')
