@@ -24,9 +24,7 @@ from movie_rec.services.movie_search import (
     get_recommendation_blurb,
     get_recommendation_name,
     get_recommendations,
-    overwrite_movie_data,
     process_request,
-    remove_movie_and_update_recommendations,
     store_blurb_to_recommendation,
     store_search_titles
 )

@@ -219,8 +219,11 @@ def set_movie_topic_to_generated(movie_topic):
 def store_new_movie(movie_data):
     new_movie = process_movie_data(movie_data)
     logging.info(f"Storing new movie {new_movie.title}")
+    imdbid = str(new_movie.imdbid)
     session.add(new_movie)
     session.commit()
+    get_and_store_videos(imdbid)
+    get_and_store_images(imdbid)
 
 
 def search_movie_by_id(movie_id, api_key):
@@ -379,11 +382,12 @@ def get_and_store_videos(imdbid: str,
                          language: str = 'en-US',
                          overwrite: bool = False):
     # Check if movie videos are already stored in the DB
+    print("Checking if movie videos are already stored in the DB")
     movie_exists = session.query(MovieVideo).filter_by(movie_imdbid=imdbid).first() is not None
 
     # If videos are already stored and overwrite is False, skip the request
     if movie_exists and not overwrite:
-        print(f"Videos for movie with IMDB ID {imdbid} are already stored. Skipping request...")
+        logging.info(f"Videos for movie with ID {imdbid} already stored. Skipping request.")
         return "Videos already stored."
     url = f"https://api.themoviedb.org/3/movie/{imdbid}/videos?" \
         f"language={language}"
@@ -395,21 +399,25 @@ def get_and_store_videos(imdbid: str,
     hard_limit = 10
     counter = 0
     response = requests.get(url, headers=headers)
+    print("Response from the request is ", response)
     movie_data = session.query(MovieData).filter_by(imdbid=imdbid).first()
     if not movie_data:
         return "Movie not found in database"
     if response.status_code == 200:
         data = response.json()
-
+        
         # If overwrite is True, delete existing records before adding new ones
         if movie_exists and overwrite:
             session.query(MovieVideo).filter_by(movie_imdbid=imdbid).delete()
 
         for video in data['results']:
+            print("Video is ", video)
             if counter == hard_limit:
                 break
             if movie_data and video['name']:
+                print("Video name is ", video['name'])
                 if 'trailer' == video['type'].lower():
+                    print("Video type is ", video['type'])
                     movie_video = MovieVideo(
                         id=video['id'],
                         iso_639_1=video['iso_639_1'],
@@ -423,6 +431,7 @@ def get_and_store_videos(imdbid: str,
                         published_at=parser.parse(video['published_at']),
                         movie_imdbid=movie_data.imdbid
                     )
+                    print("Movie video is ", movie_video)
                     session.add(movie_video)
                     counter += 1
         session.commit()
