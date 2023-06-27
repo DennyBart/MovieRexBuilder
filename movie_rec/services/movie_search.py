@@ -1,6 +1,7 @@
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+import re
 from psycopg2 import OperationalError
 from sqlalchemy.sql import exists
 import uuid
@@ -139,6 +140,7 @@ def process_request_by_id(identifier, api_key):
 
 
 def process_request_by_name(identifier, api_key, year, rec_topic=None):
+    identifier = re.sub(r'\s\(\d{4}\)$', '', identifier)
     movie_data = query_movie_by_name(identifier)
     print(f'Movie data: {identifier}')
     if movie_data:
