@@ -149,7 +149,7 @@ class MovieImage(Base):
     vote_average = Column(Float, nullable=True)
     vote_count = Column(Integer, nullable=True)
     width = Column(Integer, nullable=True)
-    movie_imdbid = Column(String(16), ForeignKey('movie_data.imdbid'))
+    imdbid = Column(String(16), ForeignKey('movie_data.imdbid'))
     movie_data = relationship("MovieData", back_populates="images")
 
 
@@ -165,5 +165,5 @@ class MovieVideo(Base):
     type = Column(String(length=200), nullable=True)
     official = Column(Boolean, nullable=True)
     published_at = Column(DateTime, nullable=True)
-    movie_imdbid = Column(String(16), ForeignKey('movie_data.imdbid'))
+    imdbid = Column(String(16), ForeignKey('movie_data.imdbid'))
     movie_data = relationship("MovieData", back_populates="videos")
