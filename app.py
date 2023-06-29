@@ -1,6 +1,7 @@
 import os
 import uuid
 import math
+from typing import List
 from flask import (
     Flask,
     jsonify,
@@ -168,10 +169,14 @@ def generate_blurb():
     if limit is None or limit == 0 or limit == ' ':
         limit = 10
 
-    return generate_movie_recommendation_titles(uuid, (limit))
+    return generate_recommendation_blurb(uuid, (limit))
 
 
-def generate_movie_recommendation_titles(uuid, limit: int):
+def contains_items(s: str, items: List[str]) -> bool:
+    return sum(item in s for item in items) >= 3
+
+
+def generate_recommendation_blurb(uuid, limit: int):
     item_list = []
     try:
         recommendation_title = get_recommendation_name(uuid=uuid)
@@ -192,16 +197,24 @@ def generate_movie_recommendation_titles(uuid, limit: int):
         {'role': 'system', 'content': GENERATE_PAGE_BLURB},
         {'role': 'user', 'content': ai_question}
     ]
-    blurb = generate_openai_response(
-        api_model=OPENAI_API_MODEL,
-        openai_api_key=OPENAI_API_KEY,
-        input_message=openai_message
-    )
-    blurb_message = blurb['choices'][0]['message']['content']
-    store_blurb_to_recommendation(uuid, blurb_message)
-    logging.info(f"{recommendation_title} {uuid} - Blurb message stored: {blurb_message}")
-    return {'recommendation_title': recommendation_title,
-            'blurb_heading': blurb_message}
+
+    max_tries = 3
+    logging.info(f"Generating blurb for {recommendation_title} {uuid}")
+    for i in range(max_tries):
+        blurb = generate_openai_response(
+            api_model=OPENAI_API_MODEL,
+            openai_api_key=OPENAI_API_KEY,
+            input_message=openai_message
+        )
+        blurb_message = blurb['choices'][0]['message']['content']
+        if contains_items(blurb_message,
+                          limited_item_list) or i == max_tries - 1:
+            store_blurb_to_recommendation(uuid, blurb_message)
+            logging.info(f"{recommendation_title} {uuid} - Blurb message stored: {blurb_message} - Attempt: {i + 1}")
+            return {'recommendation_title': recommendation_title, 'blurb_heading': blurb_message}
+
+    return {'error': 'Unable to generate a suitable blurb after maximum attempts'}
+
 
 
 # http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa

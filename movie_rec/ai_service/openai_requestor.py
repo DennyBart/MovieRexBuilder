@@ -160,8 +160,8 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
     output_list = [query_movie_by_uuid(movie_uuid).to_dict() 
                    for i, movie_uuid in enumerate(movie_list) if i < value]
 
-    logging.info(f"Movie Recommendation UUID: {rec_uuid}")
-    logging.info(f"Movie List: {output_list}")
+    logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")
+    logging.debug(f"Movie Recommendation List: {output_list}")
 
     return output_list
 
