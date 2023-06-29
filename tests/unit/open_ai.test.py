@@ -1,6 +1,6 @@
 import unittest
 
-from movie_rec.ai_service.openai_requestor import create_movie_list
+from movie_rec.openai_requestor import create_movie_list
 
 
 # TODO Non Running Tests

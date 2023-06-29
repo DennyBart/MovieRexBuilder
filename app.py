@@ -9,14 +9,14 @@ from flask import (
 )
 from dotenv import load_dotenv
 from constants import GENERATE_PAGE_BLURB, GENERATION_REC_TITLES, MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
-from movie_rec.ai_service.openai_requestor import (
+from movie_rec.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
     get_existing_recommendations,
     get_limit_and_value,
     process_titles
 )
-from movie_rec.services.movie_search import (
+from movie_rec.movie_search import (
     check_db,
     get_and_store_images,
     get_and_store_videos,
