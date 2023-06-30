@@ -14,6 +14,7 @@ This Movie Recommendation API is a Flask-based web application that provides a r
 ## Table of Contents
 
 - [Requirements](#requirements)
+- [Setup](#setup)
 - [Endpoints](#endpoints)
     - [Search Movie by ID](#search-movie-by-id)
     - [Search Movie by Name](#search-movie-by-name)
@@ -27,7 +28,6 @@ This Movie Recommendation API is a Flask-based web application that provides a r
     - [Get Recommendation Blurb](#get-recommendation-blurb)
     - [Get Movie Videos](#get-movie-videos)
     - [Get Movie Images](#get-movie-images)
-- [Setup](#setup)
 - [Logging](#logging)
 - [ToDo](#todo)
 - [License](#license)
@@ -45,6 +45,24 @@ Before running the Movie Recommendation API, make sure you have the following:
 
 
 Once you have obtained the OpenAI API key, OMDB API key, and set up the PSQL database, you can proceed with the setup and configuration steps mentioned in the previous section.
+
+## Setup
+
+To set up and run the Movie Recommendation API locally, follow these steps:
+
+1. Clone the repository: `https://github.com/DennyBart/MovieRexBuilder.git`
+2. Navigate to the project directory: `cd movie-recommendation-api`
+3. Install the required dependencies: `pip install -r requirements.txt`
+4. Set the required environment variables:
+    - `OMDB_API_KEY` - Your API key for the OMDB API
+    - `OPENAI_API_KEY` - Your API key for the OpenAI API
+    - `THEMOVIEDB_API_KEY` - Your API ker for TMDB
+    - `OPENAI_API_MODEL` - The name or ID of the OpenAI GPT model to use [OpenAI API Models] (https://platform.openai.com/docs/models)
+    - `DATABASE_URL` - Database location
+5. Run the application: `python app.py`
+6. The API will be available at `http://localhost:5000`
+
+Note: Make sure to replace the environment variable values with your own API keys and model information.
 
 ## Endpoints
 
@@ -166,26 +184,6 @@ The API provides the following endpoints:
     - `overwrite` (optional, defaults to `False`) - a boolean value indicating whether to overwrite existing image data for the movie.
 - Description: Retrieves and stores images related to a movie identified by the provided UUID. If the `overwrite` parameter is set to `True`, it will overwrite any existing image data for this movie. (NOTE: A rate limit of 40 requests per 10 seconds is enabled to prevent overloading the TMDB API.)
 - Example: http://localhost:5000/get_movie_images?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True
-
-
-
-## Setup
-
-To set up and run the Movie Recommendation API locally, follow these steps:
-
-1. Clone the repository: `https://github.com/DennyBart/MovieRexBuilder.git`
-2. Navigate to the project directory: `cd movie-recommendation-api`
-3. Install the required dependencies: `pip install -r requirements.txt`
-4. Set the required environment variables:
-    - `OMDB_API_KEY` - Your API key for the OMDB API
-    - `OPENAI_API_KEY` - Your API key for the OpenAI API
-    - `THEMOVIEDB_API_KEY` - Your API ker for TMDB
-    - `OPENAI_API_MODEL` - The name or ID of the OpenAI GPT model to use
-    - `DATABASE_URL` - Database location
-5. Run the application: `python app.py`
-6. The API will be available at `http://localhost:5000`
-
-Note: Make sure to replace the environment variable values with your own API keys and model information.
 
 ## Logging
 
