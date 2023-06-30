@@ -1,10 +1,10 @@
 # MovieRex
 
-This Movie Recommendation API is a robust, Flask-based web application that provides a variety of services tailored to film enthusiasts, content curators, and casual movie watchers. The application interacts with artificial intelligence (OpenAI's GPT API) to generate movie recommendations based on user preferences, which can include specific genres, directors, actors, or themes.
+This Movie Recommendation API is a Flask-based web application that provides a range of recomendation services for movies. The application interacts with artificial intelligence (OpenAI's GPT API) to generate movie recommendations based on popular topics such as ***Best Inspirational Movies for a Pick-Me-Up***. The service uses the GPT API to generate the list of recommendation titles, the movies for each title, an introduction to the recommendation title and also query additional APIs to store movie data. After the data is stored any request to the API will server the data from the local DB.
 
-**_Built with a commitment to flexibility and user experience, the API has several key features:_**
+***Built with a commitment to flexibility and user experience, the API has several key features:***
 
-**Intelligent Recommendations:** At the core of this application is its powerful recommendation system. The system uses OpenAI's GPT-3 model to generate suggestions based on user-provided parameters. It's able to parse and understand complex requests, such as asking for the best animated films of the last decade or cult classics that deal with specific themes. The application also creates a summary of the movie recomendation and some details about those movies.
+**Intelligent Recommendations:** At the core of this application is its powerful recommendation system. The system uses the user defined OpenAI's GPT model (gpt-3.5-turbo, gpt-4, etc) to generate suggestions based on user-provided parameters. It's able to parse and understand complex requests, such as asking for the best animated films of the last decade or cult classics that deal with specific themes. The application also creates a summary of the movie recomendation and some details about those movies.
 
 **Movie Search:** Users can search for movies by ID or name. This function makes it easy to locate specific movies in the database, streamlining the user's navigation experience.
 
@@ -196,6 +196,7 @@ The application logs are stored in the `logs/app.log` file. The log file is rota
 - Add support for other API providers
 - Add caching service to flask
 - Track errors for missing movies
+- Add support for MySql database
 
 ## License
 
