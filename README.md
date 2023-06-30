@@ -1,8 +1,8 @@
 # MovieRex
 
-This Movie Recommendation API is a Flask-based web application that provides a range of recomendation services for movies. The application interacts with artificial intelligence (OpenAI's GPT API) to generate movie recommendations based on popular topics such as ***Best Inspirational Movies for a Pick-Me-Up***. The service uses the GPT API to generate the list of recommendation titles, the movies for each title, an introduction to the recommendation title and also query additional APIs to store movie data. After the data is stored any request to the API will server the data from the local DB.
+This Movie Recommendation API is a Flask-based web application that provides a range of recomendation services for movies. The application interacts with artificial intelligence (OpenAI's GPT API) to generate movie recommendations based on popular topics such as ***"Best Zombie Movies to Keep You Up at Night"***. The service uses the GPT API to generate the list of recommendation titles, the movies for each title, an introduction to the recommendation title and also query additional APIs to store movie data. After the data is stored any request to the API will server the data from the local DB.
 
-***Built with a commitment to flexibility and user experience, the API has several key features:***
+### API Key Features
 
 **Intelligent Recommendations:** At the core of this application is its powerful recommendation system. The system uses the user defined OpenAI's GPT model (gpt-3.5-turbo, gpt-4, etc) to generate suggestions based on user-provided parameters. It's able to parse and understand complex requests, such as asking for the best animated films of the last decade or cult classics that deal with specific themes. The application also creates a summary of the movie recomendation and some details about those movies.
 
@@ -10,6 +10,7 @@ This Movie Recommendation API is a Flask-based web application that provides a r
 
 **Movie Details Retrieval:** The application interfaces with the OMDB API and TMDB to retrieve additional details about the movies. This adds a layer of depth to the recommendations by providing more information about each suggested title, including actors, directors, genre, trailers, images and more.
 
+**Movie Data Archive:** A key feature of this tool is to store API responses to the DB and if a repeat request is made the service will server the response from the DB instead of making a request to an external API.
 
 ## Table of Contents
 
@@ -31,8 +32,6 @@ This Movie Recommendation API is a Flask-based web application that provides a r
 - [Logging](#logging)
 - [ToDo](#todo)
 - [License](#license)
-
-
 
 ## Requirements
 
