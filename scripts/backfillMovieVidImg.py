@@ -41,7 +41,7 @@ def process_movie(movie):
             output =[]
             if video_response == 'Video Request not found':
                 output.append(f"Video {movie.imdbid} not found")
-            print(f'Successfully processed videos for movie with id {movie.imdbid}. Response: {video_response}')
+            logging.info(f'Successfully processed videos for movie with id {movie.imdbid}. Response: {video_response}')
             success_logger.info(f'Successfully processed videos for movie with id {movie.imdbid}. Response: {video_response}')
 
             time.sleep(RATE_LIMIT)
@@ -49,7 +49,7 @@ def process_movie(movie):
             image_response = get_and_store_images(movie.imdbid, overwrite=False)
             if image_response == 'Image Request not found':
                 output.append(f"Image {movie.imdbid} not found")
-            print(f'Successfully processed images for movie with id {movie.imdbid}. Response: {image_response}')
+            logging.info(f'Successfully processed images for movie with id {movie.imdbid}. Response: {image_response}')
             success_logger.info(f'Successfully processed images for movie with id {movie.imdbid}. Response: {image_response}')
 
             # if there is an error with either video or image processing
