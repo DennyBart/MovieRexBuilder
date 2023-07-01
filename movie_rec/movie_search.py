@@ -15,6 +15,7 @@ import requests
 import logging
 import urllib.parse
 from constants import OMDB_PLOT, TMDB_API_RATE_CALLS, TMDB_API_RATE_TIME
+from movie_rec.cast_service import CastProcessor
 
 from movie_rec.models import (
     Base,
@@ -49,45 +50,7 @@ def tmdb_call_api(url, headers):
     return response
 
 
-def get_cast(name, cast_type):
-    cast_name = session.query(CastName).filter(
-        CastName.name == name, CastName.cast_type == cast_type).first()
-    return cast_name if cast_name else None
-
-
-def create_cast(cast_list, cast_type):
-    cast_instances = []
-    for cast_member in cast_list:
-        cast_name = get_cast(cast_member, cast_type)
-        if cast_name is None:
-            cast_name = CastName(
-                name=cast_member, cast_type=cast_type, uuid=uuid.uuid4())
-        cast_instances.append(cast_name)
-    return cast_instances
-
-
-def get_movie_cast(movie_uuid):
-    # Fetch the movie by UUID and eager-load the cast
-    movie = session.query(MovieData)\
-        .options(joinedload(MovieData.cast))\
-        .filter(MovieData.uuid == movie_uuid)\
-        .one()
-
-    # Organize the cast by their type
-    cast_by_type = {
-        'actor': [],
-        'director': [],
-        'writer': []
-    }
-
-    for movie_cast in movie.cast:
-        cast_by_type[movie_cast.cast.cast_type].append(movie_cast.cast.name)
-
-    # Return cast_by_type as a Python dictionary
-    return cast_by_type
-
-
-def process_movie_data(movie_data):
+def process_movie_data(cast_processor, movie_data):
     actors = movie_data['Actors'].split(', ')
     directors = movie_data['Director'].split(', ')
     writers = movie_data['Writer'].split(', ')
@@ -101,15 +64,15 @@ def process_movie_data(movie_data):
     movie_data['uuid'] = uuid.uuid4()
     new_movie = MovieData(**movie_data)
 
-    for actor in create_cast(actors, 'actor'):
+    for actor in cast_processor.create_cast(actors, 'actor'):
         movie_cast = MovieCast(movie=new_movie, cast=actor)
         new_movie.cast.append(movie_cast)
 
-    for director in create_cast(directors, 'director'):
+    for director in cast_processor.create_cast(directors, 'director'):
         movie_cast = MovieCast(movie=new_movie, cast=director)
         new_movie.cast.append(movie_cast)
 
-    for writer in create_cast(writers, 'writer'):
+    for writer in cast_processor.create_cast(writers, 'writer'):
         movie_cast = MovieCast(movie=new_movie, cast=writer)
         new_movie.cast.append(movie_cast)
 
@@ -127,30 +90,30 @@ def store_failed_request(title, year, rec_topic=None):
     session.commit()
 
 
-def process_request_by_id(identifier, api_key):
+def process_request_by_id(cast_processor, identifier, api_key):
     movie_data = query_movie_by_id(identifier)
     if movie_data:
         logging.info(f"Movie_ID {identifier} found in local database")
         movie_dict = movie_data.to_dict()
-        movie_dict["cast"] = get_movie_cast(movie_data.uuid)
+        movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
         return jsonify(movie_dict)
 
     logging.info(f"Movie_id {identifier} not found in local database")
     movie_data = search_movie_by_id(identifier, api_key)
     if movie_data:
-        store_new_movie(movie_data)
+        store_new_movie(cast_processor, movie_data)
         get_stored_movie = query_movie_by_id(movie_data['imdbID'])
         movie_dict = get_stored_movie.to_dict()
-        movie_dict["cast"] = get_movie_cast(get_stored_movie.uuid)
+        movie_dict["cast"] = cast_processor.get_movie_cast(get_stored_movie.uuid)
         return jsonify(movie_dict)
 
     logging.info(f"Movie_id {identifier} not found in OMDB")
-    # TODO 
     store_failed_request(identifier, None)
     return jsonify({"error": f"Movie_id {identifier} not found"}), 404
 
 
-def process_request_by_name(identifier, api_key, year, rec_topic=None):
+def process_request_by_name(cast_processor, identifier, api_key, year, rec_topic=None):
+    print(f'Identifier: {identifier}')
     identifier = re.sub(r'\s\(\d{4}\)$', '', identifier)
     movie_data = query_movie_by_name(identifier)
     print(f'Movie data: {identifier}')
@@ -158,7 +121,8 @@ def process_request_by_name(identifier, api_key, year, rec_topic=None):
         logging.info(f"Movie_title {identifier} {year} "
                      f"found in local database")
         movie_dict = movie_data.to_dict()
-        movie_dict["cast"] = get_movie_cast(movie_data.uuid)
+        movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
+        print(f"Movie cast: {movie_dict['cast']} - uuid {movie_data.uuid}")
         return jsonify(movie_dict)
     logging.info(f"Movie_title {identifier} not found in local database")
     movie_data = search_movie_by_title(identifier, year, api_key)
@@ -166,27 +130,30 @@ def process_request_by_name(identifier, api_key, year, rec_topic=None):
         is_movie_local = query_movie_by_id(movie_data['imdbID'])
         if is_movie_local:
             movie_dict = is_movie_local.to_dict()
-            movie_dict["cast"] = get_movie_cast(is_movie_local.uuid)
+            movie_dict["cast"] = cast_processor.get_movie_cast(is_movie_local.uuid)
             return jsonify(movie_dict)
         else:
             # Store movie in local database
-            store_new_movie(movie_data)
+            store_new_movie(cast_processor, movie_data)
             # Get movie from local database since data is now available
             get_stored_movie = query_movie_by_id(movie_data['imdbID'])
             movie_dict = get_stored_movie.to_dict()
-            movie_dict["cast"] = get_movie_cast(get_stored_movie.uuid)
+            movie_dict["cast"] = cast_processor.get_movie_cast(get_stored_movie.uuid)
             return jsonify(movie_dict)
 
     logging.info(f"Movie_title {identifier} not found in OMDB")
     store_failed_request(identifier, year, rec_topic)
+    return jsonify({"error": f"Movie_title {identifier} not found in OMDB"}), 404
 
 
 def process_request(request_type, identifier,
                     api_key, year=None, rec_topic=None):
+    cast_processor = CastProcessor(session)
+    print(f'Process request: {request_type}')
     if request_type == 'movie_id':
-        return process_request_by_id(identifier, api_key)
+        return process_request_by_id(cast_processor, identifier, api_key)
     elif request_type == 'movie_name':
-        return process_request_by_name(identifier, api_key, year, rec_topic)
+        return process_request_by_name(cast_processor, identifier, api_key, year, rec_topic)
 
 
 def query_movie_by_id(identifier):
@@ -229,8 +196,8 @@ def set_movie_topic_to_generated(movie_topic):
     session.commit()
 
 
-def store_new_movie(movie_data):
-    new_movie = process_movie_data(movie_data)
+def store_new_movie(cast_processor, movie_data):
+    new_movie = process_movie_data(cast_processor, movie_data)
     logging.info(f"Storing new movie {new_movie.title}")
     imdbid = str(new_movie.imdbid)
     session.add(new_movie)
