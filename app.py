@@ -8,7 +8,14 @@ from flask import (
     request
 )
 from dotenv import load_dotenv
-from constants import GENERATE_PAGE_BLURB, GENERATION_REC_TITLES, MOVIE_CRITIC_BOT_MESSAGE, TOP_FORMAT, TOP_MOVIES_FORMAT
+from constants import (
+    GENERATE_PAGE_BLURB,
+    GENERATION_REC_TITLES,
+    MOVIE_CRITIC_BOT_MESSAGE,
+    TOP_FORMAT,
+    TOP_MOVIES_FORMAT,
+    GENERATION_REC_QUESTION
+)
 from movie_rec.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
@@ -74,12 +81,12 @@ def movies_name():
 def ask_chatgpt():
     movie_type = request.args.get('movie_type')
     value = request.args.get('value')
-    if movie_type is None or value is None:
-        return jsonify({'error': 'Invalid movie type or value'}), 400
     if value is None or value == 0 or value == ' ':
-        input_value = 10
+        input_value = 20
     else:
         input_value = int(value)
+    if movie_type is None:
+        return jsonify({'error': 'Invalid movie type or value'}), 400
     return generate_rec_movie_list(
         movie_type=movie_type,
         value=input_value)
@@ -91,7 +98,7 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
     if movie_type and uuid:
         return {'error': 'Movie type and uuid arg present'}, 400
     if uuid:
-        print(f"UUID: {uuid}")
+        logging.info(f"Recommendation UUID: {uuid}")
         existing_recommendations = get_existing_recommendations(
             uuid=uuid)
         if existing_recommendations:
@@ -109,7 +116,7 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
         value=value,
         movie_type=movie_type
         )
-    print(f"Existing recommendations: {existing_recommendations}")
+    logging.info(f"Existing recommendations: {existing_recommendations}")
     if existing_recommendations:
         return jsonify(existing_recommendations)
     movie_list = get_chatgpt_movie_rec(movie_type,
@@ -121,7 +128,7 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
     return jsonify(movie_list)
 
 
-# http://localhost:5000/generate_movie_rec_titles?total=10
+# http://localhost:5000/generate_movie_rec_titles?total=25
 @app.route('/generate_movie_rec_titles')
 def generate_movie_recommendation_titles():
     generate_total = int(request.args.get('total'))
@@ -131,7 +138,7 @@ def generate_movie_recommendation_titles():
         total_request = math.ceil(generate_total / 25)
         if total_request > 10:
             return {'error': 'Total request cannot be more than 250'}, 400
-    ai_question = f'Generate 25 catchy movie recomendation titles like - Movies with the Most Memorable Soundtracks'
+    ai_question = GENERATION_REC_QUESTION
     openai_message = [
         {'role': 'system', 'content': GENERATION_REC_TITLES},
         {'role': 'user', 'content': ai_question}
@@ -143,15 +150,18 @@ def generate_movie_recommendation_titles():
             openai_api_key=OPENAI_API_KEY,
             input_message=openai_message
         )
-        generated_message = generated_titles['choices'][0]['message']['content']
+        generated_message = generated_titles['choices'][0
+                                                        ]['message']['content']
         gen_lines = generated_message.split("\n")
-        gen_items = [line.split(". ")[1] for line in gen_lines if ". " in line]
+        gen_items = [line.split(". ")
+                     [1] for line in gen_lines if ". " in line]
         if gen_items is None:
             logging.info("No titles generated")
         else:
             store_search_titles(gen_items)
             total_generated_titles.extend(gen_items)
-            logging.info(f"Total generated titles: {len(total_generated_titles)}")
+            logging.info("Total generated titles: "
+                         f"{len(total_generated_titles)}")
     return {'generated_titles': total_generated_titles}
 
 
@@ -192,7 +202,8 @@ def generate_recommendation_blurb(uuid, limit: int):
     if item_list and len(item_list) < limit:
         limit = len(item_list)
     limited_item_list = item_list[:limit]
-    ai_question = f'Why are the following {recommendation_title} ({", ".join(limited_item_list)})'
+    ai_question = 'Why are the following ' \
+        f'{recommendation_title} ({", ".join(limited_item_list)})'
     openai_message = [
         {'role': 'system', 'content': GENERATE_PAGE_BLURB},
         {'role': 'user', 'content': ai_question}
@@ -210,11 +221,14 @@ def generate_recommendation_blurb(uuid, limit: int):
         if contains_items(blurb_message,
                           limited_item_list) or i == max_tries - 1:
             store_blurb_to_recommendation(uuid, blurb_message)
-            logging.info(f"{recommendation_title} {uuid} - Blurb message stored: {blurb_message} - Attempt: {i + 1}")
-            return {'recommendation_title': recommendation_title, 'blurb_heading': blurb_message}
+            logging.info(f"{recommendation_title} {uuid} - "
+                         f"Blurb message stored: {blurb_message} - "
+                         f"Attempt: {i + 1}")
+            return {'recommendation_title': recommendation_title,
+                    'blurb_heading': blurb_message}
 
-    return {'error': 'Unable to generate a suitable blurb after maximum attempts'}
-
+    return {'error': 'Unable to generate a suitable blurb '
+            'after maximum attempts'}
 
 
 # http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa
@@ -262,7 +276,9 @@ def recommendations_list():
     limit = request.args.get('limit', type=int, default=50)
     offset = request.args.get('offset', type=int, default=0)
 
-    recommendations = get_recommendations(search=search, limit=limit, offset=offset)
+    recommendations = get_recommendations(
+        search=search, limit=limit, offset=offset
+    )
 
     results = [recommendation.to_dict() for recommendation in recommendations]
 
@@ -313,7 +329,7 @@ def get_recommendations_blurb():
 
     # check if recommendation is found
     if recommendation_blurb is not None:
-        print(recommendation_blurb)
+        logging.debug(recommendation_blurb)
         return jsonify({'blurb': recommendation_blurb})
     else:
         return 'No recommendation found for this UUID', 404

@@ -58,17 +58,20 @@ def create_movie_list(response):
                 movie_with_year = movie_with_year.strip()
                 if ", Year: " in movie_with_year:
                     movie, year = movie_with_year.split(", Year: ")
+                elif " - Year: " in movie_with_year:
+                    movie, year = movie_with_year.split(" - Year: ")
                 else:
-                    movie, year = movie_with_year.split(": ")
+                    movie, year = movie_with_year, None  # No year found
 
                 # Remove leading and trailing white space
                 movie = movie.strip()
 
                 # Extract only the year as an integer
                 # Search for a four digit number representing the year
-                year = re.search(r'\d{4}', year)
                 if year:
-                    year = int(year.group())  # Convert the year to integer
+                    year = re.search(r'\d{4}', year)
+                    if year:
+                        year = int(year.group())  # Convert the year to integer
                 else:
                     year = None  # No valid year found
 
@@ -78,10 +81,8 @@ def create_movie_list(response):
                                    "Year": year})
 
         except ValueError as e:
-            print(f"An error occurred while processing line: "
-                  f"{line}. Error: {e}")
-            logging.error("An error occurred while processing "
-                          "line: {line}. Error: {e}".format)
+            logging.error(f"An error occurred while processing line: "
+                          f"{line}. Error: {e}")
     if not movie_data:
         return None
 
@@ -99,7 +100,6 @@ def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
             data = json.loads(movie_details.data)
             movie_uuid = data.get('uuid')
             movie_list.append(movie_uuid)
-            # TODO - Add movie details to logging
             logging.info(f"Movie Details: {movie_uuid}")
     return movie_list
 
@@ -169,7 +169,6 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
 def get_new_recommendations(api_model: str, openai_api_key: str,
                             movie_type: str, value: int,
                             input_message: list) -> str:
-    logging.info(f"OpenAI Request Message: {input_message}")
     response = generate_openai_response(api_model=api_model,
                                         openai_api_key=openai_api_key,
                                         input_message=input_message
@@ -193,9 +192,11 @@ def get_new_recommendations(api_model: str, openai_api_key: str,
 
     new_values = len(unique_combinations)
 
-    if len(new_movie_data) < value:
+    # 7 is the minimum number of movies required to generate a recommendation
+    if len(new_movie_data) < 7:
         logging.info(f'Not all movies were found. '
                      f'Only {len(new_movie_data)} movies were found.')
+        
         return f'Only {len(new_movie_data)} movies were found.'
 
     return new_movie_data, new_values
@@ -205,6 +206,7 @@ def generate_openai_response(api_model: str, openai_api_key: str,
                              input_message=str, retry_limit=3):
     openai.api_key = openai_api_key
     retries = 0
+    logging.info(f"OpenAI Request Message: {input_message}")
     while retries < retry_limit:
         try:
             response = openai.ChatCompletion.create(
@@ -222,6 +224,7 @@ def generate_openai_response(api_model: str, openai_api_key: str,
                 time.sleep(5)  # Wait for 5 seconds before retrying
             else:
                 return "Request timed out after multiple retries."
+    logging.debug
     return response
 
 
@@ -339,9 +342,9 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
     count = 0
 
     for title in titles:
-        logging.info(f'Generating {value} - {title}')
         if count == limit:
             return processed_titles
+        logging.info(f'Generating {value} - {title}')
 
         movie_type = title[0]  # Extract the title from the tuple
         if 'documentaries' in movie_type.lower() or 'movies' in movie_type.lower(): # noqa
