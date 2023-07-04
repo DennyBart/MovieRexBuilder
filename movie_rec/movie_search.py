@@ -46,7 +46,7 @@ def process_movie_data(cast_processor, movie_data):
         for key, value in movie_data.items()
         if key.lower() not in ['actors', 'director', 'writer']
     }
-    movie_data['uuid'] = uuid.uuid4()
+    movie_data['uuid'] = str(uuid.uuid4())
     new_movie = MovieData(**movie_data)
 
     for actor in cast_processor.create_cast(actors, 'actor'):
@@ -109,7 +109,7 @@ def process_request_by_name(cast_processor, identifier,
         movie_dict = movie_data.to_dict()
         movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
         logging.debug(f"Movie cast: {movie_dict['cast']} - "
-                     f"uuid {movie_data.uuid}")
+                      f"uuid {movie_data.uuid}")
         return jsonify(movie_dict)
     logging.info(f"Movie_title {identifier} not found in local database")
     movie_data = search_movie_by_title(identifier, year, api_key)

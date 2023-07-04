@@ -7,7 +7,6 @@ Create Date: 2023-05-25 19:10:07.443008
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
 
 # revision identifiers, used by Alembic.
 revision = '9c112b44c7fb'
@@ -22,7 +21,7 @@ def upgrade() -> None:
     # op.create_extension('uuid-ossp')
     op.create_table(
         'cast_name',
-        sa.Column('uuid', UUID(as_uuid=True),
+        sa.Column('uuid', sa.String(36),
                   primary_key=True,
                   unique=True,
                   nullable=False),
@@ -32,7 +31,7 @@ def upgrade() -> None:
 
     op.create_table(
         'movie_recommendations',
-        sa.Column('uuid', UUID(as_uuid=True),
+        sa.Column('uuid', sa.String(36),
                   primary_key=True,
                   unique=True,
                   nullable=False),
@@ -43,16 +42,8 @@ def upgrade() -> None:
     )
 
     op.create_table(
-        'search_history',
-        sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column('title', sa.String(256), nullable=False),
-        sa.Column('year', sa.Integer, nullable=True),
-        sa.Column('searched_at', sa.DateTime, nullable=False)
-    )
-
-    op.create_table(
         'movie_data',
-        sa.Column('uuid', UUID(as_uuid=True),
+        sa.Column('uuid', sa.String(36),
                   primary_key=True,
                   unique=True,
                   nullable=False),
@@ -62,7 +53,7 @@ def upgrade() -> None:
         sa.Column('released', sa.String(32), nullable=True),
         sa.Column('runtime', sa.String(32), nullable=True),
         sa.Column('genre', sa.String(256), nullable=True),
-        sa.Column('director', UUID(as_uuid=True),
+        sa.Column('director', sa.String(36),
                   sa.ForeignKey('cast_name.uuid'),
                   nullable=True),
         sa.Column('writer', sa.String(512), nullable=True),
@@ -85,10 +76,10 @@ def upgrade() -> None:
 
     op.create_table(
         'movie_cast',
-        sa.Column('movie_uuid', UUID(as_uuid=True),
+        sa.Column('movie_uuid', sa.String(36),
                   sa.ForeignKey('movie_data.uuid'),
                   primary_key=True),
-        sa.Column('cast_id', UUID(as_uuid=True),
+        sa.Column('cast_id', sa.String(36),
                   sa.ForeignKey('cast_name.uuid'),
                   primary_key=True)
     )
@@ -97,10 +88,10 @@ def upgrade() -> None:
         'movie_recommendation_relation',
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('recommendation_uuid',
-                  UUID(as_uuid=True),
+                  sa.String(36),
                   sa.ForeignKey('movie_recommendations.uuid'),
                   nullable=False),
-        sa.Column('movie_uuid', UUID(as_uuid=True),
+        sa.Column('movie_uuid', sa.String(36),
                   sa.ForeignKey('movie_data.uuid'),
                   nullable=False),
         sa.UniqueConstraint('recommendation_uuid',
@@ -145,7 +136,6 @@ def downgrade() -> None:
     op.drop_table('movie_recommendation_relation')
     op.drop_table('movie_cast')
     op.drop_table('movie_data')
-    op.drop_table('search_history')
     op.drop_table('movie_recommendations')
     op.drop_table('cast_name')
     pass

@@ -107,7 +107,7 @@ def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
 def store_movie_recommendation(movie_list, movie_type, total):
     unique_movie_list = list(set(movie_list))
 
-    rec_uuid = uuid.uuid4()
+    rec_uuid = str(uuid.uuid4())
     new_recommendations = MovieRecommendations(
         uuid=rec_uuid,
         topic_name=str(movie_type),

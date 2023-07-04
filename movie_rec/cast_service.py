@@ -18,7 +18,10 @@ class CastProcessor:
             cast_name = self.get_cast(cast_member, cast_type)
             if cast_name is None:
                 cast_name = CastName(
-                    name=cast_member, cast_type=cast_type, uuid=uuid.uuid4())
+                    name=cast_member,
+                    cast_type=cast_type,
+                    uuid=str(uuid.uuid4())
+                )
             cast_instances.append(cast_name)
         return cast_instances
 
