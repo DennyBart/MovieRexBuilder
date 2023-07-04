@@ -21,7 +21,7 @@ Base = declarative_base()
 
 class MovieData(Base):
     __tablename__ = 'movie_data'
-    uuid = sa.Column(sa.UUID(as_uuid=True), primary_key=True,
+    uuid = sa.Column(sa.String(36), primary_key=True,
                      unique=True, nullable=False)
     imdbid = sa.Column(sa.String(16), nullable=False, unique=True)
 
