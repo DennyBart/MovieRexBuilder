@@ -40,10 +40,10 @@ Before running the Movie Recommendation API, make sure you have the following:
 - OpenAI API Key: You will need an API key from OpenAI to use their GPT model for generating movie recommendations. You can sign up for an API key on the [OpenAI website](https://openai.com/).
 - OMDB API Key: You will need an account on OMDB (Open Movie Database) to access movie information and search for movies by ID or name. You can create an account on the [OMDB website](https://www.omdbapi.com/) and obtain an API key.
 - TMDB API Key: The Movie DB (TMDB) API key can be generated on the site after creating an account [TMDB](https://www.themoviedb.org/). A rate limit is advised for TMDB and it is implemented in the applicaiton for up to date information on the rate limit see [TMDB API Rate Limit](https://developer.themoviedb.org/docs/rate-limiting)
-- PSQL Database: The application requires a PostgreSQL (PSQL) database to store movie recommendation titles and other relevant data. Make sure you have a running PSQL database and the necessary credentials to connect to it. You can install PostgreSQL from the official [PostgreSQL website](https://www.postgresql.org/).
+- MySQL Database: The application requires a MySQL database to store movie recommendation titles and other relevant data. Make sure you have a running MySQL database and the necessary credentials to connect to it. You can install MySQL from the official [Mysql website](https://www.mysql.com/).
 
 
-Once you have obtained the OpenAI API key, OMDB API key, and set up the PSQL database, you can proceed with the setup and configuration steps mentioned in the previous section.
+Once you have obtained the OpenAI API key, OMDB API key, and set up the MySQL database, you can proceed with the setup and configuration steps mentioned in the previous section.
 
 ## Setup
 
