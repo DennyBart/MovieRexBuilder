@@ -14,7 +14,7 @@ from constants import (
     MOVIE_CRITIC_BOT_MESSAGE,
     TOP_FORMAT,
     TOP_MOVIES_FORMAT,
-    GENERATION_REC_QUESTION
+    GENERATION_REC_QUESTION,
 )
 from movie_rec.openai_requestor import (
     generate_openai_response,
@@ -43,6 +43,7 @@ load_dotenv()
 OMDB_API_KEY = os.environ['OMDB_API_KEY']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 OPENAI_API_MODEL = os.environ['OPENAI_API_MODEL']
+OPENAI_API_MODEL_RECOMENDATIONS = os.environ['OPENAI_API_MODEL_RECOMENDATIONS']
 app = Flask(__name__)
 
 
@@ -146,7 +147,7 @@ def generate_movie_recommendation_titles():
     total_generated_titles = []
     for i in range(total_request):
         generated_titles = generate_openai_response(
-            api_model=OPENAI_API_MODEL,
+            api_model=OPENAI_API_MODEL_RECOMENDATIONS,
             openai_api_key=OPENAI_API_KEY,
             input_message=openai_message
         )
@@ -314,6 +315,7 @@ def get_recommendations_by_uuid():
 def get_recommendations_blurb():
     # get uuid from the request
     uuid = request.args.get('uuid')
+    
 
     # check if uuid is valid
     if uuid is None:

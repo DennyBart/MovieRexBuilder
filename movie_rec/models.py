@@ -127,7 +127,7 @@ class MovieRecommendationsSearchList(Base):
     __tablename__ = 'movie_recommendations_search_list'
     id = Column(Integer, primary_key=True)
     title = Column(String(256), nullable=False)
-    generated = Column(Boolean, nullable=False, default=False)
+    is_generated = Column(Boolean, nullable=False, default=False)
     generated_at = Column(DateTime, nullable=False)
 
 
