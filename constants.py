@@ -13,8 +13,7 @@ GENERATE_PAGE_BLURB = "You are a movie reviewer and you are writing a long ' \
         'combine in the summary"
 GENERATION_REC_TITLES = "You are a movie blog writer that provides catch" \
     " titles for list of movies. Respond with a list of titles"
-GENERATION_REC_QUESTION = "Generate 25 catchy movie recomendation titles " \
-    "like - Movies with the Most Memorable Soundtracks"
+GENERATION_REC_QUESTION = "Generate 25 catchy movie recomendation titles. Use these as an example: (Must-Watch Movies of All Time) (Iconic Movies That Define the Genre)"
 
 # This will trigger the omdb response of the plot of full or short
 # default is short if not set

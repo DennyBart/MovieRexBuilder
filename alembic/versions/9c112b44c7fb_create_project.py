@@ -103,7 +103,7 @@ def upgrade() -> None:
         'movie_recommendations_search_list',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('title', sa.String(length=256), nullable=False),
-        sa.Column('generated', sa.Boolean(), nullable=False),
+        sa.Column('is_generated', sa.Boolean(), nullable=False),
         sa.Column('generated_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('id')
     )
@@ -112,7 +112,7 @@ def upgrade() -> None:
         'movie_recommendations_not_found',
         sa.Column('uuid', sa.String(36), primary_key=True),
         sa.Column('title', sa.String(256), nullable=False),
-        sa.Column('generated', sa.Boolean, nullable=False, default=False),
+        sa.Column('is_generated', sa.Boolean, nullable=False, default=False),
         sa.Column('generated_at', sa.DateTime, nullable=False),
         sa.Column('openai_response', sa.String(1024), nullable=True)
     )

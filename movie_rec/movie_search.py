@@ -179,13 +179,13 @@ def query_movie_by_name(identifier):
 
 def get_non_generated_movie_topics():
     return session.query(MovieRecommendationsSearchList.title).filter_by(
-        generated=False).all()
+        is_generated=False).all()
 
 
 def set_movie_topic_to_generated(movie_topic):
     movie_topic = session.query(MovieRecommendationsSearchList).filter_by(
         title=movie_topic).first()
-    movie_topic.generated = True
+    movie_topic.is_generated = True
     session.commit()
 
 
@@ -247,20 +247,23 @@ def store_search_titles(titles):
     existing_titles = {row[0] for row in existing_titles_query}
 
     # Process titles
-    processed_title = []
+    processed_titles = []
     for title in titles:
+        # Remove leading and trailing quotes
+        title = title.strip('"')
+        title = title.strip('25 ')
         if title not in existing_titles:
             logging.info(f'Storing movie topic "{title}" in database')
             movie_rec_search = MovieRecommendationsSearchList(
                 title=title,
-                generated=False,
+                is_generated=False,
                 generated_at=datetime.now()
             )
             session.add(movie_rec_search)
-            processed_title.append(title)
+            processed_titles.append(title)
 
     session.commit()
-    return processed_title
+    return processed_titles
 
 
 def get_recommendations(search=None, limit=50, offset=0):
@@ -278,18 +281,18 @@ def get_recommendation_name(uuid):
         uuid=uuid).first().topic_name
 
 
-def store_blurb_to_recommendation(uuid, blurb):
-    recommendation = session.query(MovieRecommendations).filter_by(
-        uuid=uuid).first()
-    recommendation.blurb = blurb
-    session.commit()
-
-
 def get_recommendation_blurb(uuid):
     # Get the blurb for the given uuid.
     # Return None if no matching record found.
     record = session.query(MovieRecommendations).filter_by(uuid=uuid).first()
     return record.blurb if record else None
+
+
+def store_blurb_to_recommendation(uuid, blurb):
+    recommendation = session.query(MovieRecommendations).filter_by(
+        uuid=uuid).first()
+    recommendation.blurb = blurb
+    session.commit()
 
 
 def get_movie_imdb_id_from_uuid(uuid):
