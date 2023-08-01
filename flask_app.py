@@ -7,7 +7,6 @@ from flask import (
     jsonify,
     request
 )
-from dotenv import load_dotenv
 from constants import (
     GENERATE_PAGE_BLURB,
     GENERATION_REC_TITLES,
@@ -15,6 +14,7 @@ from constants import (
     TOP_FORMAT,
     TOP_MOVIES_FORMAT,
     GENERATION_REC_QUESTION,
+    LOG_FILE,
 )
 from movie_rec.openai_requestor import (
     generate_openai_response,
@@ -38,12 +38,11 @@ from movie_rec.movie_search import (
 )
 import logging
 from logging.handlers import RotatingFileHandler
-
-load_dotenv()
-OMDB_API_KEY = os.environ['OMDB_API_KEY']
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-OPENAI_API_MODEL = os.environ['OPENAI_API_MODEL']
-OPENAI_API_MODEL_RECOMENDATIONS = os.environ['OPENAI_API_MODEL_RECOMENDATIONS']
+# API_MODEL = os.environ['OPENAI_API_MODEL']
+OMDB_API_KEY = os.getenv("OMDB_API_KEY")
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+OPENAI_API_MODEL = os.getenv('OPENAI_API_MODEL')
+OPENAI_API_MODEL_RECOMENDATIONS = os.getenv('OPENAI_API_MODEL_RECOMENDATIONS')
 app = Flask(__name__)
 
 
@@ -53,6 +52,11 @@ def is_valid_uuid(val):
         return True
     except ValueError:
         return False
+
+
+@app.route('/')
+def hello():
+    return 'Hello You!!!!'
 
 
 # Example: http://127.0.0.1:5000/movie_id?id=tt1392190
@@ -315,7 +319,6 @@ def get_recommendations_by_uuid():
 def get_recommendations_blurb():
     # get uuid from the request
     uuid = request.args.get('uuid')
-    
 
     # check if uuid is valid
     if uuid is None:
@@ -394,7 +397,7 @@ def get_movie_images():
 
 
 def setup_logging():
-    log_file = 'logs/app.log'
+    log_file = LOG_FILE
     max_log_size = 10 * 1024 * 1024  # 10 MB
     backup_count = 5
 
@@ -417,5 +420,6 @@ def setup_logging():
 
 if __name__ == '__main__':
     check_db()
-    setup_logging()
     app.run(debug=True)
+
+setup_logging()

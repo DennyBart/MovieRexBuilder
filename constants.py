@@ -1,4 +1,4 @@
-
+LOG_FILE = '/home/dennyb/MovieRexBuilder/logs/app.log'
 TOP_MOVIES_FORMAT = 'Top {} {} movies'
 TOP_FORMAT = 'Top {} {}'
 MOVIE_CRITIC_BOT_MESSAGE = 'You are a movie critic bot that responds with ' \
