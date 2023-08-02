@@ -37,6 +37,7 @@ class MovieMediaProcessor:
                          f"with IMDB ID {imdbid}")
             self.session.query(entity).filter_by(imdbid=imdbid).delete()
             self.session.commit()
+            self.session.close()
 
         url = self._generate_url(imdbid, endpoint, include_language)
         response = self._make_api_call(url, headers)
@@ -107,6 +108,7 @@ class MovieMediaProcessor:
 
         self._log_items_added(counter, endpoint, imdbid)
         self.session.commit()
+        self.session.close()
 
     def _log_items_added(self, counter, endpoint, imdbid):
         if counter > 0:

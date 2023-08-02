@@ -7,7 +7,6 @@ from flask import (
     jsonify,
     request
 )
-from dotenv import load_dotenv
 from constants import (
     GENERATE_PAGE_BLURB,
     GENERATION_REC_TITLES,
@@ -15,6 +14,7 @@ from constants import (
     TOP_FORMAT,
     TOP_MOVIES_FORMAT,
     GENERATION_REC_QUESTION,
+    LOG_FILE,
 )
 from movie_rec.openai_requestor import (
     generate_openai_response,
@@ -38,12 +38,10 @@ from movie_rec.movie_search import (
 )
 import logging
 from logging.handlers import RotatingFileHandler
-
-load_dotenv()
-OMDB_API_KEY = os.environ['OMDB_API_KEY']
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-OPENAI_API_MODEL = os.environ['OPENAI_API_MODEL']
-OPENAI_API_MODEL_RECOMENDATIONS = os.environ['OPENAI_API_MODEL_RECOMENDATIONS']
+OMDB_API_KEY = os.getenv("OMDB_API_KEY")
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+OPENAI_API_MODEL = os.getenv('OPENAI_API_MODEL')
+OPENAI_API_MODEL_RECOMENDATIONS = os.getenv('OPENAI_API_MODEL_RECOMENDATIONS')
 app = Flask(__name__)
 
 
@@ -53,6 +51,11 @@ def is_valid_uuid(val):
         return True
     except ValueError:
         return False
+
+
+@app.route('/')
+def hello():
+    return 'Hello You!!!!'
 
 
 # Example: http://127.0.0.1:5000/movie_id?id=tt1392190
@@ -74,7 +77,11 @@ def movies_name():
     if year is None:
         return jsonify({'error': 'Invalid movie year'}), 400
     # TODO Drop year and search for title and compare to year in request if close then its right # noqa
-    return process_request('movie_name', title, OMDB_API_KEY, year)
+    response = process_request('movie_name', title, OMDB_API_KEY, year)
+    if response:
+        return response
+    else:
+        return f'Title:{title} Year:{year} Not Found', 404
 
 
 # http://127.0.0.1:5000/create_recommendation?movie_type=war&value=10
@@ -315,7 +322,6 @@ def get_recommendations_by_uuid():
 def get_recommendations_blurb():
     # get uuid from the request
     uuid = request.args.get('uuid')
-    
 
     # check if uuid is valid
     if uuid is None:
@@ -394,7 +400,7 @@ def get_movie_images():
 
 
 def setup_logging():
-    log_file = 'logs/app.log'
+    log_file = LOG_FILE
     max_log_size = 10 * 1024 * 1024  # 10 MB
     backup_count = 5
 
@@ -416,6 +422,7 @@ def setup_logging():
 
 
 if __name__ == '__main__':
-    check_db()
-    setup_logging()
     app.run(debug=True)
+
+check_db()
+setup_logging()
