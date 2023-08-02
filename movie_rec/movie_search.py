@@ -73,6 +73,7 @@ def store_failed_request(title, year, rec_topic=None):
     )
     session.add(not_found_movie)
     session.commit()
+    session.close()
 
 
 def process_request_by_id(cast_processor, identifier, api_key):
@@ -187,6 +188,7 @@ def set_movie_topic_to_generated(movie_topic):
         title=movie_topic).first()
     movie_topic.is_generated = True
     session.commit()
+    session.close()
 
 
 def store_new_movie(cast_processor, movie_data):
@@ -195,6 +197,7 @@ def store_new_movie(cast_processor, movie_data):
     imdbid = str(new_movie.imdbid)
     session.add(new_movie)
     session.commit()
+    session.close()
     get_and_store_videos(imdbid)
     get_and_store_images(imdbid)
 
@@ -263,6 +266,7 @@ def store_search_titles(titles):
             processed_titles.append(title)
 
     session.commit()
+    session.close()
     return processed_titles
 
 
@@ -293,6 +297,7 @@ def store_blurb_to_recommendation(uuid, blurb):
         uuid=uuid).first()
     recommendation.blurb = blurb
     session.commit()
+    session.close()
 
 
 def get_movie_imdb_id_from_uuid(uuid):

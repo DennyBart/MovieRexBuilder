@@ -126,6 +126,7 @@ def store_movie_recommendation(movie_list, movie_type, total):
         session.add(new_movie_recommendation)
     logging.info(f"New Movie Recommendation: {movie_type}")
     session.commit()
+    session.close()
 
 
 def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
