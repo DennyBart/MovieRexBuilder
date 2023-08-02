@@ -146,9 +146,10 @@ def process_request(request_type, identifier,
     if request_type == 'movie_id':
         return process_request_by_id(cast_processor, identifier, api_key)
     elif request_type == 'movie_name':
-        return process_request_by_name(cast_processor, identifier,
+        response = process_request_by_name(cast_processor, identifier,
                                        api_key, year, rec_topic)
-
+        if response:
+            return response
 
 def query_movie_by_id(identifier):
     return session.query(MovieData).filter(

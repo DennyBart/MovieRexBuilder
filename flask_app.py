@@ -38,7 +38,6 @@ from movie_rec.movie_search import (
 )
 import logging
 from logging.handlers import RotatingFileHandler
-# API_MODEL = os.environ['OPENAI_API_MODEL']
 OMDB_API_KEY = os.getenv("OMDB_API_KEY")
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_API_MODEL = os.getenv('OPENAI_API_MODEL')
@@ -78,7 +77,11 @@ def movies_name():
     if year is None:
         return jsonify({'error': 'Invalid movie year'}), 400
     # TODO Drop year and search for title and compare to year in request if close then its right # noqa
-    return process_request('movie_name', title, OMDB_API_KEY, year)
+    response = process_request('movie_name', title, OMDB_API_KEY, year)
+    if response:
+        return response
+    else:
+        return f'Title:{title} Year:{year} Not Found', 404
 
 
 # http://127.0.0.1:5000/create_recommendation?movie_type=war&value=10
@@ -419,7 +422,7 @@ def setup_logging():
 
 
 if __name__ == '__main__':
-    check_db()
     app.run(debug=True)
 
+check_db()
 setup_logging()
