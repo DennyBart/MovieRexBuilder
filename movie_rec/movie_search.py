@@ -16,6 +16,7 @@ from movie_rec.image_video_service import MovieMediaProcessor
 
 from movie_rec.models import (
     Base,
+    CastName,
     MovieCast,
     MovieData,
     MovieImage,
@@ -335,3 +336,28 @@ def get_and_store_videos(imdbid: str,
         imdbid, 'videos', language, headers,
         overwrite, MovieVideo, 10,
         movie_media_processor.process_video_data)
+
+
+def get_cast_info(movie_uuid):
+    # Query the 'movie_cast' table to get cast_ids
+    movie_casts = session.query(MovieCast).filter_by(
+        movie_uuid=movie_uuid).all()
+
+    # Initialize dictionary to hold cast info
+    cast_info = {'actors': [], 'directors': [], 'writers': []}
+
+    # Loop through the movie_casts list and fill cast_info dict
+    for movie_cast in movie_casts:
+        # Get cast_name object using cast_id
+        cast_name = session.query(CastName).filter_by(
+            uuid=movie_cast.cast_id).first()
+
+        if cast_name:
+            if cast_name.cast_type == 'actor':
+                cast_info['actors'].append(cast_name.name)
+            elif cast_name.cast_type == 'director':
+                cast_info['directors'].append(cast_name.name)
+            elif cast_name.cast_type == 'writer':
+                cast_info['writers'].append(cast_name.name)
+
+    return cast_info

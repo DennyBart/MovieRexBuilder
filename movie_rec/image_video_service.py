@@ -144,3 +144,29 @@ class MovieMediaProcessor:
             published_at=parser.parse(video['published_at']),
             imdbid=movie_data.imdbid
         )
+
+    @staticmethod
+    def get_movie_image(self, imdbid, file_path_only=True):
+        # If file_path_only option is True, query only for the file_paths
+        if file_path_only:
+            movie_images = self.session.query(MovieImage.file_path).filter_by(
+                imdbid=imdbid).all()
+            return [img.file_path for img in movie_images]
+        else:
+            # Otherwise, query for the full movie_images objects
+            movie_images = self.session.query(MovieImage).filter_by(
+                imdbid=imdbid).all()
+            return movie_images
+
+    @staticmethod
+    def get_movie_video(self, imdbid, key_and_name=True):
+        # If key_and_name option is True, query only for the keys and names
+        if key_and_name:
+            movie_videos = self.session.query(MovieVideo.key, MovieVideo.name
+                                              ).filter_by(imdbid=imdbid).all()
+            return movie_videos
+        else:
+            # Otherwise, query for the full movie_videos objects
+            movie_videos = self.session.query(MovieVideo
+                                              ).filter_by(imdbid=imdbid).all()
+            return movie_videos

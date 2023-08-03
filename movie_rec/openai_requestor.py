@@ -8,6 +8,7 @@ import logging
 import json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
+from movie_rec.data_converter import format_recommendation_list
 from movie_rec.models import (
     MovieRecommendationRelation,
     MovieRecommendations,
@@ -126,7 +127,6 @@ def store_movie_recommendation(movie_list, movie_type, total):
         session.add(new_movie_recommendation)
     logging.info(f"New Movie Recommendation: {movie_type}")
     session.commit()
-    session.close()
 
 
 def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
@@ -160,11 +160,16 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
     movie_list = get_related_movies(rec_uuid)
     output_list = [query_movie_by_uuid(movie_uuid).to_dict() 
                    for i, movie_uuid in enumerate(movie_list) if i < value]
+    formatted_rec_list = format_recommendation_list(output_list,
+                                                    cast=True,
+                                                    plot=True,
+                                                    media=True,
+                                                    info=False)
 
     logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")
-    logging.debug(f"Movie Recommendation List: {output_list}")
+    logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
 
-    return output_list
+    return formatted_rec_list
 
 
 def get_new_recommendations(api_model: str, openai_api_key: str,
