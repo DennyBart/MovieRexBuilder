@@ -1,6 +1,6 @@
 import json
 
-from movie_rec.movie_search import get_cast_info
+from movie_rec.movie_search import get_cast_info, get_imdb_image_url, get_imdb_video_url
 
 
 def json_to_dict(data_json):
@@ -23,18 +23,34 @@ def add_cast(output, data_dict):
     # Get cast information
     cast_info = get_cast_info(data_dict.get('uuid'))
     # Add cast information to output
-    output['director'] = ', '.join(cast_info['directors']) if cast_info['directors'] else None
-    output['actors'] = ', '.join(cast_info['actors']) if cast_info['actors'] else None
-    output['writer'] = ', '.join(cast_info['writers']) if cast_info['writers'] else None
+    output['director'] = [{'name': director} for director in cast_info['directors']] if cast_info['directors'] else None # noqa
+    output['actors'] = [{'name': actor} for actor in cast_info['actors']] if cast_info['actors'] else None # noqa
+    output['writer'] = [{'name': writer} for writer in cast_info['writers']] if cast_info['writers'] else None # noqa
 
 
 def add_plot(output, data_dict):
     output['plot'] = data_dict.get('plot', None)
 
 
-def add_media(output, data_dict):
-    output['video_keys'] = None   # To be populated later
-    output['image_keys'] = data_dict.get('poster', None)
+def add_media(output, data_dict, imdbid):
+    IMAGE_DOMAIN = 'https://dennyb.pythonanywhere.com/static/images'
+    VIDEO_DOMAIN = 'https://www.youtube.com/watch?v='
+    image_urls = get_imdb_image_url(imdbid)
+    video_data = get_imdb_video_url(imdbid)
+    # Process image URLs
+    if image_urls:
+        for i, url in enumerate(image_urls):
+            output[f'image_key_{i+1}'] = IMAGE_DOMAIN + str(url)
+    else:
+        output['image_keys'] = data_dict.get('poster', None)
+    # Process video data
+    if video_data:
+        # Transform each tuple into a dictionary and append to 'video_keys'
+        output['video_keys'] = [{'key': VIDEO_DOMAIN + str(k), 'name': str(n)} for k, n in video_data] # noqa
+    else:
+        output['video_keys'] = None
+
+
 
 
 def add_info(output, data_dict):
@@ -59,7 +75,7 @@ def format_recommendation_list(data_list, cast=False, plot=False,
             add_plot(output, data_dict)
 
         if media:
-            add_media(output, data_dict)
+            add_media(output, data_dict, data_dict.get('imdbid'))
 
         if info:
             add_info(output, data_dict)

@@ -318,6 +318,7 @@ def get_and_store_images(imdbid: str,
         "accept": "application/json",
         "Authorization": f"Bearer {THEMOVIEDB_API_KEY}"
     }
+    session.close()
     return movie_media_processor.tmdb_request(
         imdbid, 'images', include_image_language, headers,
         overwrite, MovieImage, 5,
@@ -332,10 +333,21 @@ def get_and_store_videos(imdbid: str,
         "accept": "application/json",
         "Authorization": f"Bearer {THEMOVIEDB_API_KEY}"
     }
+    session.close()
     return movie_media_processor.tmdb_request(
         imdbid, 'videos', language, headers,
         overwrite, MovieVideo, 10,
         movie_media_processor.process_video_data)
+
+
+def get_imdb_image_url(imdbid: str):
+    movie_media_processor = MovieMediaProcessor(session)
+    return movie_media_processor.get_movie_image(imdbid)
+
+
+def get_imdb_video_url(imdbid: str):
+    movie_media_processor = MovieMediaProcessor(session)
+    return movie_media_processor.get_movie_video(imdbid)
 
 
 def get_cast_info(movie_uuid):
