@@ -277,8 +277,8 @@ def generate_recs_from_list():
         return {'completed_topic_list': processed_titles}
 
 
-# http://localhost:5000/recommendations_list?search=Comedy
-@app.route('/recommendations_list')
+# http://localhost:5000/list_recommendations?search=Comedy
+@app.route('/list_recommendations')
 def recommendations_list():
     search = request.args.get('search')
     limit = request.args.get('limit', type=int, default=50)
@@ -310,6 +310,7 @@ def get_recommendations_by_uuid():
             uuid=uuid
             )
         if existing_recommendations:
+            # Format json data
             return jsonify(existing_recommendations)
         else:
             return {'error': 'No recommendations found'}, 400

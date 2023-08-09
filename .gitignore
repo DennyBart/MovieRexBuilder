@@ -165,6 +165,7 @@ alembic/env.py
 scripts/*.txt
 scripts/*.pgsql
 scripts/*.json
+scripts*.txt_old
 
 # Logging
 logs/*.log*

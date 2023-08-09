@@ -55,6 +55,31 @@ class MovieMediaProcessor:
         self.session.close()
         return f"{endpoint.capitalize()} Request Generated and Stored."
 
+    def get_movie_image(self, imdbid, file_path_only=True):
+        # If file_path_only option is True, query only for the file_paths
+        if file_path_only:
+            movie_images = self.session.query(MovieImage.file_path).filter_by(
+                imdbid=imdbid).all()
+            return [img.file_path for img in movie_images]
+        else:
+            # Otherwise, query for the full movie_images objects
+            movie_images = self.session.query(MovieImage).filter_by(
+                imdbid=imdbid).all()
+            return movie_images
+
+    def get_movie_video(self, imdbid, key_and_name=True):
+        # If key_and_name option is True, query only for the keys and names
+        if key_and_name:
+            movie_videos = self.session.query(MovieVideo.key, MovieVideo.name
+                                              ).filter_by(imdbid=imdbid).all()
+            return movie_videos
+        else:
+            # Otherwise, query for the full movie_videos objects
+            movie_videos = self.session.query(MovieVideo
+                                              ).filter_by(imdbid=imdbid).all()
+            return movie_videos
+
+
     def _is_entity_stored(self, imdbid, entity, overwrite):
         logging.debug(f"Checking if entity for movie with IMDB "
                       f"ID {imdbid} is already stored")
