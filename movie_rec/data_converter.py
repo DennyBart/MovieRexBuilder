@@ -1,6 +1,13 @@
 import json
+import os
 
-from movie_rec.movie_search import get_cast_info, get_imdb_image_url, get_imdb_video_url
+from movie_rec.movie_search import (
+    get_cast_info,
+    get_imdb_image_url,
+    get_imdb_video_url)
+
+IMAGE_DOMAIN = os.getenv("IMAGE_DOMAIN")
+VIDEO_DOMAIN = os.getenv("VIDEO_DOMAIN")
 
 
 def json_to_dict(data_json):
@@ -33,8 +40,6 @@ def add_plot(output, data_dict):
 
 
 def add_media(output, data_dict, imdbid):
-    IMAGE_DOMAIN = 'https://dennyb.pythonanywhere.com/static/images'
-    VIDEO_DOMAIN = 'https://www.youtube.com/watch?v='
     image_urls = get_imdb_image_url(imdbid)
     video_data = get_imdb_video_url(imdbid)
     # Process image URLs
@@ -49,8 +54,6 @@ def add_media(output, data_dict, imdbid):
         output['video_keys'] = [{'key': VIDEO_DOMAIN + str(k), 'name': str(n)} for k, n in video_data] # noqa
     else:
         output['video_keys'] = None
-
-
 
 
 def add_info(output, data_dict):
