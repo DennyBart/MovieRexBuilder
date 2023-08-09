@@ -59,12 +59,19 @@ def hello():
 
 
 # Example: http://127.0.0.1:5000/movie_id?id=tt1392190
+# Example: http://127.0.0.1:5000/movie_id?uuid=88841ced-35c5-4828-be5c-f0cfe4732192
 @app.route('/movie_id')
 def movie_id():
     movie_id = request.args.get('id')
-    if movie_id is None:
+    movie_uuid = request.args.get('uuid')
+    if movie_id is None and movie_uuid is None:
         return jsonify({'error': 'Invalid movie id'}), 400
-    return process_request('movie_id', movie_id, OMDB_API_KEY)
+    if movie_id is not None and movie_uuid is not None:
+        return jsonify({'error': 'Input only id or uuid'}), 400
+    if movie_uuid is None and movie_id:
+        return process_request('movie_id', movie_id, OMDB_API_KEY)
+    if movie_uuid:
+        return process_request('movie_uuid', movie_uuid, OMDB_API_KEY)
 
 
 # Example: http://127.0.0.1:5000/movie_name?title=Swallow&year=2019
