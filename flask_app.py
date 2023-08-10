@@ -335,11 +335,12 @@ def get_recommendation_by_uuid():
             # Format json data
             return jsonify(existing_recommendations)
         else:
-            return {'error': 'No recommendations found'}, 400
+            return {'error': 'No recommendations found'}, 404
     except ValueError as e:
         return {'error': str(e)}, 400
 
 
+# http://127.0.0.1:5000/get_recommendation_by_title?search=Character Driven Movies # noqa
 @app.route('/get_recommendation_by_title')
 def get_recommendation_by_title():
     try:
@@ -358,7 +359,7 @@ def get_recommendation_by_title():
             # Format json data
             return jsonify(existing_recommendations)
         else:
-            return {'error': 'No recommendations found'}, 400
+            return {'error': 'No recommendations found'}, 404
     except ValueError as e:
         return {'error': str(e)}, 400
 

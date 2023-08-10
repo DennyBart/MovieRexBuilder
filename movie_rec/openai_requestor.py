@@ -140,11 +140,19 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
 
     # Improved readability for uuid and movie_type check.
     if uuid:
-        rec_uuid, rec_count, title = check_movie_recommendation(uuid=uuid)
+        try:
+            rec_uuid, rec_count, title = check_movie_recommendation(uuid=uuid)
+        except ValueError as e:
+            logging.error(f"ValueError: {e}")
+            return None
     elif movie_type:
-        rec_uuid, rec_count, title = check_movie_recommendation(
-            search_term=movie_type
-            )
+        try:
+            rec_uuid, rec_count, title = check_movie_recommendation(
+                search_term=movie_type
+                )
+        except ValueError as e:
+            logging.error(f"ValueError: {e}")
+            return None
     else:
         logging.error("Both uuid and movie_type cannot be None.")
         return None
