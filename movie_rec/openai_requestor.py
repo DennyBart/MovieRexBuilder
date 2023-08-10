@@ -140,9 +140,9 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
 
     # Improved readability for uuid and movie_type check.
     if uuid:
-        rec_uuid, rec_count = check_movie_recommendation(uuid=uuid)
+        rec_uuid, rec_count, title = check_movie_recommendation(uuid=uuid)
     elif movie_type:
-        rec_uuid, rec_count = check_movie_recommendation(
+        rec_uuid, rec_count, title = check_movie_recommendation(
             search_term=movie_type
             )
     else:
@@ -161,6 +161,7 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
     output_list = [query_movie_by_uuid(movie_uuid).to_dict() 
                    for i, movie_uuid in enumerate(movie_list) if i < value]
     formatted_rec_list = format_recommendation_list(output_list,
+                                                    title=title,
                                                     cast=True,
                                                     plot=True,
                                                     media=True,
@@ -309,7 +310,9 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
     if movie_recommendation is None:
         return None, None
     else:
-        return movie_recommendation.uuid, movie_recommendation.count
+        return (movie_recommendation.uuid,
+                movie_recommendation.count,
+                movie_recommendation.topic_name)
 
 
 def get_related_movies(recommendation_uuid):

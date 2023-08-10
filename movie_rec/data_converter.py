@@ -39,6 +39,10 @@ def add_plot(output, data_dict):
     output['plot'] = data_dict.get('plot', None)
 
 
+def add_rec_title(output, rec_title):
+    output['recommendation_title'] = rec_title
+
+
 def add_media(output, data_dict, imdbid):
     image_urls = get_imdb_image_url(imdbid)
     video_data = get_imdb_video_url(imdbid)
@@ -64,7 +68,7 @@ def add_info(output, data_dict):
     output['runtime'] = data_dict.get('runtime', None)
 
 
-def format_recommendation_list(data_list, cast=False, plot=False,
+def format_recommendation_list(data_list, title=None, cast=False, plot=False,
                                media=False, info=False):
     output_list = []
     for data_json in data_list:
@@ -82,6 +86,9 @@ def format_recommendation_list(data_list, cast=False, plot=False,
 
         if info:
             add_info(output, data_dict)
+
+        if title is not None:
+            add_rec_title(output, title)
 
         output_list.append(output)
 
