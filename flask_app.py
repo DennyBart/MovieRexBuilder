@@ -317,7 +317,7 @@ def recommendations_list():
 
 # http://localhost:5000/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10 # noqa
 @app.route('/get_recommendation_by_uuid')
-def get_recommendations_by_uuid():
+def get_recommendation_by_uuid():
     # Todo add movie_type to search
     try:
         uuid = request.args.get('uuid')
@@ -341,7 +341,7 @@ def get_recommendations_by_uuid():
 
 
 @app.route('/get_recommendation_by_title')
-def get_recommendations_by_title():
+def get_recommendation_by_title():
     try:
         rec_title = request.args.get('search')
         # Check if rec_title is valid

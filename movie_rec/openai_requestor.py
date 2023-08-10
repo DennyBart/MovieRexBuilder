@@ -156,21 +156,26 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
     if value > rec_count:
         value = rec_count
 
-    # Use list comprehension for output_list.
-    movie_list = get_related_movies(rec_uuid)
-    output_list = [query_movie_by_uuid(movie_uuid).to_dict() 
-                   for i, movie_uuid in enumerate(movie_list) if i < value]
-    formatted_rec_list = format_recommendation_list(output_list,
-                                                    title=title,
-                                                    cast=True,
-                                                    plot=True,
-                                                    media=True,
-                                                    info=False)
+    try:
+        # Use list comprehension for output_list.
+        movie_list = get_related_movies(rec_uuid)
+        output_list = [query_movie_by_uuid(movie_uuid).to_dict()
+                       for i, movie_uuid in enumerate(movie_list) if i < value]
+        formatted_rec_list = format_recommendation_list(output_list,
+                                                        rec_data=[title,
+                                                                  rec_uuid],
+                                                        cast=True,
+                                                        plot=True,
+                                                        media=True,
+                                                        info=False)
 
-    logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")
-    logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
+        logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")  # noqa
+        logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
 
-    return formatted_rec_list
+        return formatted_rec_list
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return "Error occurred while fetching recommendations.", 500
 
 
 def get_new_recommendations(api_model: str, openai_api_key: str,

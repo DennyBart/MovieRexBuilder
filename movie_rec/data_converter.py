@@ -40,7 +40,12 @@ def add_plot(output, data_dict):
 
 
 def add_rec_title(output, rec_title):
-    output['recommendation_title'] = rec_title
+    title_name, uuid = rec_title
+    recommendation = {
+        "recommendation_title": title_name,
+        "rec_uuid": uuid
+    }
+    output['recommendation'] = [recommendation]
 
 
 def add_media(output, data_dict, imdbid):
@@ -68,7 +73,7 @@ def add_info(output, data_dict):
     output['runtime'] = data_dict.get('runtime', None)
 
 
-def format_recommendation_list(data_list, title=None, cast=False, plot=False,
+def format_recommendation_list(data_list, rec_data=None, cast=False, plot=False,
                                media=False, info=False):
     output_list = []
     for data_json in data_list:
@@ -87,8 +92,8 @@ def format_recommendation_list(data_list, title=None, cast=False, plot=False,
         if info:
             add_info(output, data_dict)
 
-        if title is not None:
-            add_rec_title(output, title)
+        if rec_data is not None:
+            add_rec_title(output, rec_data)
 
         output_list.append(output)
 

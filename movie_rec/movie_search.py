@@ -101,21 +101,6 @@ def process_request_by_id(cast_processor, identifier, api_key):
     return jsonify({"error": f"Movie_id {identifier} not found"}), 404
 
 
-def process_request_by_uuid(cast_processor, uuid_identifier, api_key):
-    movie_data = query_movie_by_uuid(uuid_identifier)
-    if movie_data:
-        logging.info(f"Movie_UUID {uuid_identifier} found in local database")
-        movie_dict = movie_data.to_dict()
-        movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
-        # TODO FINISH THIS****&&&&*******>>>>>>
-        formatted_rec_list = format_recommendation_list(output_list,
-                                                    cast=True,
-                                                    plot=True,
-                                                    media=True,
-                                                    info=False)
-        return jsonify(movie_dict)
-
-
 def process_request_by_name(cast_processor, identifier,
                             api_key, year, rec_topic=None):
     identifier = re.sub(r'\s\(\d{4}\)$', '', identifier)
@@ -161,8 +146,6 @@ def process_request(request_type, identifier,
     logging.info(f'Process request: {request_type}')
     if request_type == 'movie_id':
         return process_request_by_id(cast_processor, identifier, api_key)
-    if request_type == 'movie_uuid':
-        return process_request_by_uuid(cast_processor, identifier, api_key)
     elif request_type == 'movie_name':
         response = process_request_by_name(cast_processor, identifier,
                                        api_key, year, rec_topic)
