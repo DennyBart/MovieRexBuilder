@@ -16,6 +16,7 @@ from constants import (
     GENERATION_REC_QUESTION,
     LOG_FILE,
 )
+from movie_rec.data_converter import format_recommendation_list
 from movie_rec.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
@@ -33,6 +34,7 @@ from movie_rec.movie_search import (
     get_recommendation_name,
     get_recommendations,
     process_request,
+    query_movie_by_uuid,
     store_blurb_to_recommendation,
     store_search_titles
 )
@@ -60,11 +62,31 @@ def hello():
 
 # Example: http://127.0.0.1:5000/movie_id?id=tt1392190
 @app.route('/movie_id')
-def movie_id():
+def movie_by_id():
     movie_id = request.args.get('id')
-    if movie_id is None:
+    if not movie_id:
         return jsonify({'error': 'Invalid movie id'}), 400
     return process_request('movie_id', movie_id, OMDB_API_KEY)
+
+
+# Example: http://127.0.0.1:5000/movie_uuid?uuid=88841ced-35c5-4828-be5c-f0cfe4732192
+@app.route('/get_movie_uuid')
+def movie_by_uuid():
+    movie_uuid = request.args.get('uuid')
+    if not movie_uuid:
+        return jsonify({'error': 'Invalid movie uuid'}), 400
+
+    try:
+        movie_data = query_movie_by_uuid(movie_uuid).to_dict()
+        data_output = format_recommendation_list([movie_data],
+                                                 cast=True,
+                                                 plot=True,
+                                                 media=True,
+                                                 info=True)
+        return jsonify(data_output)
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return jsonify({'error': 'Movie uuid not found'}), 404
 
 
 # Example: http://127.0.0.1:5000/movie_name?title=Swallow&year=2019
@@ -294,8 +316,8 @@ def recommendations_list():
 
 
 # http://localhost:5000/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10 # noqa
-@app.route('/get_recommendation')
-def get_recommendations_by_uuid():
+@app.route('/get_recommendation_by_uuid')
+def get_recommendation_by_uuid():
     # Todo add movie_type to search
     try:
         uuid = request.args.get('uuid')
@@ -313,7 +335,31 @@ def get_recommendations_by_uuid():
             # Format json data
             return jsonify(existing_recommendations)
         else:
-            return {'error': 'No recommendations found'}, 400
+            return {'error': 'No recommendations found'}, 404
+    except ValueError as e:
+        return {'error': str(e)}, 400
+
+
+# http://127.0.0.1:5000/get_recommendation_by_title?search=Character Driven Movies # noqa
+@app.route('/get_recommendation_by_title')
+def get_recommendation_by_title():
+    try:
+        rec_title = request.args.get('search')
+        # Check if rec_title is valid
+        if rec_title is None:
+            return 'Missing recommendation title', 400
+        if not rec_title.strip():
+            return 'Invalid recommendation title', 400
+        value = request.args.get('limit', type=int, default=50)
+        existing_recommendations = get_existing_recommendations(
+            value=value,
+            movie_type=rec_title
+            )
+        if existing_recommendations:
+            # Format json data
+            return jsonify(existing_recommendations)
+        else:
+            return {'error': 'No recommendations found'}, 404
     except ValueError as e:
         return {'error': str(e)}, 400
 

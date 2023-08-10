@@ -140,11 +140,19 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
 
     # Improved readability for uuid and movie_type check.
     if uuid:
-        rec_uuid, rec_count = check_movie_recommendation(uuid=uuid)
+        try:
+            rec_uuid, rec_count, title = check_movie_recommendation(uuid=uuid)
+        except ValueError as e:
+            logging.error(f"ValueError: {e}")
+            return None
     elif movie_type:
-        rec_uuid, rec_count = check_movie_recommendation(
-            search_term=movie_type
-            )
+        try:
+            rec_uuid, rec_count, title = check_movie_recommendation(
+                search_term=movie_type
+                )
+        except ValueError as e:
+            logging.error(f"ValueError: {e}")
+            return None
     else:
         logging.error("Both uuid and movie_type cannot be None.")
         return None
@@ -156,20 +164,26 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
     if value > rec_count:
         value = rec_count
 
-    # Use list comprehension for output_list.
-    movie_list = get_related_movies(rec_uuid)
-    output_list = [query_movie_by_uuid(movie_uuid).to_dict() 
-                   for i, movie_uuid in enumerate(movie_list) if i < value]
-    formatted_rec_list = format_recommendation_list(output_list,
-                                                    cast=True,
-                                                    plot=True,
-                                                    media=True,
-                                                    info=False)
+    try:
+        # Use list comprehension for output_list.
+        movie_list = get_related_movies(rec_uuid)
+        output_list = [query_movie_by_uuid(movie_uuid).to_dict()
+                       for i, movie_uuid in enumerate(movie_list) if i < value]
+        formatted_rec_list = format_recommendation_list(output_list,
+                                                        rec_data=[title,
+                                                                  rec_uuid],
+                                                        cast=True,
+                                                        plot=True,
+                                                        media=True,
+                                                        info=False)
 
-    logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")
-    logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
+        logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")  # noqa
+        logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
 
-    return formatted_rec_list
+        return formatted_rec_list
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return "Error occurred while fetching recommendations.", 500
 
 
 def get_new_recommendations(api_model: str, openai_api_key: str,
@@ -309,7 +323,9 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
     if movie_recommendation is None:
         return None, None
     else:
-        return movie_recommendation.uuid, movie_recommendation.count
+        return (movie_recommendation.uuid,
+                movie_recommendation.count,
+                movie_recommendation.topic_name)
 
 
 def get_related_movies(recommendation_uuid):
