@@ -299,18 +299,22 @@ def generate_recs_from_list():
         return {'completed_topic_list': processed_titles}
 
 
-# http://localhost:5000/list_recommendations?search=Comedy
+# http://localhost:5000/list_recommendations?search=Comedy&blurb=True&limit=10&offset=0 # noqa
 @app.route('/list_recommendations')
 def recommendations_list():
     search = request.args.get('search')
     limit = request.args.get('limit', type=int, default=50)
     offset = request.args.get('offset', type=int, default=0)
+    blurb = request.args.get('blurb', type=bool, default=False)
 
     recommendations = get_recommendations(
         search=search, limit=limit, offset=offset
     )
 
     results = [recommendation.to_dict() for recommendation in recommendations]
+    for result in results:
+        if not blurb and 'blurb' in result:
+            del result['blurb']
 
     return jsonify(results)
 
