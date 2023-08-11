@@ -60,8 +60,8 @@ def hello():
     return 'Hello You!!!!'
 
 
-# Example: http://127.0.0.1:5000/movie_id?id=tt1392190
-@app.route('/movie_id')
+# Example: http://127.0.0.1:5000/api/get_movie_id?id=tt1392190
+@app.route('/api/get_movie_id')
 def movie_by_id():
     movie_id = request.args.get('id')
     if not movie_id:
@@ -69,8 +69,8 @@ def movie_by_id():
     return process_request('movie_id', movie_id, OMDB_API_KEY)
 
 
-# Example: http://127.0.0.1:5000/movie_uuid?uuid=88841ced-35c5-4828-be5c-f0cfe4732192
-@app.route('/get_movie_uuid')
+# Example: http://127.0.0.1:5000/api/get_movie_uuid?uuid=88841ced-35c5-4828-be5c-f0cfe4732192 # noqa
+@app.route('/api/get_movie_uuid')
 def movie_by_uuid():
     movie_uuid = request.args.get('uuid')
     if not movie_uuid:
@@ -89,8 +89,8 @@ def movie_by_uuid():
         return jsonify({'error': 'Movie uuid not found'}), 404
 
 
-# Example: http://127.0.0.1:5000/movie_name?title=Swallow&year=2019
-@app.route('/movie_name')
+# Example: http://127.0.0.1:5000/api/get_movie_name?title=Goodfellas&year=1990
+@app.route('/api/get_movie_name')
 def movies_name():
     title = request.args.get('title')
     year = request.args.get('year')
@@ -106,8 +106,8 @@ def movies_name():
         return f'Title:{title} Year:{year} Not Found', 404
 
 
-# http://127.0.0.1:5000/create_recommendation?movie_type=war&value=10
-@app.route('/create_recommendation')
+# http://127.0.0.1:5000/api/add_recommendation?movie_type=war&value=10
+@app.route('/api/add_recommendation')
 def ask_chatgpt():
     movie_type = request.args.get('movie_type')
     value = request.args.get('value')
@@ -158,8 +158,8 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
     return jsonify(movie_list)
 
 
-# http://localhost:5000/generate_movie_rec_titles?total=25
-@app.route('/generate_movie_rec_titles')
+# http://localhost:5000/api/process_movie_rec_titles?total=25
+@app.route('/api/process_movie_rec_titles')
 def generate_movie_recommendation_titles():
     generate_total = int(request.args.get('total'))
     if generate_total is None or generate_total < 25 or generate_total == ' ':
@@ -195,8 +195,8 @@ def generate_movie_recommendation_titles():
     return {'generated_titles': total_generated_titles}
 
 
-# http://localhost:5000/generate_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131&limit=10 # noqa
-@app.route('/generate_blurb')
+# http://localhost:5000/api/generate_rec_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131&limit=10 # noqa
+@app.route('/api/generate_rec_blurb')
 def generate_blurb():
     uuid = request.args.get('uuid')
     limit = request.args.get('limit')
@@ -212,10 +212,12 @@ def generate_blurb():
     return generate_recommendation_blurb(uuid, (limit))
 
 
+# TODO - Refactor this 
 def contains_items(s: str, items: List[str]) -> bool:
     return sum(item in s for item in items) >= 3
 
 
+# TODO - Refactor this
 def generate_recommendation_blurb(uuid, limit: int):
     item_list = []
     try:
@@ -261,8 +263,8 @@ def generate_recommendation_blurb(uuid, limit: int):
             'after maximum attempts'}
 
 
-# http://localhost:5000/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa
-@app.route('/provide_movie_rec_titles', methods=['POST'])
+# http://localhost:5000/api/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa
+@app.route('/api/provide_movie_rec_titles', methods=['POST'])
 def provide_movie_recommendation_titles():
     search_titles = request.json.get('titles')
 
@@ -273,9 +275,9 @@ def provide_movie_recommendation_titles():
     return {'generated_titles': sotred_title}
 
 
-# http://localhost:5000/generate_recs_in_db?limit=10&value=10
-@app.route('/generate_recs_in_db')
-def generate_recs_from_list():
+# http://localhost:5000/api/generate_recs_in_db?limit=10&value=10
+@app.route('/api/generate_recs_in_db')
+def generate_recs_in_db():
     logging.info('Generating recommendations from list')
     limit, value = get_limit_and_value(request)
 
@@ -319,10 +321,9 @@ def recommendations_list():
     return jsonify(results)
 
 
-# http://localhost:5000/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10 # noqa
-@app.route('/get_recommendation_by_uuid')
+# http://localhost:5000/api/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10 # noqa
+@app.route('/api/get_recommendation_by_uuid')
 def get_recommendation_by_uuid():
-    # Todo add movie_type to search
     try:
         uuid = request.args.get('uuid')
         # check if uuid is valid
@@ -344,8 +345,8 @@ def get_recommendation_by_uuid():
         return {'error': str(e)}, 400
 
 
-# http://127.0.0.1:5000/get_recommendation_by_title?search=Character Driven Movies # noqa
-@app.route('/get_recommendation_by_title')
+# http://127.0.0.1:5000/api/get_recommendation_by_title?search=Character Driven Movies # noqa
+@app.route('/api/get_recommendation_by_title')
 def get_recommendation_by_title():
     try:
         rec_title = request.args.get('search')
@@ -368,8 +369,8 @@ def get_recommendation_by_title():
         return {'error': str(e)}, 400
 
 
-# http://localhost:5000/get_recommendation_blurb?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f # noqa
-@app.route('/get_recommendation_blurb')
+# http://localhost:5000/api/get_recommendation_blurb?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f # noqa
+@app.route('/api/get_recommendation_blurb')
 def get_recommendations_blurb():
     # get uuid from the request
     uuid = request.args.get('uuid')
@@ -394,8 +395,8 @@ def get_recommendations_blurb():
         return 'No recommendation found for this UUID', 404
 
 
-# http://localhost:5000/get_movie_videos?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True # noqa
-@app.route('/get_movie_videos')
+# http://localhost:5000/api/get_movie_videos?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True # noqa
+@app.route('/api/get_movie_videos')
 def get_movie_videos():
     # get uuid from the request
     uuid = request.args.get('uuid')
@@ -422,8 +423,8 @@ def get_movie_videos():
         return 'No recommendation found for this UUID', 404
 
 
-# http://localhost:5000/get_movie_images?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=true # noqa
-@app.route('/get_movie_images')
+# http://localhost:5000/api/get_movie_images?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=true # noqa
+@app.route('/api/get_movie_images')
 def get_movie_images():
     # get uuid from the request
     uuid = request.args.get('uuid')
