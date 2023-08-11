@@ -113,8 +113,7 @@ def store_movie_recommendation(movie_list, movie_type, total):
         uuid=rec_uuid,
         topic_name=str(movie_type),
         count=len(unique_movie_list),
-        date_generated=datetime.datetime.now(),
-        casting_id=None
+        date_generated=datetime.datetime.now()
     )
     session.add(new_recommendations)
     session.commit()
@@ -216,10 +215,15 @@ def get_new_recommendations(api_model: str, openai_api_key: str,
     if len(new_movie_data) < 7:
         logging.info(f'Not all movies were found. '
                      f'Only {len(new_movie_data)} movies were found.')
-        
         return f'Only {len(new_movie_data)} movies were found.'
 
     return new_movie_data, new_values
+
+
+def get_recommendations_from_db(movie_type: str, value: int):
+    # Get movie recommendations from database
+    movie_recommendations = get_existing_recommendations(value=value,
+                                                         movie_type=movie_type)
 
 
 def generate_openai_response(api_model: str, openai_api_key: str,

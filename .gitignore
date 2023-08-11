@@ -165,10 +165,11 @@ alembic/env.py
 scripts/*.txt
 scripts/*.pgsql
 scripts/*.json
-scripts*.txt_old
+scripts/*_old
 
 # Logging
 logs/*.log*
+
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
