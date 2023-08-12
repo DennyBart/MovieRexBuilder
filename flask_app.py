@@ -75,7 +75,7 @@ def hello():
     recommendations = list_reccomendations().get_json()
     for recommendation in recommendations:
         # check if value in count is 0 and if it is remove the item
-        if recommendation['count'] == 0:
+        if int(recommendation['count']) == 0:
             recommendations.remove(recommendation)
     return render_template(f'{user_agent}/index.html', recommendations=recommendations)
 
