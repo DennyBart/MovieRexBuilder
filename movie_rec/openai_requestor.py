@@ -28,7 +28,7 @@ import time
 
 # Replace with your own database URL
 DATABASE_URL = os.environ['DATABASE_URL']
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_recycle=280)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()

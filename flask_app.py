@@ -7,6 +7,7 @@ from flask import (
     jsonify,
     request,
     render_template,
+    make_response,
 )
 import requests
 from constants import (
@@ -40,6 +41,7 @@ from movie_rec.movie_search import (
     store_blurb_to_recommendation,
     store_search_titles
 )
+from sqlalchemy import create_engine
 import logging
 from logging.handlers import RotatingFileHandler
 OMDB_API_KEY = os.getenv("OMDB_API_KEY")
@@ -82,8 +84,12 @@ def display_recommendation(uuid):
     response_blurb = process_recommendation_blurb(uuid)
     if response.status_code == 200:
         rec_movie_list = response.get_json()  # Extract the JSON data from the Response object
-        rec_blurb = response_blurb.get_json()
-        print(rec_blurb)
+        print(f"response_blurb{response_blurb}")
+        print(f"response_blurb_TYPE{type(response_blurb)}")
+        if response_blurb.status_code == 200:
+            rec_blurb = response_blurb.get_json()
+        else:
+            rec_blurb = None
         return render_template(f'{device_type}/rec.html',
                                rec_movie_list=rec_movie_list,
                                rec_blurb=rec_blurb)
@@ -434,7 +440,7 @@ def process_recommendation_blurb(uuid):
         logging.debug(recommendation_blurb)
         return jsonify({'blurb': recommendation_blurb})
     else:
-        return 'No recommendation found for this UUID', 404
+        return make_response('No recommendation found for this UUID', 404)
 
 
 # http://localhost:5000/api/get_movie_videos?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True # noqa

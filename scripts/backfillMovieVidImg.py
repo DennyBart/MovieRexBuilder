@@ -13,7 +13,7 @@ from movie_rec.models import MovieData
 
 # Modify this with your actual SQLAlchemy connection string
 DATABASE_URL = os.environ['DATABASE_URL']
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_recycle=280)
 session = Session(engine)
 
 # Set the rate limit (10 per second => 0.1s delay)
