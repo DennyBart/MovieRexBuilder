@@ -5,18 +5,11 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recommendations Mobile</title>
+    <title>Recommendations Web</title>
     <style>
         body {
+            padding: 20px;
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 800px;  /* Limit width to make readable on large devices */
-            margin: 0 auto;  /* Center the container */
-            padding: 20px;  /* Add some padding to prevent content from touching the edges */
         }
 
         h1 {
@@ -25,55 +18,62 @@
             margin-bottom: 1em;
         }
 
-        .recommendation {
-            border-bottom: 1px solid #e0e0e0;
-            padding: 20px 0;  /* Space out each recommendation */
+        .topic {
+            font-size: 1.5em;
+            text-align: center;
+            margin-bottom: 0.5em;
         }
 
-        .topic {
-            font-size: 1.4em;
-            text-align: center;
-            margin-bottom: 0.5em;  /* Space between topic and count */
+        .topic a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        .topic a:hover,
+        .topic a:focus {
+            text-decoration: underline;
+            color: #0056b3;
         }
 
         .count {
-            font-size: 1.2em;
+            font-size: 1.5em;
             text-align: center;
             color: green;
-            margin-bottom: 1em;  /* Space between count and next topic */
+            margin-bottom: 1em;
         }
 
-        /* Responsive styling for smaller screens */
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
             h1 {
-                font-size: 1.6em;
+                font-size: 1.8em;
             }
 
             .topic {
-                font-size: 1.2em;
+                font-size: 1.3em;
             }
 
             .count {
-                font-size: 1em;
+                font-size: 1.3em;
+            }
+
+            body {
+                padding: 10px;
             }
         }
+
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Recommendations Mobile</h1>
-        {% for rec in recommendations %}
-        <div class="recommendation">
-            <div class="topic">
-                {{ rec.topic_name }}
-            </div>
-            <div class="count">
-                Count: {{ rec.count }}
-            </div>
-        </div>
-        {% endfor %}
+    <h1>Recommendations Web</h1>
+    {% for rec in recommendations %}
+    <div class="topic">
+        <!-- Here's the hyperlink using the UUID -->
+        <a href="/web/rec/{{ rec.uuid }}">{{ rec.topic_name }}</a>
     </div>
+    <div class="count">
+        Count: {{ rec.count }}
+    </div>
+    {% endfor %}
 </body>
 
 </html>

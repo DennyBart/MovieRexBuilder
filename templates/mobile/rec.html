@@ -84,7 +84,6 @@
         {% endif %}
         {% if movie.video_keys and movie.video_keys[0].key %}
         <div>
-            <strong>Trailer:</strong>
             <iframe src="{{ movie.video_keys[0].key.replace('https://www.youtube.com/watch?v=', 'https://www.youtube.com/embed/') }}" frameborder="0" allowfullscreen></iframe>
         </div>
         {% endif %}
