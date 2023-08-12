@@ -5,8 +5,10 @@ from typing import List
 from flask import (
     Flask,
     jsonify,
-    request
+    request,
+    render_template,
 )
+import requests
 from constants import (
     GENERATE_PAGE_BLURB,
     GENERATION_REC_TITLES,
@@ -55,10 +57,35 @@ def is_valid_uuid(val):
         return False
 
 
+def get_device_type():
+    user_agent = request.headers.get('User-Agent', '').lower()
+
+    if "iphone" in user_agent:
+        return 'mobile'
+    elif "android" in user_agent:
+        return 'mobile'
+    else:
+        return 'desktop'
+
+
 @app.route('/')
 def hello():
-    return 'Hello You!!!!'
+    user_agent = get_device_type()
+    recommendations = list_reccomendations().get_json()
+    return render_template(f'{user_agent}/index.html', recommendations=recommendations)
 
+
+@app.route('/web/rec/<uuid>')
+def display_recommendation(uuid):
+    device_type = get_device_type()
+    response = process_recommendation_by_uuid(uuid)
+    if response.status_code == 200:
+        rec_movie_list = response.get_json()  # Extract the JSON data from the Response object
+        return render_template(f'{device_type}/rec.html', rec_movie_list=rec_movie_list)
+    else:
+        return "Error fetching the recommendation", 404
+
+# API Endpoints
 
 # Example: http://127.0.0.1:5000/api/get_movie_id?id=tt1392190
 @app.route('/api/get_movie_id')
@@ -302,8 +329,8 @@ def generate_recs_in_db():
 
 
 # http://localhost:5000/list_recommendations?search=Comedy&blurb=True&limit=10&offset=0 # noqa
-@app.route('/list_recommendations')
-def recommendations_list():
+@app.route('/api/list_recommendations')
+def list_reccomendations():
     search = request.args.get('search')
     limit = request.args.get('limit', type=int, default=50)
     offset = request.args.get('offset', type=int, default=0)
@@ -324,8 +351,14 @@ def recommendations_list():
 # http://localhost:5000/api/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10 # noqa
 @app.route('/api/get_recommendation_by_uuid')
 def get_recommendation_by_uuid():
+    uuid = request.args.get('uuid')
+    if uuid is None:
+        return "Sorry! Not found"
+    return process_recommendation_by_uuid(uuid)
+
+
+def process_recommendation_by_uuid(uuid):
     try:
-        uuid = request.args.get('uuid')
         # check if uuid is valid
         if uuid is None:
             return 'Missing uuid', 400

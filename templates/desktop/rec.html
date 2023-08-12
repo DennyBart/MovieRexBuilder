@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommendations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .movie {
+            margin-bottom: 40px;
+        }
+        img {
+            width: 100%;
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body>
+    {% if rec_movie_list and rec_movie_list[0].recommendation and rec_movie_list[0].recommendation[0].recommendation_title %}
+        <h1>{{ rec_movie_list[0].recommendation[0].recommendation_title }}</h1>
+    {% endif %}
+    {% for movie in rec_movie_list %}
+    <div class="movie">
+        {% if movie.title and movie.year %}
+        <h2>{{ movie.title }} ({{ movie.year }})</h2>
+        {% endif %}
+        {% if movie.image_key_1 %}
+        <img src="{{ movie.image_key_1 }}" alt="{{ movie.title if movie.title }}">
+        {% endif %}
+        {% if movie.director %}
+        <p>
+            <strong>Director:</strong>
+            {% for director in movie.director %}
+            {{ director.name }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        {% endif %}
+        {% if movie.actors %}
+        <p>
+            <strong>Actors:</strong>
+            {% for actor in movie.actors %}
+            {{ actor.name }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        {% endif %}
+        {% if movie.plot %}
+        <p><strong>Plot:</strong> {{ movie.plot }}</p>
+        {% endif %}
+        {% if movie.video_keys and movie.video_keys[0].key %}
+        <div>
+            <iframe width="560" height="315" src="{{ movie.video_keys[0].key.replace('https://www.youtube.com/watch?v=', 'https://www.youtube.com/embed/') }}" frameborder="0" allowfullscreen></iframe>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</body>
+</html>

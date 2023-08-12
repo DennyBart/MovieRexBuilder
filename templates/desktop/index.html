@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations Web</title>
+    <style>
+        h1 {
+            font-size: 2em;
+            text-align: center;
+            margin-bottom: 1em;
+        }
+        .topic {
+            font-size: 1.5em;
+            text-align: center;
+        }
+        .count {
+            font-size: 1.5em;
+            text-align: center;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Recommendations Web</h1>
+    {% for rec in recommendations %}
+        <div class="topic">
+            <!-- Here's the hyperlink using the UUID -->
+            <a href="/web/rec/{{ rec.uuid }}">{{ rec.topic_name }}</a>
+        </div>
+        <div class="count">
+            Count: {{ rec.count }}
+        </div>
+    {% endfor %}
+</body>
+</html>
