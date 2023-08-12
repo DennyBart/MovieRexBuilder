@@ -79,9 +79,14 @@ def hello():
 def display_recommendation(uuid):
     device_type = get_device_type()
     response = process_recommendation_by_uuid(uuid)
+    response_blurb = process_recommendation_blurb(uuid)
     if response.status_code == 200:
         rec_movie_list = response.get_json()  # Extract the JSON data from the Response object
-        return render_template(f'{device_type}/rec.html', rec_movie_list=rec_movie_list)
+        rec_blurb = response_blurb.get_json()
+        print(rec_blurb)
+        return render_template(f'{device_type}/rec.html',
+                               rec_movie_list=rec_movie_list,
+                               rec_blurb=rec_blurb)
     else:
         return "Error fetching the recommendation", 404
 
@@ -413,7 +418,11 @@ def get_recommendations_blurb():
         return 'Missing uuid', 400
     if not is_valid_uuid(uuid):
         return 'Invalid uuid', 400
+    process_rec = process_recommendation_blurb(uuid)
+    return process_rec
 
+
+def process_recommendation_blurb(uuid):
     # remove leading and trailing whitespace from uuid
     uuid = uuid.strip()
 

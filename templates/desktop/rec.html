@@ -1,28 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie Recommendations</title>
     <style>
+        .blurb-content {
+            width: 60%;
+            text-align: left; 
+        }
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
         }
         .movie {
             margin-bottom: 40px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 20px;
         }
         img {
             width: 100%;
             max-width: 500px;
         }
+        h1 {
+            text-align: center;
+        }
     </style>
+    
 </head>
+
 <body>
     {% if rec_movie_list and rec_movie_list[0].recommendation and rec_movie_list[0].recommendation[0].recommendation_title %}
-        <h1>{{ rec_movie_list[0].recommendation[0].recommendation_title }}</h1>
+    <h1>{{ rec_movie_list[0].recommendation[0].recommendation_title }}</h1>
     {% endif %}
+
+    {% if rec_blurb.blurb == null or rec_blurb.blurb == 'Missing uuid' %}
+    <!-- Handle 400 error in your server-side logic -->
+    {% endif %}
+    
+    {% if rec_blurb %}
+    <p class="blurb-content">{{ rec_blurb.blurb }}</p>
+    {% endif %}
+
     {% for movie in rec_movie_list %}
     <div class="movie">
         {% if movie.title and movie.year %}
@@ -57,5 +78,7 @@
         {% endif %}
     </div>
     {% endfor %}
+
 </body>
+
 </html>

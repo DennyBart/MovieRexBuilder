@@ -10,44 +10,42 @@
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
-            margin: 0;
+        }
+
+        .blurb-content {
+            width: 60%;
+            text-align: left; 
         }
 
         .movie {
             margin-bottom: 40px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 20px;
         }
 
         img {
             width: 100%;
             max-width: 500px;
-            display: block;
-            margin: 0 auto;
         }
 
-        iframe {
-            width: 100%;
-            max-width: 560px;
-            height: auto;
-            display: block;
-            margin: 0 auto;
+        h1 {
+            text-align: center;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 767px) {
+            .blurb-content {
+                width: 100%;
+            }
+
             body {
                 padding: 10px;
             }
 
-            h1, h2 {
-                font-size: 1.5rem;
-                margin-top: 10px;
-            }
-            
-            p {
-                margin-top: 10px;
-                margin-bottom: 10px;
+            iframe {
+                width: 100%;
+                height: auto;
             }
         }
-
     </style>
 </head>
 
@@ -55,6 +53,15 @@
     {% if rec_movie_list and rec_movie_list[0].recommendation and rec_movie_list[0].recommendation[0].recommendation_title %}
     <h1>{{ rec_movie_list[0].recommendation[0].recommendation_title }}</h1>
     {% endif %}
+
+    {% if rec_blurb.blurb == null or rec_blurb.blurb == 'Missing uuid' %}
+    <!-- Handle 400 error in your server-side logic -->
+    {% endif %}
+    
+    {% if rec_blurb %}
+    <p class="blurb-content">{{ rec_blurb.blurb }}</p>
+    {% endif %}
+
     {% for movie in rec_movie_list %}
     <div class="movie">
         {% if movie.title and movie.year %}
