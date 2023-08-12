@@ -41,7 +41,6 @@ from movie_rec.movie_search import (
     store_blurb_to_recommendation,
     store_search_titles
 )
-from sqlalchemy import create_engine
 import logging
 from logging.handlers import RotatingFileHandler
 OMDB_API_KEY = os.getenv("OMDB_API_KEY")
@@ -74,6 +73,10 @@ def get_device_type():
 def hello():
     user_agent = get_device_type()
     recommendations = list_reccomendations().get_json()
+    for recommendation in recommendations:
+        # check if value in count is 0 and if it is remove the item
+        if recommendation['count'] == 0:
+            recommendations.remove(recommendation)
     return render_template(f'{user_agent}/index.html', recommendations=recommendations)
 
 
