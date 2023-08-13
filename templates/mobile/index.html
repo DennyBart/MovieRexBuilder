@@ -4,76 +4,123 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Recommendations Web</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Borel&family=Bungee+Shade&display=swap" rel="stylesheet">
+
     <style>
+        /* Base styles for the entire page */
         body {
-            padding: 20px;
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', cursive;
+            background-color: #f4f4f4;
+            margin: 0;
         }
 
-        h1 {
-            font-size: 2em;
-            text-align: center;
-            margin-bottom: 1em;
+        /* Header styles */
+        header {
+            font-family: 'Borel', cursive;
+            padding: 15px;
+            background-color: #333;
+        }
+
+        header h1 {
+            font-size: 1.8em;
+            text-align: left;
+            margin: 0;
+            color: white;
+        }
+
+        /* Body styles */
+        .recommendation-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .recommendation {
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            width: calc(33.33% - 15px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .recommendation:hover {
+            transform: scale(1.05);
+        }
+
+        .rec-img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
         }
 
         .topic {
-            font-size: 1.5em;
-            text-align: center;
-            margin-bottom: 0.5em;
-        }
-
-        .topic a {
-            color: #007BFF;
-            text-decoration: none;
-        }
-
-        .topic a:hover,
-        .topic a:focus {
-            text-decoration: underline;
-            color: #0056b3;
+            font-size: 1.4em;
+            margin-top: 8px;
         }
 
         .count {
-            font-size: 1.5em;
-            text-align: center;
-            color: green;
-            margin-bottom: 1em;
+            font-size: 1.1em;
+            color: #4caf50;
+            margin-top: 4px;
         }
 
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.8em;
-            }
-
-            .topic {
-                font-size: 1.3em;
-            }
-
-            .count {
-                font-size: 1.3em;
-            }
-
-            body {
-                padding: 10px;
-            }
+        /* Mobile Styles */
+    @media (max-width: 768px) {
+        .recommendation {
+            width: calc(50% - 10px); /* Two recommendations per row */
+            margin-bottom: 10px;
         }
+
+        .rec-img {
+            width: 70%; /* Reducing the image size to 70% of container width */
+            margin: 0 auto; /* Centering the image */
+            border-radius: 5px;
+        }
+
+        .recommendation-container {
+            gap: 10px;
+            padding: 10px;
+        }
+
+        header {
+            padding: 10px;
+        }
+
+        header h1 {
+            font-size: 1.6em;
+        }
+    }
 
     </style>
 </head>
 
 <body>
-    <h1>Recommendations Web</h1>
-    {% for rec in recommendations %}
-    <div class="topic">
-        <!-- Here's the hyperlink using the UUID -->
-        <a href="/web/rec/{{ rec.uuid }}">{{ rec.topic_name }}</a>
+    <header>
+        <h1>MovieRex</h1>
+    </header>
+
+    <div class="recommendation-container">
+        {% for rec in recommendations %}
+        <div class="recommendation">
+            <img src="{{ url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
+            <div class="topic">
+                <!-- Here's the hyperlink using the UUID -->
+                <a href="/web/rec/{{ rec.uuid }}">{{ rec.topic_name }}</a>
+            </div>
+            <div class="count">
+                Count: {{ rec.count }}
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    <div class="count">
-        Count: {{ rec.count }}
-    </div>
-    {% endfor %}
 </body>
 
 </html>

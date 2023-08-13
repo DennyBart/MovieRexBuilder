@@ -1,37 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recommendations Web</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Borel&family=Bungee+Shade&display=swap" rel="stylesheet">
+
     <style>
-        h1 {
-            font-size: 2em;
-            text-align: center;
-            margin-bottom: 1em;
+        /* Base styles for the entire page */
+        body {
+            font-family: 'Roboto', cursive;
+            background-color: #f4f4f4; 
+            margin: 0;
         }
+
+        /* Header styles */
+        header {
+            font-family: 'Borel', cursive;
+            padding: 20px;
+            background-color: #333;
+        }
+
+        header h1 {
+            font-size: 2em;
+            text-align: left;
+            margin: 0;
+            color: white;
+        }
+
+        /* Body styles */
+        .recommendation-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .recommendation {
+            background-color: white;
+            border-radius: 10px; 
+            padding: 20px;
+            width: calc(33.33% - 20px); 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+            transition: transform 0.2s; 
+        }
+
+        .recommendation:hover {
+            transform: scale(1.05); 
+        }
+
+        .rec-img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
         .topic {
             font-size: 1.5em;
-            text-align: center;
+            margin-top: 10px;
         }
+
         .count {
-            font-size: 1.5em;
-            text-align: center;
-            color: green;
+            font-size: 1.2em;
+            color: #4caf50; 
+            margin-top: 5px;
         }
+
     </style>
 </head>
+
 <body>
-    <h1>Recommendations Web</h1>
-    {% for rec in recommendations %}
-        <div class="topic">
-            <!-- Here's the hyperlink using the UUID -->
-            <a href="/web/rec/{{ rec.uuid }}">{{ rec.topic_name }}</a>
+    <header>
+        <h1>MovieRex</h1>
+    </header>
+
+    <div class="recommendation-container">
+        {% for rec in recommendations %}
+        <div class="recommendation">
+            <img src="{{ url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
+            <div class="topic">
+                <!-- Here's the hyperlink using the UUID -->
+                <a href="/web/rec/{{ rec.uuid }}">{{ rec.topic_name }}</a>
+            </div>
+            <div class="count">
+                Count: {{ rec.count }}
+            </div>
         </div>
-        <div class="count">
-            Count: {{ rec.count }}
-        </div>
-    {% endfor %}
+        {% endfor %}
+    </div>
 </body>
+
 </html>
