@@ -68,9 +68,14 @@
         .blurb-content {
             padding-left: 15px;
             padding-right: 15px;
-            margin-bottom: 20px; /* Space below the blurb */
+            margin-bottom: 10px; /* Space below the blurb */
         }
 
+        .blurb-line {
+            border-bottom: 1px solid #555;
+            margin-left: 15px;
+            margin-right: 15px;
+        }
 
         .movie {
             border-bottom: 1px solid #555;
@@ -133,7 +138,9 @@
     {% endif %}
     
     {% if rec_blurb %}
+    <div class="blurb-line"></div>
     <p class="blurb-content">{{ rec_blurb.blurb }}</p>
+    <div class="blurb-line"></div>
     {% endif %}
 
     {% for movie in rec_movie_list %}
