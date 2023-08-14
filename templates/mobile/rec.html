@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Movie Recommendations</title>
+    <title>MovieRec.org</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -80,6 +80,16 @@
             padding-right: 15px;
         }
 
+        .movie-number {
+            display: inline-block;
+            background-color: #555;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
         .advertisement {
             border: 1px solid #555;
             padding: 20px;
@@ -103,7 +113,7 @@
 
 <body>
     <header>
-        <h1><a href="/">MovieRex</a></h1>
+        <h1><a href="/">MovieRec</a></h1>
     </header>
 
     <!-- Title after the header -->
@@ -122,7 +132,7 @@
     {% for movie in rec_movie_list %}
     <div class="movie">
         {% if movie.title and movie.year %}
-        <h2>{{ movie.title }} ({{ movie.year }})</h2>
+        <h2><span class="movie-number">{{ loop.index }}</span>{{ movie.title }} ({{ movie.year }})</h2>
         {% endif %}
         {% if movie.image_key_1 %}
         <img src="{{ movie.image_key_1 }}" alt="{{ movie.title if movie.title }}">

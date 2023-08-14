@@ -4,81 +4,232 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Movie Recommendations</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Borel&family=Roboto&display=swap" rel="stylesheet">
+
     <style>
-        .blurb-content {
-            width: 60%;
-            text-align: left; 
-        }
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        .movie {
-            margin-bottom: 40px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 20px;
-        }
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #333333e6;
+        margin: 0;
+        color: white;
+    }
+
+    header {
+        font-family: 'Borel', cursive;
+        padding: 15px;
+        background-color: #333333;
+    }
+
+    header h1 {
+        font-size: 1.8em;
+        margin: 0;
+        color: white;
+    }
+
+    header h1 a,
+    header h1 a:visited {
+        color: white;
+        text-decoration: none;
+    }
+
+    .title {
+        text-align: center;
+        border-bottom: 1px solid #555;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .blurb-content {
+        border-bottom: 1px solid #555;
+        padding: 0 20px 20px;
+        margin-bottom: 30px;
+    }
+
+    .clearfix::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .movie {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #555;
+        padding-bottom: 20px;
+    }
+
+    .movie-number {
+        display: inline-block;
+        background-color: #555;
+        padding: 5px 10px;
+        border-radius: 4px;
+        margin-right: 10px;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    /* Body styles */
+    .movie-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        padding: 0 50px;
+        max-width: 1200px;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    .movie-info {
+        display: flex;
+    }
+
+    .director-actor-info {
+        padding: 20px 0 0 0; /* Updated padding - removes the bottom padding */
+    }
+
+    img {
+        display: block;
+        height: auto;
+        margin: 0;
+        float: left;
+        margin-right: 20px;
+    }
+
+    iframe {
+        width: 100%;
+        max-width: 400px;
+        height: 315px;
+        border: none;
+        display: block;
+        margin: 20px 0;
+    }
+
+    .advertisement {
+        float: right;
+        background-color: #555;
+        padding: 10px;
+        width: calc(100% - 500px);
+        text-align: center;
+        border: 1px solid white;
+        margin-bottom: 20px;
+    }
+
+    /* Base Styles for Small Screens */
+    .movie-info, .director-actor-info {
+        width: 100%;
+    }
+
+    .advertisement {
+        float: none;
+        width: 100%;
+    }
+
+    /* Adjustments for Very Small Screens */
+    @media (max-width: 480px) {
+        /* ... [your styles] ... */
+    }
+
+    @media (max-width: 767px) {
         img {
-            width: 100%;
-            max-width: 500px;
+            float: none;
+            margin-right: 0;
+            display: block;
+            margin: 0 auto;
         }
-        h1 {
-            text-align: center;
+    }
+
+    /* Adjustments for Medium to Large Screens */
+    @media (min-width: 768px) {
+        .movie-info {
+            flex-wrap: wrap;
         }
+
+        .director-actor-info {
+            width: calc(100% - 320px);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .movie-container {
+            padding: 0 150px;
+        }
+    }
+
+    .movie p {
+        margin-top: 0; /* Added this to remove the top margin from the plot */
+    }
+
     </style>
-    
 </head>
 
 <body>
-    {% if rec_movie_list and rec_movie_list[0].recommendation and rec_movie_list[0].recommendation[0].recommendation_title %}
-    <h1>{{ rec_movie_list[0].recommendation[0].recommendation_title }}</h1>
-    {% endif %}
+    <header>
+        <h1><a href="/">MovieRec</a></h1>
+    </header>
 
-    {% if rec_blurb.blurb == null or rec_blurb.blurb == 'Missing uuid' %}
-    <!-- Handle 400 error in your server-side logic -->
-    {% endif %}
-    
-    {% if rec_blurb %}
-    <p class="blurb-content">{{ rec_blurb.blurb }}</p>
-    {% endif %}
+    <div class="movie-container"> <!-- Starting the container here -->
 
-    {% for movie in rec_movie_list %}
-    <div class="movie">
-        {% if movie.title and movie.year %}
-        <h2>{{ movie.title }} ({{ movie.year }})</h2>
+        {% if rec_movie_list and rec_movie_list[0].recommendation and rec_movie_list[0].recommendation[0].recommendation_title %}
+        <h1 class="title">{{ rec_movie_list[0].recommendation[0].recommendation_title }}</h1>
         {% endif %}
-        {% if movie.image_key_1 %}
-        <img src="{{ movie.image_key_1 }}" alt="{{ movie.title if movie.title }}">
+
+        {% if rec_blurb.blurb == null or rec_blurb.blurb == 'Missing uuid' %}
+        <!-- Handle 400 error in your server-side logic -->
         {% endif %}
-        {% if movie.director %}
-        <p>
-            <strong>Director:</strong>
-            {% for director in movie.director %}
-            {{ director.name }}{% if not loop.last %}, {% endif %}
-            {% endfor %}
-        </p>
+        
+        {% if rec_blurb %}
+        <p class="blurb-content"> {{ rec_blurb.blurb }}</p>
         {% endif %}
-        {% if movie.actors %}
-        <p>
-            <strong>Actors:</strong>
-            {% for actor in movie.actors %}
-            {{ actor.name }}{% if not loop.last %}, {% endif %}
-            {% endfor %}
-        </p>
-        {% endif %}
-        {% if movie.plot %}
-        <p><strong>Plot:</strong> {{ movie.plot }}</p>
-        {% endif %}
-        {% if movie.video_keys and movie.video_keys[0].key %}
-        <div>
-            <iframe width="560" height="315" src="{{ movie.video_keys[0].key.replace('https://www.youtube.com/watch?v=', 'https://www.youtube.com/embed/') }}" frameborder="0" allowfullscreen></iframe>
+
+        <!-- ... [Previous code] ... -->
+
+        {% for movie in rec_movie_list %}
+        <div class="movie clearfix">
+            {% if movie.title and movie.year %}
+            <h2><span class="movie-number">{{ loop.index }}</span>{{ movie.title }} ({{ movie.year }})</h2>
+            {% endif %}
+            
+            <div class="movie-info">  <!-- Start of new movie-info div -->
+                {% if movie.image_key_1 %}
+                <img src="{{ movie.image_key_1 }}" alt="{{ movie.title if movie.title }}">
+                {% endif %}
+                <div class="director-actor-info"> <!-- Start of director-actor-info div -->
+                    {% if movie.director %}
+                    <p>
+                        <strong>Director:</strong>
+                        {% for director in movie.director %}
+                        {{ director.name }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+                    {% endif %}
+                    {% if movie.actors %}
+                    <p>
+                        <strong>Actors:</strong>
+                        {% for actor in movie.actors %}
+                        {{ actor.name }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+                    {% endif %}
+                </div> <!-- End of director-actor-info div -->
+            </div>  <!-- End of new movie-info div -->
+            
+            {% if movie.plot %}
+            <p> {{ movie.plot }}</p>
+            {% endif %}
+            {% if movie.video_keys and movie.video_keys[0].key %}
+            <iframe src="{{ movie.video_keys[0].key.replace('https://www.youtube.com/watch?v=', 'https://www.youtube.com/embed/') }}" allowfullscreen></iframe>
+            {% endif %}
+            {% if loop.index % 5 == 0 %}
+            <div class="advertisement">Advertisement</div>
+            {% endif %}
         </div>
-        {% endif %}
-    </div>
-    {% endfor %}
+        {% endfor %}
 
+    </div> <!-- Ending the container here -->
 </body>
-
 </html>
