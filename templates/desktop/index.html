@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations Web</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Borel&family=Bungee+Shade&display=swap" rel="stylesheet">
+
+    <style>
+        /* Base styles for the entire page */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #333333e6;
+            margin: 0;
+            color: white;
+        }
+
+        /* Header styles */
+        header {
+            font-family: 'Borel', cursive;
+            padding: 15px;
+            background-color: #333333;
+        }
+
+        header h1 {
+            font-size: 1.8em;
+            text-align: left;
+            margin: 0;
+            color: white;
+        }
+
+        header h1 a,
+        header h1 a:visited {
+            color: white;
+            text-decoration: none;
+        }
+
+        /* Body styles */
+        .recommendation-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            justify-content: center;
+        }
+
+        .recommendation {
+            background-color: #424242e6;
+            border-radius: 10px;
+            padding: 15px;
+            width: calc(30% - 15px);  /* Adjusted to allow three in a row */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            overflow: hidden;
+        }
+
+        .recommendation a,
+        .recommendation a:visited {
+            color: white;
+            text-decoration: none;
+        }
+
+        .recommendation:hover {
+            transform: scale(1.05);
+        }
+
+        .rec-img a {
+            display: block;
+        }
+
+        .rec-img img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .topic {
+            font-size: 1.4em;
+            padding: 0 10px; /* Padding added to push text */
+        }
+
+        .count {
+            font-size: 1.1em;
+            text-align: right;
+            padding: 0 10px; /* Padding added to push text */
+        }
+
+        .advertisement {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            background-color: #424242e6;
+            border-radius: 10px;
+            width: 100%;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .recommendation-container,
+            .recommendation {
+                padding: 10px;
+            }
+
+            .recommendation {
+                width: 100%;
+            }
+
+            header h1 {
+                font-size: 1.6em;
+            }
+        }
+
+        /* Additional Styles */
+        .row {
+            display: flex;
+            align-items: center;
+        }
+
+        .row-title {
+            font-family: 'Borel', cursive;
+            font-size: 1.5em;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        /* Additional Styles for set-title positioning */
+        .recommendation {
+            position: relative;
+        }
+
+        .set-title {
+            font-family: 'Borel', cursive;
+            position: absolute; 
+            top: 10px; 
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7); 
+            padding: 2px 4px;
+            border-radius: 3px;
+            z-index: 10;
+        }
+
+    </style>
+</head>
+</head>
+
+<body>
+    <header>
+        <h1><a href="/">MovieRec</a></h1>
+    </header>
+
+    <div class="recommendation-container">
+        {% for rec in recommendations %}
+        <div class="recommendation">
+            <div class="rec-img">
+                <a href="/web/rec/{{ rec.uuid }}">
+                    <!-- Check for recommendation_image existence or use default -->
+                    <img src="{{ rec.recommendation_image if rec.recommendation_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image">
+                </a>
+            </div>
+            <div class="topic">
+                <a href="/web/rec/{{ rec.uuid }}">{{ rec.topic_name }}</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+
+</html>

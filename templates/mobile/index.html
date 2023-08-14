@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MovieRec.org</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Borel&family=Bungee+Shade&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #333333e6; /* Darker gray background color for the body */
+            margin: 0;
+        }
+
+        /* Header styles */
+        header {
+            font-family: 'Borel', cursive;
+            padding: 15px;
+            background-color: #333333;
+        }
+
+        header h1 {
+            font-size: 1.8em;
+            text-align: left;
+            margin: 0;
+        }
+
+        header h1 a {
+            color: white;
+            text-decoration: none;
+        }
+
+        header h1 a:visited {
+            color: white;
+        }
+
+
+        .recommendation a,
+        .recommendation a:visited {
+            color: white;
+            text-decoration: none;
+        }
+
+
+        /* Body styles */
+        .recommendation-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .recommendation {
+            position: relative;
+            background-color: #424242e6;
+            border-radius: 10px;
+            padding: 15px;
+            width: calc(33.33% - 15px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            overflow: hidden;
+            height: auto; /* Ensures the height auto-adjusts based on content */
+        }
+
+        .recommendation a,
+        .recommendation a:visited {
+            color: white;
+            text-decoration: none;
+            display: block; /* This ensures the entire div is clickable */
+            height: 100%; /* This ensures the link takes the entire height of the div */
+        }
+
+
+        .recommendation:hover {
+            transform: scale(1.05);
+        }
+
+        .rec-img {
+            width: 100%;
+            display: block; /* Eliminate the space at the bottom of the image */
+            height: 100%;
+            object-fit: cover; /* Ensures image covers the entire space without distorting its aspect ratio */
+            border-radius: 10px;
+        }
+
+        .rec-content {
+            position: absolute;
+            bottom: 15px; /* Adjust this value to move text up or down */
+            left: 15px;
+            right: 15px;
+            padding: 5px;
+            background-color: rgba(0, 0, 0, 0.5); /* Optional: Adds a semi-transparent background to make the text stand out more */
+        }
+
+        .rec-content a {
+            color: white;
+            text-decoration: none;
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.6);
+        }
+
+        .topic {
+            font-size: 1.4em;
+        }
+
+        .count {
+            font-size: 1.1em;
+            text-align: right;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .recommendation {
+                width: 100%;
+            }
+
+            .rec-content {
+                left: 10px;
+                right: 10px;
+            }
+
+            .topic, .count {
+                font-size: 1.2em;
+            }
+
+            .recommendation-container {
+                gap: 10px;
+                padding: 10px;
+            }
+
+            header {
+                padding: 10px;
+            }
+
+            header h1 {
+                font-size: 1.6em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1><a href="/">MovieRec</a></h1>
+    </header>
+
+    <div class="recommendation-container">
+        {% set counter = 0 %}
+        {% for rec in recommendations %}
+        <div class="recommendation">
+            <a href="/web/rec/{{ rec.uuid }}">
+                <img src="{{ url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
+                <div class="rec-content">
+                    <div class="topic">{{ rec.topic_name }}</div>
+                </div>
+            </a>
+        </div>
+        {% set counter = counter + 1 %}
+        {% if counter % 5 == 0 %}
+            <!-- Your ad code here -->
+        {% endif %}
+        {% endfor %}
+    </div>
+</body>
+
+</html>

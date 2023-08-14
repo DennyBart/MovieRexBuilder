@@ -30,7 +30,7 @@ from movie_rec.models import (
 load_dotenv()
 THEMOVIEDB_API_KEY = os.environ['THEMOVIEDB_API_KEY']
 DATABASE_URL = os.environ['DATABASE_URL']
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_recycle=280)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
@@ -161,7 +161,7 @@ def query_movie_by_id(identifier):
 def check_db():
     try:
         # Replace the connection URL with your actual database connection URL
-        engine = create_engine(DATABASE_URL)
+        engine = create_engine(DATABASE_URL, pool_recycle=280)
         engine.connect()
     except OperationalError:
         raise DBNotFoundError("Database not found or connection refused.")
