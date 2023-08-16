@@ -374,3 +374,34 @@ def get_cast_info(movie_uuid):
                 cast_info['writers'].append(cast_name.name)
 
     return cast_info
+
+
+def remove_movie_by_uuid(movie_uuid):
+    try:
+        # Remove movie-cast associations
+        session.query(MovieCast).filter(
+            MovieCast.movie_uuid == movie_uuid).delete()
+
+        # Remove movie-recommendation relations
+        session.query(MovieData).filter(
+            MovieData.movie_uuid == movie_uuid).delete()
+
+        # Remove movie images
+        session.query(MovieImage).filter(
+            MovieImage.imdbid == movie_uuid).delete()
+
+        # Remove movie videos
+        session.query(MovieVideo).filter
+        (MovieVideo.imdbid == movie_uuid).delete()
+
+        # Finally, remove the movie
+        session.query(MovieData).filter(
+            MovieData.uuid == movie_uuid).delete()
+
+        session.commit()
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        session.rollback()
+    finally:
+        session.close()

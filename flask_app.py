@@ -77,19 +77,18 @@ def hello():
         # check if value in count is 0 and if it is remove the item
         if int(recommendation['count']) == 0:
             recommendations.remove(recommendation)
-    return render_template(f'{user_agent}/index.html', recommendations=recommendations)
+    return render_template(f'{user_agent}/index.html',
+                           recommendations=recommendations)
 
 
 @app.route('/web/rec/<uuid>')
 def display_recommendation(uuid):
     device_type = get_device_type()
-    response = process_recommendation_by_uuid(uuid)
+    processed_recs = process_recommendation_by_uuid(uuid)
     response_blurb = process_recommendation_blurb(uuid)
-    if response.status_code == 200:
-        rec_movie_list = response.get_json()  # Extract the JSON data from the Response object
-        print(f"response_blurb{response_blurb}")
-        print(f"response_blurb_TYPE{type(response_blurb)}")
-        if response_blurb.status_code == 200:
+    if processed_recs is not None:
+        rec_movie_list = processed_recs.get_json()  # Extract the JSON data from the Response object # noqa
+        if response_blurb is not None:
             rec_blurb = response_blurb.get_json()
         else:
             rec_blurb = None
@@ -428,7 +427,10 @@ def get_recommendations_blurb():
     if not is_valid_uuid(uuid):
         return 'Invalid uuid', 400
     process_rec = process_recommendation_blurb(uuid)
-    return process_rec
+    if process_rec is None:
+        return {'No recommendation found for this UUID'}, 404
+    else:
+        return process_rec
 
 
 def process_recommendation_blurb(uuid):
@@ -443,7 +445,7 @@ def process_recommendation_blurb(uuid):
         logging.debug(recommendation_blurb)
         return jsonify({'blurb': recommendation_blurb})
     else:
-        return make_response('No recommendation found for this UUID', 404)
+        return None
 
 
 # http://localhost:5000/api/get_movie_videos?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True # noqa
