@@ -394,10 +394,9 @@ def remove_movie_by_uuid(movie_uuid):
         imdbid = movie_data.imdbid  # retrieve imdbid from the movie_data
 
         # Remove movie-cast associations
-        session.query(MovieCast).filter(MovieCast.movie_uuid == movie_uuid).delete()
+        session.query(MovieCast).filter(MovieCast.movie_uuid == movie_uuid).delete() # noqa
 
         # Remove movie-recommendation relations
-        # (Not sure if you wanted to delete by uuid or imdbid here, so kept it as uuid)
         session.query(MovieData).filter(MovieData.uuid == movie_uuid).delete()
 
         # Remove movie images
@@ -406,14 +405,10 @@ def remove_movie_by_uuid(movie_uuid):
         # Remove movie videos
         session.query(MovieVideo).filter(MovieVideo.imdbid == imdbid).delete()
 
-        # Finally, remove the movie
-        # (You had this line twice, so removed the duplicate)
-        session.query(MovieData).filter(MovieData.uuid == movie_uuid).delete()
-
         session.commit()
-        logging.info(f'Removed all data related to uuid {movie_uuid} and imdbid {imdbid} Movie Data')
+        logging.info(f'Removed all data related to uuid {movie_uuid} and imdbid {imdbid} Movie Data') # noqa
     except Exception as e:
-        print(f"Error occurred: {e}")
+        logging.error(f"Error occurred: {e}")
         session.rollback()
     finally:
         session.close()
