@@ -20,6 +20,7 @@ from movie_rec.models import (
     MovieCast,
     MovieData,
     MovieImage,
+    MovieRecommendationRelation,
     MovieRecommendations,
     MovieRecommendationsSearchList,
     MovieVideo,
@@ -83,7 +84,7 @@ def process_request_by_id(cast_processor, identifier, api_key):
         logging.info(f"Movie_ID {identifier} found in local database")
         movie_dict = movie_data.to_dict()
         movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
-        return jsonify(movie_dict)
+        return movie_dict
 
     logging.info(f"Movie_id {identifier} not found in local database")
     movie_data = search_movie_by_id(identifier, api_key)
@@ -94,11 +95,11 @@ def process_request_by_id(cast_processor, identifier, api_key):
         movie_dict["cast"] = cast_processor.get_movie_cast(
             get_stored_movie.uuid
         )
-        return jsonify(movie_dict)
+        return movie_dict
 
     logging.info(f"Movie_id {identifier} not found in OMDB")
     store_failed_request(identifier, None)
-    return jsonify({"error": f"Movie_id {identifier} not found"}), 404
+    return None
 
 
 def process_request_by_name(cast_processor, identifier,
@@ -123,7 +124,7 @@ def process_request_by_name(cast_processor, identifier,
             movie_dict["cast"] = cast_processor.get_movie_cast(
                 is_movie_local.uuid
             )
-            return jsonify(movie_dict)
+            return movie_dict
         else:
             # Store movie in local database
             store_new_movie(cast_processor, movie_data)
@@ -133,19 +134,24 @@ def process_request_by_name(cast_processor, identifier,
             movie_dict["cast"] = cast_processor.get_movie_cast(
                 get_stored_movie.uuid
             )
-            return jsonify(movie_dict)
+            return movie_dict
 
     logging.info(f"Movie_title {identifier} not found in OMDB")
     store_failed_request(identifier, year, rec_topic)
     return None
 
 
-def process_request(request_type, identifier,
-                    api_key, year=None, rec_topic=None):
+def process_request(request_type,
+                    identifier,
+                    api_key,
+                    year=None,
+                    rec_topic=None):
     cast_processor = CastProcessor(session)
     logging.info(f'Process request: {request_type}')
     if request_type == 'movie_id':
-        return process_request_by_id(cast_processor, identifier, api_key)
+        return process_request_by_id(cast_processor,
+                                     identifier,
+                                     api_key)
     elif request_type == 'movie_name':
         response = process_request_by_name(cast_processor, identifier,
                                            api_key, year, rec_topic)
@@ -374,3 +380,63 @@ def get_cast_info(movie_uuid):
                 cast_info['writers'].append(cast_name.name)
 
     return cast_info
+
+
+def remove_movie_by_uuid(movie_uuid):
+    try:
+        # Get movie data
+        movie_data = session.query(MovieData).filter_by(uuid=movie_uuid).first()
+
+        if not movie_data:  # if movie_data is None or doesn't exist
+            logging.warning(f"Movie with uuid {movie_uuid} not found.")
+            return
+
+        imdbid = movie_data.imdbid  # retrieve imdbid from the movie_data
+
+        # Remove movie-cast associations
+        session.query(MovieCast).filter(MovieCast.movie_uuid == movie_uuid).delete() # noqa
+
+        # Remove movie-recommendation relations
+        session.query(MovieData).filter(MovieData.uuid == movie_uuid).delete()
+
+        # Remove movie images
+        session.query(MovieImage).filter(MovieImage.imdbid == imdbid).delete()
+
+        # Remove movie videos
+        session.query(MovieVideo).filter(MovieVideo.imdbid == imdbid).delete()
+
+        session.commit()
+        logging.info(f'Removed all data related to uuid {movie_uuid} and imdbid {imdbid} Movie Data') # noqa
+    except Exception as e:
+        logging.error(f"Error occurred: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+def replace_movie_uuid(original_uuid, new_uuid):
+    """
+    Replace the movie_uuid in the MovieRecommendationRelation table.
+
+    Parameters:
+    - original_uuid (str): The original UUID that needs to be replaced.
+    - new_uuid (str): The new UUID value that will replace the original.
+
+    Returns:
+    - int: Number of rows updated.
+    """
+    try:
+        updated_rows = session.query(MovieRecommendationRelation) \
+                              .filter(MovieRecommendationRelation.
+                                      movie_uuid == original_uuid) \
+                              .update({MovieRecommendationRelation.
+                                       movie_uuid: new_uuid})
+
+        session.commit()
+        logging.info(f'REC UUID {str(original_uuid)} has been replaced with {str(new_uuid)}') # noqa
+        return updated_rows
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()

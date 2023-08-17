@@ -38,6 +38,8 @@ from movie_rec.movie_search import (
     get_recommendations,
     process_request,
     query_movie_by_uuid,
+    remove_movie_by_uuid,
+    replace_movie_uuid,
     store_blurb_to_recommendation,
     store_search_titles
 )
@@ -77,19 +79,18 @@ def hello():
         # check if value in count is 0 and if it is remove the item
         if int(recommendation['count']) == 0:
             recommendations.remove(recommendation)
-    return render_template(f'{user_agent}/index.html', recommendations=recommendations)
+    return render_template(f'{user_agent}/index.html',
+                           recommendations=recommendations)
 
 
 @app.route('/web/rec/<uuid>')
 def display_recommendation(uuid):
     device_type = get_device_type()
-    response = process_recommendation_by_uuid(uuid)
+    processed_recs = process_recommendation_by_uuid(uuid)
     response_blurb = process_recommendation_blurb(uuid)
-    if response.status_code == 200:
-        rec_movie_list = response.get_json()  # Extract the JSON data from the Response object
-        print(f"response_blurb{response_blurb}")
-        print(f"response_blurb_TYPE{type(response_blurb)}")
-        if response_blurb.status_code == 200:
+    if processed_recs is not None:
+        rec_movie_list = processed_recs.get_json()  # Extract the JSON data from the Response object # noqa
+        if response_blurb is not None:
             rec_blurb = response_blurb.get_json()
         else:
             rec_blurb = None
@@ -107,7 +108,14 @@ def movie_by_id():
     movie_id = request.args.get('id')
     if not movie_id:
         return jsonify({'error': 'Invalid movie id'}), 400
-    return process_request('movie_id', movie_id, OMDB_API_KEY)
+    movie_data = process_request(
+        request_type='movie_id',
+        identifier=movie_id,
+        api_key=OMDB_API_KEY)
+    if movie_data:
+        return jsonify(movie_data)
+    else:
+        return f'ID:{movie_id} Not Found', 404
 
 
 # Example: http://127.0.0.1:5000/api/get_movie_uuid?uuid=88841ced-35c5-4828-be5c-f0cfe4732192 # noqa
@@ -140,9 +148,13 @@ def movies_name():
     if year is None:
         return jsonify({'error': 'Invalid movie year'}), 400
     # TODO Drop year and search for title and compare to year in request if close then its right # noqa
-    response = process_request('movie_name', title, OMDB_API_KEY, year)
+    response = process_request(
+        request_type='movie_name',
+        identifier=title,
+        api_key=OMDB_API_KEY,
+        year=year)
     if response:
-        return response
+        return jsonify(response)
     else:
         return f'Title:{title} Year:{year} Not Found', 404
 
@@ -428,7 +440,10 @@ def get_recommendations_blurb():
     if not is_valid_uuid(uuid):
         return 'Invalid uuid', 400
     process_rec = process_recommendation_blurb(uuid)
-    return process_rec
+    if process_rec is None:
+        return {'No recommendation found for this UUID'}, 404
+    else:
+        return process_rec
 
 
 def process_recommendation_blurb(uuid):
@@ -443,7 +458,7 @@ def process_recommendation_blurb(uuid):
         logging.debug(recommendation_blurb)
         return jsonify({'blurb': recommendation_blurb})
     else:
-        return make_response('No recommendation found for this UUID', 404)
+        return None
 
 
 # http://localhost:5000/api/get_movie_videos?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True # noqa
@@ -500,6 +515,30 @@ def get_movie_images():
         return jsonify({'message': f'{response}'})
     else:
         return 'No recommendation found for this UUID', 404
+
+
+# Example: http://127.0.0.1:5000/api/replace_movie_id?imbdid=tt1392190&replace_uuid=88841ced-35c5-4828-be5c-f0cfe4732192 # noqa
+@app.route('/api/replace_movie_id')
+def replace_movie_by_id():
+    movie_id = request.args.get('imbdid')
+    replace_uuid = request.args.get('replace_uuid')
+    validate_uuid = is_valid_uuid(replace_uuid)
+    if not validate_uuid:
+        return jsonify({'error': 'Invalid uuid'}), 400
+    if not movie_id or not replace_uuid:
+        return jsonify({'error': 'Invalid movie id or uuid'}), 400
+    movie_data = process_request(
+        request_type='movie_id',
+        identifier=movie_id,
+        api_key=OMDB_API_KEY)
+    print(f'movie_data - {movie_data}')
+    if movie_data:
+        replace_movie_uuid(original_uuid=replace_uuid,
+                           new_uuid=movie_data['uuid'])
+        remove_movie_by_uuid(replace_uuid)
+        return jsonify(movie_data)
+    else:
+        return f'ID:{movie_id} Not Found', 404
 
 
 def setup_logging():

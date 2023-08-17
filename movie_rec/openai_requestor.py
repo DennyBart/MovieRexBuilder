@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from movie_rec.data_converter import format_recommendation_list
 from movie_rec.models import (
+    MovieData,
     MovieRecommendationRelation,
     MovieRecommendations,
     Base
@@ -97,8 +98,9 @@ def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
                                         movie['Movie'],
                                         omdb_api_key, movie['Year'],
                                         rec_topic)
-        if movie_details is not None:
-            data = json.loads(movie_details.data)
+        movie_json_details = json.loads(movie_details)
+        if movie_json_details is not None:
+            data = json.loads(movie_json_details.data)
             movie_uuid = data.get('uuid')
             movie_list.append(movie_uuid)
             logging.info(f"Movie Details: {movie_uuid}")
@@ -220,10 +222,10 @@ def get_new_recommendations(api_model: str, openai_api_key: str,
     return new_movie_data, new_values
 
 
-def get_recommendations_from_db(movie_type: str, value: int):
-    # Get movie recommendations from database
-    movie_recommendations = get_existing_recommendations(value=value,
-                                                         movie_type=movie_type)
+# def get_recommendations_from_db(movie_type: str, value: int):
+#     # Get movie recommendations from database
+#     movie_recommendations = get_existing_recommendations(value=value,
+#                                                          movie_type=movie_type)
 
 
 def generate_openai_response(api_model: str, openai_api_key: str,
@@ -272,7 +274,7 @@ def get_chatgpt_movie_rec(movie_type: str,
                           omdb_api_key: str,
                           openai_api_key: str) -> str:
     # TODO Remove value and set to a global variable int
-    movie_list_size_limit = 10
+    movie_list_size_limit = 20
     existing_recommendations = get_existing_recommendations(
         value=value,
         movie_type=movie_type
@@ -334,8 +336,12 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
 
 def get_related_movies(recommendation_uuid):
     # Query the relation table to get all associated movie UUIDs
-    movie_relations = session.query(MovieRecommendationRelation).filter_by(
-        recommendation_uuid=recommendation_uuid).all()
+    movie_relations = session.query(MovieRecommendationRelation) \
+        .join(MovieData, MovieRecommendationRelation.
+              movie_uuid == MovieData.uuid) \
+        .filter(MovieRecommendationRelation.
+                recommendation_uuid == recommendation_uuid) \
+        .filter(~MovieData.plot.in_(["N/A", " N/A"])).all()
 
     # Create a list to hold all the movie_uuid values
     related_movies = [relation.movie_uuid for relation in movie_relations]
