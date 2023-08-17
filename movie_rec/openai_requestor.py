@@ -98,8 +98,9 @@ def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
                                         movie['Movie'],
                                         omdb_api_key, movie['Year'],
                                         rec_topic)
-        if movie_details is not None:
-            data = json.loads(movie_details.data)
+        movie_json_details = json.loads(movie_details)
+        if movie_json_details is not None:
+            data = json.loads(movie_json_details.data)
             movie_uuid = data.get('uuid')
             movie_list.append(movie_uuid)
             logging.info(f"Movie Details: {movie_uuid}")
@@ -273,7 +274,7 @@ def get_chatgpt_movie_rec(movie_type: str,
                           omdb_api_key: str,
                           openai_api_key: str) -> str:
     # TODO Remove value and set to a global variable int
-    movie_list_size_limit = 10
+    movie_list_size_limit = 20
     existing_recommendations = get_existing_recommendations(
         value=value,
         movie_type=movie_type
