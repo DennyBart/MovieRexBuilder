@@ -1,4 +1,5 @@
 from datetime import datetime
+import hashlib
 from dotenv import load_dotenv
 import os
 import re
@@ -15,6 +16,7 @@ from movie_rec.cast_service import CastProcessor
 from movie_rec.image_video_service import MovieMediaProcessor
 
 from movie_rec.models import (
+    APIKey,
     Base,
     CastName,
     MovieCast,
@@ -440,3 +442,33 @@ def replace_movie_uuid(original_uuid, new_uuid):
         raise e
     finally:
         session.close()
+
+
+def is_valid_api_key(api_key):
+    if api_key is not None:
+        hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
+        key_record = session.query(APIKey).filter(
+            APIKey.hashed_key == hashed_key).first()
+        if key_record and key_record.expires_at > datetime.utcnow():
+            return True
+    return False
+
+
+def generate_and_store_api_key():
+    try:
+        # Generate a simple UUID based API key
+        api_key = str(uuid.uuid4())
+        hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
+        # Store the hashed key in the database
+        new_key_record = APIKey(hashed_key=hashed_key)
+        session.add(new_key_record)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+    # Return the raw API key to the user (it's the only time it'll be visible)
+    print(f'API-KEY = {api_key}')
+    return api_key

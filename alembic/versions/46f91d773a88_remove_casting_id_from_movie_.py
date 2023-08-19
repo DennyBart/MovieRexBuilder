@@ -21,4 +21,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.add_column('movie_recommendations', sa.Column('casting_id', sa.YOUR_DATA_TYPE, nullable=True))
+    op.add_column('movie_recommendations', sa.Column('casting_id', sa.String(36), nullable=True)) # noqa
