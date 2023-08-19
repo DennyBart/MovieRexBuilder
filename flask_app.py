@@ -545,6 +545,7 @@ def replace_movie_by_id():
         return f'ID:{movie_id} Not Found', 404
 
 
+# TODO: Secure this endpoint for generation
 # Example: http://127.0.0.1:5000/api/generate_api_key
 # @app.route('/api/generate_api_key')
 # def generate_api_key():
