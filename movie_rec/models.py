@@ -16,6 +16,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import text
 from datetime import datetime
+from sqlalchemy import Enum as SQLEnum
+
+from movie_rec.types import ContentType
 
 Base = declarative_base()
 
@@ -28,6 +31,7 @@ class CastName(Base):
                   nullable=False)
     name = Column(String(256), nullable=False)
     cast_type = Column(String(16), nullable=False)
+    vip = Column(Boolean, nullable=False, default=False)
     movies = relationship('MovieCast', back_populates='cast')
 
 
@@ -90,6 +94,7 @@ class MovieRecommendations(Base):
     topic_name = Column(String(256), nullable=False)
     date_generated = Column(DateTime, nullable=True)
     blurb = Column(Text)
+    genre = Column(String(256), nullable=True)
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
@@ -177,4 +182,16 @@ class APIKey(Base):
     id = Column(Integer, primary_key=True)
     hashed_key = Column(String(64), unique=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, default=text('CURRENT_TIMESTAMP + INTERVAL 30 DAY'))
+    expires_at = Column(DateTime, default=text(
+        'CURRENT_TIMESTAMP + INTERVAL 30 DAY'))
+
+
+class FeaturedContent(Base):
+    __tablename__ = 'featured_content'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    content_type = Column(SQLEnum(ContentType), nullable=False)
+    name = Column(String(256), nullable=True)
+    recommendation_uuid = Column(CHAR(36), ForeignKey(
+        'movie_recommendations.uuid'), nullable=False)
+    replaced_at = Column(DateTime, nullable=True)  # New column
