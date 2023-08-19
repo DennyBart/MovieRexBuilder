@@ -14,6 +14,8 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import text
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -167,3 +169,12 @@ class MovieVideo(Base):
     published_at = Column(DateTime, nullable=True)
     imdbid = Column(String(16), ForeignKey('movie_data.imdbid'))
     movie_data = relationship("MovieData", back_populates="videos")
+
+
+class APIKey(Base):
+    __tablename__ = 'api_key'
+
+    id = Column(Integer, primary_key=True)
+    hashed_key = Column(String(64), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, default=text('CURRENT_TIMESTAMP + INTERVAL 30 DAY'))

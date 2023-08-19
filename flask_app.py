@@ -29,6 +29,7 @@ from movie_rec.openai_requestor import (
 )
 from movie_rec.movie_search import (
     check_db,
+    generate_and_store_api_key,
     get_and_store_images,
     get_and_store_videos,
     get_movie_imdb_id_from_uuid,
@@ -36,6 +37,7 @@ from movie_rec.movie_search import (
     get_recommendation_blurb,
     get_recommendation_name,
     get_recommendations,
+    is_valid_api_key,
     process_request,
     query_movie_by_uuid,
     remove_movie_by_uuid,
@@ -520,6 +522,9 @@ def get_movie_images():
 # Example: http://127.0.0.1:5000/api/replace_movie_id?imbdid=tt1392190&replace_uuid=88841ced-35c5-4828-be5c-f0cfe4732192 # noqa
 @app.route('/api/replace_movie_id')
 def replace_movie_by_id():
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
     movie_id = request.args.get('imbdid')
     replace_uuid = request.args.get('replace_uuid')
     validate_uuid = is_valid_uuid(replace_uuid)
@@ -531,7 +536,6 @@ def replace_movie_by_id():
         request_type='movie_id',
         identifier=movie_id,
         api_key=OMDB_API_KEY)
-    print(f'movie_data - {movie_data}')
     if movie_data:
         replace_movie_uuid(original_uuid=replace_uuid,
                            new_uuid=movie_data['uuid'])
@@ -539,6 +543,14 @@ def replace_movie_by_id():
         return jsonify(movie_data)
     else:
         return f'ID:{movie_id} Not Found', 404
+
+
+# TODO: Secure this endpoint for generation
+# Example: http://127.0.0.1:5000/api/generate_api_key
+# @app.route('/api/generate_api_key')
+# def generate_api_key():
+#     data = generate_and_store_api_key()
+#     return jsonify(data), 200
 
 
 def setup_logging():
