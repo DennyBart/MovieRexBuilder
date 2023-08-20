@@ -20,6 +20,7 @@ from constants import (
     LOG_FILE,
 )
 from movie_rec.data_converter import format_recommendation_list
+from movie_rec.homepage_data import generate_movie_cast_homepage_data
 from movie_rec.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
@@ -30,6 +31,7 @@ from movie_rec.openai_requestor import (
 from movie_rec.movie_search import (
     check_db,
     generate_and_store_api_key,
+    generte_cast_data,
     get_and_store_images,
     get_and_store_videos,
     get_movie_imdb_id_from_uuid,
@@ -83,6 +85,12 @@ def hello():
             recommendations.remove(recommendation)
     return render_template(f'{user_agent}/index.html',
                            recommendations=recommendations)
+
+
+@app.route('/gen_data')
+def gen_data():
+    generte_cast_data()
+    return "Data generated"
 
 
 @app.route('/web/rec/<uuid>')

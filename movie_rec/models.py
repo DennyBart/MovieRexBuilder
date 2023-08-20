@@ -191,7 +191,8 @@ class FeaturedContent(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     content_type = Column(SQLEnum(ContentType), nullable=False)
-    name = Column(String(256), nullable=True)
+    group_title = Column(String(256), nullable=True)
     recommendation_uuid = Column(CHAR(36), ForeignKey(
         'movie_recommendations.uuid'), nullable=False)
     replaced_at = Column(DateTime, nullable=True)  # New column
+    live_list = Column(Boolean, default=True)

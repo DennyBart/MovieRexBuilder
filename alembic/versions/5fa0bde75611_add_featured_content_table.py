@@ -29,11 +29,12 @@ def upgrade():
         'featured_content',
         sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
         sa.Column('content_type', ContentType, nullable=False),
-        sa.Column('name', sa.String(256), nullable=True),
+        sa.Column('group_title', sa.String(256), nullable=True),
         sa.Column('recommendation_uuid', sa.CHAR(36),
                   sa.ForeignKey('movie_recommendations.uuid'),
                   nullable=False),
-        sa.Column('replaced_at', sa.DateTime, nullable=True)  # Added column
+        sa.Column('replaced_at', sa.DateTime, nullable=True),
+        sa.Column('live_list', sa.Boolean, nullable=False)
     )
 
     op.add_column('cast_name',

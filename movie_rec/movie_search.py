@@ -13,6 +13,7 @@ import logging
 import urllib.parse
 from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
+from movie_rec.homepage_data import generate_movie_cast_homepage_data
 from movie_rec.image_video_service import MovieMediaProcessor
 
 from movie_rec.models import (
@@ -28,6 +29,7 @@ from movie_rec.models import (
     MovieVideo,
     MoviesNotFound
 )
+from movie_rec.types import ContentType
 
 
 load_dotenv()
@@ -472,3 +474,7 @@ def generate_and_store_api_key():
     # Return the raw API key to the user (it's the only time it'll be visible)
     print(f'API-KEY = {api_key}')
     return api_key
+
+
+def generte_cast_data():
+    generate_movie_cast_homepage_data(session, 'director')
