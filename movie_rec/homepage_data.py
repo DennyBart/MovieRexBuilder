@@ -81,7 +81,8 @@ def generate_movie_cast_homepage_data(session: Session, cast_type: str):
 
             # Limit the number of unique recommendation_uuids
             # based on CAST_PAGE_LIMIT
-            limited_recommendation_uuids = random.sample(list_recommendation_uuids, min(CAST_PAGE_LIMIT, len(list_recommendation_uuids)))  # noqa
+            unique_recommendation_uuids = list(set(list_recommendation_uuids))
+            limited_recommendation_uuids = random.sample(unique_recommendation_uuids, min(CAST_PAGE_LIMIT, len(unique_recommendation_uuids)))  # noqa
 
             header = DIRECTOR_HOMEPAGE_HEADER if cast_type == 'director' else ACTOR_HOMEPAGE_HEADER  # noqa
 
