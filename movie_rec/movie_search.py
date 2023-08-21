@@ -8,6 +8,7 @@ import uuid
 from flask import jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
 import requests
 import logging
 import urllib.parse
@@ -20,8 +21,10 @@ from movie_rec.models import (
     APIKey,
     Base,
     CastName,
+    Genre,
     MovieCast,
     MovieData,
+    MovieGenre,
     MovieImage,
     MovieRecommendationRelation,
     MovieRecommendations,
@@ -205,14 +208,49 @@ def set_movie_topic_to_generated(movie_topic):
 
 
 def store_new_movie(cast_processor, movie_data):
-    new_movie = process_movie_data(cast_processor, movie_data)
-    logging.info(f"Storing new movie {new_movie.title}")
-    imdbid = str(new_movie.imdbid)
-    session.add(new_movie)
-    session.commit()
-    session.close()
-    get_and_store_videos(imdbid)
-    get_and_store_images(imdbid)
+    try:
+        new_movie = process_movie_data(cast_processor, movie_data)
+        logging.info(f"Storing new movie {new_movie.title}")
+        imdbid = str(new_movie.imdbid)
+        session.add(new_movie)
+        session.commit()
+        store_movie_genre(session=session, new_movie=new_movie, genre_string=str(new_movie.genre)) # noqa
+        get_and_store_videos(imdbid)
+        get_and_store_images(imdbid)
+    except IntegrityError as e:
+        logging.error(f"IntegrityError occurred: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+def store_movie_genre(session, new_movie, genre_string):
+    try:
+        genres = genre_string.split(', ')
+        
+        for genre_name in genres:
+            genre = session.query(Genre).filter_by(name=genre_name).first()
+            
+            if genre is None:
+                genre = Genre(name=genre_name)
+                session.add(genre)
+                session.commit()
+            
+            existing_relation = session.query(MovieGenre).filter_by(
+                movie_uuid=new_movie.uuid,
+                genre_id=genre.id
+            ).first()
+
+            if existing_relation is None:
+                new_movie_genre = MovieGenre(movie_uuid=new_movie.uuid, genre_id=genre.id)
+                session.add(new_movie_genre)
+                session.commit()
+
+            if genre not in new_movie.genres:
+                new_movie.genres.append(genre)
+
+    except IntegrityError as e:
+        session.rollback()
 
 
 def search_movie_by_id(movie_id, api_key):

@@ -75,6 +75,7 @@ class MovieData(Base):
     production = Column(String(256), nullable=True)
     website = Column(String(256), nullable=True)
     cast = relationship('MovieCast', back_populates='movie')
+    genres = relationship('Genre', secondary='movie_genre', back_populates='movies')
 
     def to_dict(self):
         return {
@@ -196,3 +197,19 @@ class FeaturedContent(Base):
         'movie_recommendations.uuid'), nullable=False)
     replaced_at = Column(DateTime, nullable=True)  # New column
     live_list = Column(Boolean, default=True)
+
+
+class Genre(Base):
+    __tablename__ = 'genre'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(64), unique=True, nullable=False)
+    movies = relationship('MovieData', secondary='movie_genre', back_populates='genres')
+
+
+class MovieGenre(Base):
+    __tablename__ = 'movie_genre'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    movie_uuid = Column(CHAR(36), ForeignKey('movie_data.uuid'), nullable=False)
+    genre_id = Column(Integer, ForeignKey('genre.id'), nullable=False)
+
+    __table_args__ = (UniqueConstraint('movie_uuid', 'genre_id', name='unique_movie_genre'),)
