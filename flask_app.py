@@ -28,6 +28,7 @@ from movie_rec.openai_requestor import (
 from movie_rec.movie_search import (
     check_db,
     generte_cast_data,
+    generte_rec_genre_data,
     get_and_store_images,
     get_and_store_videos,
     get_movie_imdb_id_from_uuid,
@@ -549,6 +550,21 @@ def replace_movie_by_id():
         return jsonify(movie_data)
     else:
         return f'ID:{movie_id} Not Found', 404
+
+
+@app.route('/api/generate_recommendations_genre')
+def generate_recommendations_genre():
+    recommendation_uuid = request.args.get('recommendation_uuid')
+
+    if not recommendation_uuid:
+        return jsonify({"error": "recommendation_uuid is required"}), 400
+
+    gen_rec_data = generte_rec_genre_data(recommendation_uuid)
+
+    if not gen_rec_data:
+        return jsonify({"error": "No such recommendation exists"}), 404
+
+    return jsonify(gen_rec_data.to_dict())
 
 
 # TODO: Secure this endpoint for generation

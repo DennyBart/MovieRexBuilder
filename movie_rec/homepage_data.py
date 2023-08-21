@@ -1,14 +1,19 @@
+from collections import Counter
 import random
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from movie_rec.models import FeaturedContent, MovieCast, MovieData, MovieRecommendationRelation
+from movie_rec.models import (FeaturedContent,
+                              Genre,
+                              MovieCast,
+                              MovieGenre,
+                              MovieRecommendationRelation,
+                              MovieRecommendations)
 from movie_rec.models import CastName
 from datetime import datetime
 from constants import (
     DIRECTOR_HOMEPAGE_HEADER,
     ACTOR_HOMEPAGE_HEADER,
     CAST_PAGE_LIMIT)
-from sqlalchemy.orm import joinedload
 
 
 def get_vip_cast(session: Session, cast_type: str):
@@ -33,7 +38,7 @@ def get_recommendations_by_vip_cast(session: Session,
                                     cast_type: str,
                                     limit: int):
     """
-    Fetches all the recommendation_uuids for movies directed by a VIP director, up to a given limit.
+    Fetches all the recommendation_uuids for movies directed by a VIP director, up to a given limit. # noqa
 
     :param session: SQLAlchemy Session object
     :param director_uuid: The UUID of the director
@@ -106,3 +111,38 @@ def generate_movie_cast_homepage_data(session: Session, cast_type: str):
             }
     else:
         return None
+
+
+def fetch_movie_uuids(session: Session, recommendation_uuid):
+    query = session.query(MovieRecommendationRelation.movie_uuid).filter(
+        MovieRecommendationRelation.recommendation_uuid == recommendation_uuid
+    )
+    return [record[0] for record in query.all()]
+
+
+def fetch_genres_for_movies(session: Session, movie_uuids):
+    genre_query = session.query(Genre.name).join(MovieGenre).filter(
+        MovieGenre.movie_uuid.in_(movie_uuids)
+    )
+    return [record[0] for record in genre_query.all()]
+
+
+def get_top_genres(genres):
+    genre_counter = Counter(genres)
+    return genre_counter.most_common(3)
+
+
+def update_recommendation(session: Session, recommendation_uuid, top_genres):
+    recommendation = session.query(MovieRecommendations).filter_by(
+        uuid=recommendation_uuid).first()
+
+    if not recommendation:
+        return None
+
+    for i, (genre_name, _) in enumerate(top_genres):
+        genre = session.query(Genre).filter_by(name=genre_name).first()
+        if genre:
+            setattr(recommendation, f'genre_{i+1}', genre.id)
+
+    session.commit()
+    return recommendation

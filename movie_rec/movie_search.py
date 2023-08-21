@@ -13,7 +13,7 @@ import logging
 import urllib.parse
 from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
-from movie_rec.homepage_data import generate_movie_cast_homepage_data
+from movie_rec.homepage_data import fetch_genres_for_movies, fetch_movie_uuids, generate_movie_cast_homepage_data, get_top_genres, update_recommendation
 from movie_rec.image_video_service import MovieMediaProcessor
 
 from movie_rec.models import (
@@ -514,5 +514,24 @@ def generate_and_store_api_key():
     return api_key
 
 
+# TODO Remove
 def generte_cast_data():
     generate_movie_cast_homepage_data(session, 'director')
+
+
+# TODO remove
+def generte_rec_genre_data(recommendation_uuid):
+    print(f'Generating genre data for recommendation_uuid {recommendation_uuid}')
+    movie_uuids = fetch_movie_uuids(session, recommendation_uuid)
+    print(f'Movie UUIDs: {str(movie_uuids)}')
+    genres = fetch_genres_for_movies(session, movie_uuids)
+    print(f'Genres: {str(genres)}')
+    top_genres = get_top_genres(genres)
+    print(f'Top Genres: {str(top_genres)}')
+
+    updated_recommendation = update_recommendation(session,
+                                                   recommendation_uuid,
+                                                   top_genres)
+    print("CloseSession")
+
+    return updated_recommendation
