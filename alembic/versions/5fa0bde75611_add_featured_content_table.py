@@ -41,12 +41,8 @@ def upgrade():
                   sa.Column('vip', sa.Boolean, nullable=False,
                             default=False, server_default=sa.text('0')))
 
-    op.add_column('movie_recommendations',
-                  sa.Column('genre', sa.String(256), nullable=True))
-
 
 def downgrade() -> None:
-    op.drop_column('movie_recommendations', 'genre')
     op.drop_column('cast_name', 'vip')
     op.drop_table('featured_content')
     ContentType.drop(op.get_bind(), checkfirst=False)

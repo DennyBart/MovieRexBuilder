@@ -33,8 +33,18 @@ def upgrade():
         sa.UniqueConstraint('movie_uuid', 'genre_id', name='unique_movie_genre') # noqa
     )
 
+    # add new columns to 'movie_recommendations' table
+    op.add_column('movie_recommendations', sa.Column('genre_1', sa.Integer, sa.ForeignKey('genre.id'), nullable=True)) # noqa
+    op.add_column('movie_recommendations', sa.Column('genre_2', sa.Integer, sa.ForeignKey('genre.id'), nullable=True)) # noqa
+    op.add_column('movie_recommendations', sa.Column('genre_3', sa.Integer, sa.ForeignKey('genre.id'), nullable=True)) # noqa
+
 
 def downgrade():
+    # remove newly added columns from 'movie_recommendations' table
+    op.drop_column('movie_recommendations', 'genre_3')
+    op.drop_column('movie_recommendations', 'genre_2')
+    op.drop_column('movie_recommendations', 'genre_1')
+
     # remove the 'movie_genre' table
     op.drop_table('movie_genre')
 

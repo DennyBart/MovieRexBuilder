@@ -75,7 +75,8 @@ class MovieData(Base):
     production = Column(String(256), nullable=True)
     website = Column(String(256), nullable=True)
     cast = relationship('MovieCast', back_populates='movie')
-    genres = relationship('Genre', secondary='movie_genre', back_populates='movies')
+    genres = relationship('Genre', secondary='movie_genre',
+                          back_populates='movies')
 
     def to_dict(self):
         return {
@@ -95,7 +96,14 @@ class MovieRecommendations(Base):
     topic_name = Column(String(256), nullable=False)
     date_generated = Column(DateTime, nullable=True)
     blurb = Column(Text)
-    genre = Column(String(256), nullable=True)
+    genre_1 = Column(Integer, ForeignKey('genre.id'), nullable=True)
+    genre_2 = Column(Integer, ForeignKey('genre.id'), nullable=True)
+    genre_3 = Column(Integer, ForeignKey('genre.id'), nullable=True)
+
+    # Relationships (if necessary)
+    genre_1_relation = relationship("Genre", foreign_keys=[genre_1])
+    genre_2_relation = relationship("Genre", foreign_keys=[genre_2])
+    genre_3_relation = relationship("Genre", foreign_keys=[genre_3])
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
@@ -203,13 +211,16 @@ class Genre(Base):
     __tablename__ = 'genre'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(64), unique=True, nullable=False)
-    movies = relationship('MovieData', secondary='movie_genre', back_populates='genres')
+    movies = relationship('MovieData', secondary='movie_genre',
+                          back_populates='genres')
 
 
 class MovieGenre(Base):
     __tablename__ = 'movie_genre'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    movie_uuid = Column(CHAR(36), ForeignKey('movie_data.uuid'), nullable=False)
+    movie_uuid = Column(CHAR(36), ForeignKey('movie_data.uuid'),
+                        nullable=False)
     genre_id = Column(Integer, ForeignKey('genre.id'), nullable=False)
 
-    __table_args__ = (UniqueConstraint('movie_uuid', 'genre_id', name='unique_movie_genre'),)
+    __table_args__ = (UniqueConstraint('movie_uuid', 'genre_id',
+                                       name='unique_movie_genre'),)
