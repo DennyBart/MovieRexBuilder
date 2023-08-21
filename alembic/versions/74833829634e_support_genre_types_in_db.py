@@ -28,9 +28,9 @@ def upgrade():
     op.create_table(
         'movie_genre',
         sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column('movie_uuid', sa.CHAR(36), sa.ForeignKey('movie_data.uuid'), nullable=False),
-        sa.Column('genre_id', sa.Integer, sa.ForeignKey('genre.id'), nullable=False),
-        sa.UniqueConstraint('movie_uuid', 'genre_id', name='unique_movie_genre')
+        sa.Column('movie_uuid', sa.CHAR(36), sa.ForeignKey('movie_data.uuid'), nullable=False), # noqa
+        sa.Column('genre_id', sa.Integer, sa.ForeignKey('genre.id'), nullable=False), # noqa
+        sa.UniqueConstraint('movie_uuid', 'genre_id', name='unique_movie_genre') # noqa
     )
 
 

@@ -73,7 +73,8 @@ def add_info(output, data_dict):
     output['runtime'] = data_dict.get('runtime', None)
 
 
-def format_recommendation_list(data_list, rec_data=None, cast=False, plot=False,
+def format_recommendation_list(data_list, rec_data=None,
+                               cast=False, plot=False,
                                media=False, info=False):
     output_list = []
     for data_json in data_list:

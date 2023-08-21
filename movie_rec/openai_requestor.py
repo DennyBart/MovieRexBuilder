@@ -94,16 +94,17 @@ def create_movie_list(response):
 def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
     movie_list = []
     for movie in movies:
-        movie_details = process_request('movie_name',
-                                        movie['Movie'],
-                                        omdb_api_key, movie['Year'],
-                                        rec_topic)
-        movie_json_details = json.loads(movie_details)
-        if movie_json_details is not None:
-            data = json.loads(movie_json_details.data)
-            movie_uuid = data.get('uuid')
-            movie_list.append(movie_uuid)
-            logging.info(f"Movie Details: {movie_uuid}")
+        movie_data = process_request('movie_name',
+                                     movie['Movie'],
+                                     omdb_api_key, movie['Year'],
+                                     rec_topic)
+        if movie_data:
+            movie_uuid = movie_data['uuid']  # Assuming 'uuid' is a key in the 'data'  # noqa
+            if movie_uuid:
+                movie_list.append(movie_uuid)
+                logging.info(f"Movie Details: {movie_uuid}")
+        else:
+            logging.warning(f"Failed to fetch details for movie: {movie['Movie']}") # noqa
     return movie_list
 
 
@@ -277,8 +278,8 @@ def get_chatgpt_movie_rec(movie_type: str,
     movie_list_size_limit = 20
     existing_recommendations = get_existing_recommendations(
         value=value,
-        movie_type=movie_type
-        )
+        movie_type=movie_type,
+        uuid=None)
     if existing_recommendations is not None:
         return existing_recommendations
     num_attempts = 0
@@ -327,7 +328,7 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
         )
 
     if movie_recommendation is None:
-        return None, None
+        return None, None, None
     else:
         return (movie_recommendation.uuid,
                 movie_recommendation.count,
@@ -372,7 +373,6 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                    OMDB_API_KEY, OPENAI_API_KEY):
     processed_titles = []
     count = 0
-
     for title in titles:
         if count == limit:
             return processed_titles

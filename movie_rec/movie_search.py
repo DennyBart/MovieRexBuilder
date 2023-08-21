@@ -5,7 +5,6 @@ import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from flask import jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
@@ -32,7 +31,6 @@ from movie_rec.models import (
     MovieVideo,
     MoviesNotFound
 )
-from movie_rec.types import ContentType
 
 
 load_dotenv()
@@ -120,7 +118,7 @@ def process_request_by_name(cast_processor, identifier,
         movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
         logging.debug(f"Movie cast: {movie_dict['cast']} - "
                       f"uuid {movie_data.uuid}")
-        return jsonify(movie_dict)
+        return movie_dict
     logging.info(f"Movie_title {identifier} not found in local database")
     movie_data = search_movie_by_title(identifier, year, api_key)
     if movie_data and movie_data.get('Type') != 'series' and movie_data.get('Type') != 'episode': # noqa
@@ -160,10 +158,10 @@ def process_request(request_type,
                                      identifier,
                                      api_key)
     elif request_type == 'movie_name':
-        response = process_request_by_name(cast_processor, identifier,
-                                           api_key, year, rec_topic)
-        if response:
-            return response
+        process_movie_data = process_request_by_name(cast_processor,
+                                                     identifier,
+                                                     api_key, year, rec_topic)
+        return process_movie_data
 
 
 def query_movie_by_id(identifier):
@@ -227,29 +225,30 @@ def store_new_movie(cast_processor, movie_data):
 def store_movie_genre(session, new_movie, genre_string):
     try:
         genres = genre_string.split(', ')
-        
+
         for genre_name in genres:
             genre = session.query(Genre).filter_by(name=genre_name).first()
-            
+
             if genre is None:
                 genre = Genre(name=genre_name)
                 session.add(genre)
                 session.commit()
-            
+
             existing_relation = session.query(MovieGenre).filter_by(
                 movie_uuid=new_movie.uuid,
                 genre_id=genre.id
             ).first()
 
             if existing_relation is None:
-                new_movie_genre = MovieGenre(movie_uuid=new_movie.uuid, genre_id=genre.id)
+                new_movie_genre = MovieGenre(movie_uuid=new_movie.uuid,
+                                             genre_id=genre.id)
                 session.add(new_movie_genre)
                 session.commit()
 
             if genre not in new_movie.genres:
                 new_movie.genres.append(genre)
 
-    except IntegrityError as e:
+    except IntegrityError as e: # noqa
         session.rollback()
 
 
@@ -427,7 +426,8 @@ def get_cast_info(movie_uuid):
 def remove_movie_by_uuid(movie_uuid):
     try:
         # Get movie data
-        movie_data = session.query(MovieData).filter_by(uuid=movie_uuid).first()
+        movie_data = session.query(MovieData).filter_by(
+            uuid=movie_uuid).first()
 
         if not movie_data:  # if movie_data is None or doesn't exist
             logging.warning(f"Movie with uuid {movie_uuid} not found.")

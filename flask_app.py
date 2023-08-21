@@ -7,9 +7,7 @@ from flask import (
     jsonify,
     request,
     render_template,
-    make_response,
 )
-import requests
 from constants import (
     GENERATE_PAGE_BLURB,
     GENERATION_REC_TITLES,
@@ -20,7 +18,6 @@ from constants import (
     LOG_FILE,
 )
 from movie_rec.data_converter import format_recommendation_list
-from movie_rec.homepage_data import generate_movie_cast_homepage_data
 from movie_rec.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
@@ -30,7 +27,6 @@ from movie_rec.openai_requestor import (
 )
 from movie_rec.movie_search import (
     check_db,
-    generate_and_store_api_key,
     generte_cast_data,
     get_and_store_images,
     get_and_store_videos,
@@ -110,8 +106,8 @@ def display_recommendation(uuid):
     else:
         return "Error fetching the recommendation", 404
 
-# API Endpoints
 
+# API Endpoints
 # Example: http://127.0.0.1:5000/api/get_movie_id?id=tt1392190
 @app.route('/api/get_movie_id')
 def movie_by_id():
@@ -343,9 +339,11 @@ def provide_movie_recommendation_titles():
 def generate_recs_in_db():
     logging.info('Generating recommendations from list')
     limit, value = get_limit_and_value(request)
+    print(limit, value)
 
     try:
         titles = get_non_generated_movie_topics()
+        print(titles)
     except ValueError as e:
         return {'error': str(e)}, 400
 
