@@ -21,6 +21,7 @@ from constants import (
     TOP_MOVIES_FORMAT
 )
 from movie_rec.movie_search import (
+    generte_rec_genre_data,
     process_request,
     query_movie_by_uuid,
     set_movie_topic_to_generated
@@ -129,6 +130,7 @@ def store_movie_recommendation(movie_list, movie_type, total):
         session.add(new_movie_recommendation)
     logging.info(f"New Movie Recommendation: {movie_type}")
     session.commit()
+    return rec_uuid
 
 
 def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
@@ -264,8 +266,11 @@ def process_new_recommendations(movie_data: list,
     movies = json.loads(resp_json)
 
     movie_list = fetch_movie_details(movies, omdb_api_key, movie_type)
-    store_movie_recommendation(movie_list, movie_type, total)
-    return movie_list
+    rec_uuid = store_movie_recommendation(movie_list, movie_type, total)
+    print(f'New Movie Recommendation: {movie_type} - ')
+    print(rec_uuid)
+    # generte_rec_genre_data(str(rec_uuid))
+    return movie_list, rec_uuid
 
 
 def get_chatgpt_movie_rec(movie_type: str,
@@ -281,7 +286,7 @@ def get_chatgpt_movie_rec(movie_type: str,
         movie_type=movie_type,
         uuid=None)
     if existing_recommendations is not None:
-        return existing_recommendations
+        return existing_recommendations, None
     num_attempts = 0
     while num_attempts < 3:
         try:
@@ -293,12 +298,13 @@ def get_chatgpt_movie_rec(movie_type: str,
                                  f"Only {len(new_recommendations)} movies "
                                  f"were found.")
             elif new_recommendations is not None:
-                return process_new_recommendations(
+                movie_list, rec_uuid = process_new_recommendations(
                     new_recommendations, omdb_api_key, movie_type, rec_total)
+                return movie_list, rec_uuid
         except ValueError:
             num_attempts += 1
 
-    return "Error: Failed to retrieve movie recommendations."
+    return None, None
 
 
 def check_movie_recommendation(search_term=None, uuid=None, value=None):
@@ -388,7 +394,7 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
             {'role': 'user', 'content': f'List {combined_message}'}
         ]
         try:
-            get_chatgpt_movie_rec(
+            movie_list, rec_uuid = get_chatgpt_movie_rec(
                 movie_type,
                 value,
                 input_message,
@@ -402,6 +408,8 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
             continue
 
         set_movie_topic_to_generated(movie_type)
+        if rec_uuid:
+            generte_rec_genre_data(str(rec_uuid))
         logging.info(f'Completed Processing {title}')
         count += 1
 

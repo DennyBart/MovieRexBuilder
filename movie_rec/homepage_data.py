@@ -1,4 +1,5 @@
 from collections import Counter
+import logging
 import random
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -143,6 +144,7 @@ def update_recommendation(session: Session, recommendation_uuid, top_genres):
         genre = session.query(Genre).filter_by(name=genre_name).first()
         if genre:
             setattr(recommendation, f'genre_{i+1}', genre.id)
+    logging.info(f'Updated recommendation {recommendation_uuid} with genres')
 
     session.commit()
     return recommendation

@@ -97,6 +97,7 @@ def display_recommendation(uuid):
     response_blurb = process_recommendation_blurb(uuid)
     if processed_recs is not None:
         rec_movie_list = processed_recs.get_json()  # Extract the JSON data from the Response object # noqa
+        print(f'Recommendation processed_recs: {rec_movie_list}')
         if response_blurb is not None:
             rec_blurb = response_blurb.get_json()
         else:
@@ -209,12 +210,12 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
     logging.info(f"Existing recommendations: {existing_recommendations}")
     if existing_recommendations:
         return jsonify(existing_recommendations)
-    movie_list = get_chatgpt_movie_rec(movie_type,
-                                       value,
-                                       input_message,
-                                       OPENAI_API_MODEL,
-                                       OMDB_API_KEY,
-                                       OPENAI_API_KEY)
+    movie_list, rec_uuid = get_chatgpt_movie_rec(movie_type,
+                                                 value,
+                                                 input_message,
+                                                 OPENAI_API_MODEL,
+                                                 OMDB_API_KEY,
+                                                 OPENAI_API_KEY)
     return jsonify(movie_list)
 
 
@@ -406,6 +407,7 @@ def process_recommendation_by_uuid(uuid):
             )
         if existing_recommendations:
             # Format json data
+            # TODO Return in a better format
             return jsonify(existing_recommendations)
         else:
             return {'error': 'No recommendations found'}, 404

@@ -40,13 +40,16 @@ def upgrade():
 
 
 def downgrade():
-    # remove newly added columns from 'movie_recommendations' table
+    # 1. Drop the foreign key constraints
+    op.drop_constraint('movie_recommendations_ibfk_1', 'movie_recommendations', type_='foreignkey') # noqa
+    op.drop_constraint('movie_recommendations_ibfk_2', 'movie_recommendations', type_='foreignkey') # noqa
+    op.drop_constraint('movie_recommendations_ibfk_3', 'movie_recommendations', type_='foreignkey') # noqa
+
+    # 2. Remove the columns
     op.drop_column('movie_recommendations', 'genre_3')
     op.drop_column('movie_recommendations', 'genre_2')
     op.drop_column('movie_recommendations', 'genre_1')
 
-    # remove the 'movie_genre' table
+    # Remove the 'movie_genre' and 'genre' tables
     op.drop_table('movie_genre')
-
-    # remove the 'genre' table
     op.drop_table('genre')

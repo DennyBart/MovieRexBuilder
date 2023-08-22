@@ -23,6 +23,7 @@ def init_output(data_dict):
         'uuid': data_dict.get('uuid', None),
         'year': data_dict.get('year', None),
         'genre': data_dict.get('genre', None),
+        'metascore': data_dict.get('metascore', None),
     }
 
 
@@ -98,4 +99,5 @@ def format_recommendation_list(data_list, rec_data=None,
 
         output_list.append(output)
 
-    return output_list
+    sorted_movies = sorted(output_list, key=lambda x: x['metascore'] if x['metascore'] is not None else -1, reverse=True)
+    return sorted_movies
