@@ -13,7 +13,11 @@ import logging
 import urllib.parse
 from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
-from movie_rec.homepage_data import fetch_genres_for_movies, fetch_movie_uuids, generate_movie_cast_homepage_data, get_top_genres, update_recommendation
+from movie_rec.homepage_data import (fetch_genres_for_movies,
+                                     fetch_movie_uuids,
+                                     generate_movie_cast_homepage_data,
+                                     get_top_genres,
+                                     update_recommendation)
 from movie_rec.image_video_service import MovieMediaProcessor
 
 from movie_rec.models import (
@@ -510,7 +514,6 @@ def generate_and_store_api_key():
         session.close()
 
     # Return the raw API key to the user (it's the only time it'll be visible)
-    print(f'API-KEY = {api_key}')
     return api_key
 
 

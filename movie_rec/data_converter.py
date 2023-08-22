@@ -99,5 +99,5 @@ def format_recommendation_list(data_list, rec_data=None,
 
         output_list.append(output)
 
-    sorted_movies = sorted(output_list, key=lambda x: x['metascore'] if x['metascore'] is not None else -1, reverse=True)
+    sorted_movies = sorted(output_list, key=lambda x: x['metascore'] if x['metascore'] is not None else -1, reverse=True) # noqa
     return sorted_movies

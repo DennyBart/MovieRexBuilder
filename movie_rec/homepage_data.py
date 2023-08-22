@@ -24,7 +24,6 @@ def get_vip_cast(session: Session, cast_type: str):
     :param session: SQLAlchemy Session object
     :return: List of VIP cast members
     """
-    print(str(cast_type))
     if cast_type.lower() == 'director' or cast_type.lower() == 'actor':
         return session.query(CastName).filter(
             func.lower(CastName.cast_type) == cast_type.lower(),
@@ -62,7 +61,6 @@ def get_recommendations_by_vip_cast(session: Session,
         MovieRecommendationRelation.recommendation_uuid).filter(
         MovieRecommendationRelation.movie_uuid.in_(movie_uuids)
     ).limit(limit).all()
-    print(recommendations)
 
     # 4. Extract and return the recommendation_uuids
     recommendation_uuids = [rec.recommendation_uuid for rec in recommendations]
@@ -71,7 +69,6 @@ def get_recommendations_by_vip_cast(session: Session,
 
 def generate_movie_cast_homepage_data(session: Session, cast_type: str):
     vip_cast_list = get_vip_cast(session, cast_type)
-    print(f'VIP Cast List: {str(vip_cast_list)}')
 
     if vip_cast_list:
         random_cast_vip = random.choice(vip_cast_list)

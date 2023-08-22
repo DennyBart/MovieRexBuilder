@@ -97,7 +97,6 @@ def display_recommendation(uuid):
     response_blurb = process_recommendation_blurb(uuid)
     if processed_recs is not None:
         rec_movie_list = processed_recs.get_json()  # Extract the JSON data from the Response object # noqa
-        print(f'Recommendation processed_recs: {rec_movie_list}')
         if response_blurb is not None:
             rec_blurb = response_blurb.get_json()
         else:
@@ -341,11 +340,9 @@ def provide_movie_recommendation_titles():
 def generate_recs_in_db():
     logging.info('Generating recommendations from list')
     limit, value = get_limit_and_value(request)
-    print(limit, value)
 
     try:
         titles = get_non_generated_movie_topics()
-        print(titles)
     except ValueError as e:
         return {'error': str(e)}, 400
 

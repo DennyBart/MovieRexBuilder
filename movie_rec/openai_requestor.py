@@ -267,9 +267,6 @@ def process_new_recommendations(movie_data: list,
 
     movie_list = fetch_movie_details(movies, omdb_api_key, movie_type)
     rec_uuid = store_movie_recommendation(movie_list, movie_type, total)
-    print(f'New Movie Recommendation: {movie_type} - ')
-    print(rec_uuid)
-    # generte_rec_genre_data(str(rec_uuid))
     return movie_list, rec_uuid
 
 
