@@ -2,7 +2,7 @@ from collections import Counter
 import logging
 import random
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import and_, func
 from movie_rec.models import (FeaturedContent,
                               Genre,
                               MovieCast,
@@ -11,10 +11,12 @@ from movie_rec.models import (FeaturedContent,
                               MovieRecommendations)
 from movie_rec.models import CastName
 from datetime import datetime
+from random import choice
 from constants import (
     DIRECTOR_HOMEPAGE_HEADER,
     ACTOR_HOMEPAGE_HEADER,
     CAST_PAGE_LIMIT)
+from movie_rec.types import ContentType
 
 
 def get_vip_cast(session: Session, cast_type: str):
@@ -145,3 +147,43 @@ def update_recommendation(session: Session, recommendation_uuid, top_genres):
 
     session.commit()
     return recommendation
+
+
+def get_genre(session: Session, genre_name=None):    
+    if genre_name:
+        genre = session.query(Genre).filter(Genre.name.ilike(genre_name)).first()
+        if genre:
+            return genre
+
+    # Ensure that the query actually returns something before choosing
+    all_genres = session.query(Genre).all()
+    if all_genres:
+        return choice(all_genres)
+    else:
+        return None  # Handle this case appropriately
+
+
+def get_movie_recommendations(session: Session, genre, num_items=10):
+    return session.query(MovieRecommendations).filter_by(
+        genre_1=genre.id).limit(num_items).all()
+
+
+def clear_previous_featured_content(session: Session, genre):
+    session.query(FeaturedContent).filter(
+        and_(
+            FeaturedContent.content_type == 'genre'
+        )
+    ).delete()
+    session.commit()
+
+
+def add_featured_content(session: Session, genre, uuids):
+    for u in uuids:
+        content = FeaturedContent(
+            content_type=ContentType.GENRE.value,
+            group_title=f"Featured in {genre.name}",
+            recommendation_uuid=u,
+            replaced_at=datetime.utcnow()
+        )
+        session.add(content)
+    session.commit()

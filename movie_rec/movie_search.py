@@ -13,9 +13,9 @@ import logging
 import urllib.parse
 from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
-from movie_rec.homepage_data import (fetch_genres_for_movies,
+from movie_rec.homepage_data import (add_featured_content, clear_previous_featured_content, fetch_genres_for_movies,
                                      fetch_movie_uuids,
-                                     generate_movie_cast_homepage_data,
+                                     generate_movie_cast_homepage_data, get_genre, get_movie_recommendations,
                                      get_top_genres,
                                      update_recommendation)
 from movie_rec.image_video_service import MovieMediaProcessor
@@ -533,3 +533,12 @@ def generte_rec_genre_data(recommendation_uuid):
                                                    top_genres)
 
     return updated_recommendation
+
+
+def generate_genre_homepage_data():
+    genre_to_search = "Action"  # Replace this with the genre you are interested in or None
+    genre = get_genre(session, genre_to_search)
+    recommendations = get_movie_recommendations(session, genre)
+    uuid_list = [rec.uuid for rec in recommendations]
+    clear_previous_featured_content(session, genre)
+    add_featured_content(session, genre, uuid_list)

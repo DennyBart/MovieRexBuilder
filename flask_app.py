@@ -27,6 +27,7 @@ from movie_rec.openai_requestor import (
 )
 from movie_rec.movie_search import (
     check_db,
+    generate_genre_homepage_data,
     generte_cast_data,
     generte_rec_genre_data,
     get_and_store_images,
@@ -84,9 +85,10 @@ def hello():
                            recommendations=recommendations)
 
 
-@app.route('/gen_data')
+@app.route('/api/gen_data')
 def gen_data():
     generte_cast_data()
+    generate_genre_homepage_data()
     return "Data generated"
 
 
@@ -572,6 +574,24 @@ def generate_recommendations_genre():
 # def generate_api_key():
 #     data = generate_and_store_api_key()
 #     return jsonify(data), 200
+
+
+def frontpage_reccomendations():
+    search = request.args.get('search')
+    limit = request.args.get('limit', type=int, default=50)
+    offset = request.args.get('offset', type=int, default=0)
+    blurb = request.args.get('blurb', type=bool, default=False)
+
+    recommendations = get_recommendations(
+        search=search, limit=limit, offset=offset
+    )
+
+    results = [recommendation.to_dict() for recommendation in recommendations]
+    for result in results:
+        if not blurb and 'blurb' in result:
+            del result['blurb']
+
+    return jsonify(results)
 
 
 def setup_logging():
