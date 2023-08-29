@@ -77,6 +77,19 @@
             height: 100%; /* This ensures the link takes the entire height of the div */
         }
 
+        .row-title {
+            font-family: 'Roboto', sans-serif;
+            color: white;  /* Optional: Style it as you see fit */
+            font-size: 1.5em;
+            margin-right: 20px;
+            margin-left: 10px; /* Adjust as needed */
+            flex-shrink: 0;
+        }
+        .replaced-at {
+            font-size: 0.8em;
+            margin-left: 20px; /* Adjust as needed */
+            color: whitesmoke;  /* Optional: Style it as you see fit */
+        }
 
         .recommendation:hover {
             transform: scale(1.05);
@@ -150,23 +163,33 @@
         <h1><a href="/">MovieRec</a></h1>
     </header>
 
-    <div class="recommendation-container">
-        {% set counter = 0 %}
-        {% for rec in recommendations %}
-        <div class="recommendation">
-            <a href="/web/rec/{{ rec.uuid }}">
-                <img src="{{ url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
-                <div class="rec-content">
-                    <div class="topic">{{ rec.topic_name }}</div>
-                </div>
-            </a>
+    <!-- Loop through recommendation groups -->
+    {% for title, rec_group in recommendations.items() %}
+    <section>
+        <!-- Display title and replaced_at date for each group -->
+        <div class="row">
+            <h2 class="row-title">{{ title }}</h2>
+            <div class="replaced-at">Published: {{ rec_group[0].replaced_at_date }}</div>
         </div>
-        {% set counter = counter + 1 %}
-        {% if counter % 5 == 0 %}
-            <!-- Your ad code here -->
-        {% endif %}
-        {% endfor %}
-    </div>
+        
+        <div class="recommendation-container">
+            {% set counter = 0 %}
+            {% for rec in rec_group %}
+            <div class="recommendation">
+                <a href="/web/rec/{{ rec.topic_uuid }}">
+                    <img src="{{ rec.recommendation_image if rec.recommendation_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
+                    <div class="rec-content">
+                        <div class="topic">{{ rec.topic_name }}</div>
+                    </div>
+                </a>
+            </div>
+            {% set counter = counter + 1 %}
+            {% if counter % 5 == 0 %}
+                <!-- Your ad code here -->
+            {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
 </body>
-
 </html>

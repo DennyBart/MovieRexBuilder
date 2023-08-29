@@ -2,7 +2,7 @@ from collections import Counter
 import logging
 import random
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from movie_rec.models import (FeaturedContent,
                               Genre,
                               MovieCast,
@@ -81,15 +81,15 @@ def generate_movie_cast_homepage_data(session: Session, cast_type: str):
             # Delete existing entries with the same cast_type
             # TODO - This is a temporary solution. We need to update
             # the existing entries with the new ones. No empyt data at any time
-            session.query(FeaturedContent).filter_by(content_type=cast_type).delete() # noqa
-            session.commit()
+            # session.query(FeaturedContent).filter_by(content_type=cast_type).delete() # noqa
+            # session.commit()
 
             # Limit the number of unique recommendation_uuids
             # based on CAST_PAGE_LIMIT
             unique_recommendation_uuids = list(set(list_recommendation_uuids))
             limited_recommendation_uuids = random.sample(unique_recommendation_uuids, min(CAST_PAGE_LIMIT, len(unique_recommendation_uuids)))  # noqa
 
-            header = DIRECTOR_HOMEPAGE_HEADER if cast_type == 'director' else ACTOR_HOMEPAGE_HEADER  # noqa
+            header = DIRECTOR_HOMEPAGE_HEADER if cast_type.lower() == 'director' else ACTOR_HOMEPAGE_HEADER  # noqa
 
             # Populate FeaturedContent table
             for rec_uuid in limited_recommendation_uuids:
@@ -164,8 +164,13 @@ def get_genre(session: Session, genre_name=None):
 
 
 def get_movie_recommendations(session: Session, genre, num_items=10):
-    return session.query(MovieRecommendations).filter_by(
-        genre_1=genre.id).limit(num_items).all()
+    return session.query(MovieRecommendations).filter(
+        or_(
+            MovieRecommendations.genre_1 == genre.id,
+            MovieRecommendations.genre_2 == genre.id,
+            MovieRecommendations.genre_3 == genre.id
+        )
+    ).limit(num_items).all()
 
 
 def clear_previous_featured_content(session: Session, genre):

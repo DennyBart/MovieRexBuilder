@@ -615,6 +615,11 @@ def generate_genre_homepage_data():
         print("No recommendations found after {} retries".format(max_retries))
 
 
+def fetch_genre_name_by_id(genre_id):
+    genre = session.query(Genre).filter(Genre.id == genre_id).first()
+    return genre.name if genre else None
+
+
 def fetch_recommendations():
     recommendations = {}
 
@@ -623,21 +628,30 @@ def fetch_recommendations():
         joinedload(FeaturedContent.movie_recommendation)
     ).all()
 
-    # for featured_content in featured_contents:
-    #     recommendation = featured_content.movie_recommendation
-    #     topic_name = recommendation.topic_name
+    for featured_content in featured_contents:
+        recommendation = featured_content.movie_recommendation
+        group_title = featured_content.group_title
 
-    #     if topic_name not in recommendations:
-    #         recommendations[topic_name] = []
+        if group_title not in recommendations:
+            recommendations[group_title] = []
 
-    #     # Add only the required data from FeaturedContent and MovieRecommendations
-    #     recommendations[topic_name].append({
-    #         "group_title": featured_content.group_title,
-    #         "replaced_at": featured_content.replaced_at,
-    #         "topic_name": recommendation.topic_name,
-    #         "genre_1": recommendation.genre_1,
-    #         "genre_2": recommendation.genre_2,
-    #         "genre_3": recommendation.genre_3
-    #     })
+        genre_1_name = fetch_genre_name_by_id(recommendation.genre_1)
+        genre_2_name = fetch_genre_name_by_id(recommendation.genre_2)
+        genre_3_name = fetch_genre_name_by_id(recommendation.genre_3)
 
-    # return recommendations
+        # Convert the DateTime object to a string in MM-DD-YY format
+        replaced_at_date = None
+        if featured_content.replaced_at:
+            replaced_at_date = featured_content.replaced_at.strftime('%m-%d-%y')
+
+        # Add only the required data from FeaturedContent and MovieRecommendations
+        recommendations[group_title].append({
+            "topic_name": recommendation.topic_name,
+            "topic_uuid": recommendation.uuid,
+            "genre_1": genre_1_name,
+            "genre_2": genre_2_name,
+            "genre_3": genre_3_name,
+            "replaced_at_date": replaced_at_date  # Now it contains the date in MM-DD-YY format
+        })
+
+    return recommendations

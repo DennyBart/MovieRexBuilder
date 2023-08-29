@@ -51,6 +51,7 @@ def update_vip_status(names_list, cast_type='actor'):
     for line in names_list:
         # Remove numeric prefixes (if present) and extra spaces
         name = re.sub(r'^\d+\.\s*', '', line).strip()
+        print(name)
         
         cast_entry = session.query(CastName).filter(CastName.name == name, CastName.cast_type == cast_type).first()
         
@@ -74,11 +75,11 @@ def update_vip_status(names_list, cast_type='actor'):
 
 if __name__ == "__main__":
     # Read the list of names from a file
-    with open("actor_names_list.txt", "r") as f:
+    with open("dir_names_list.txt", "r") as f:
         names_list = [line.strip() for line in f.readlines()]
 
     # Update the VIP status
-    not_found = update_vip_status(names_list, cast_type='director')
+    not_found = update_vip_status(names_list, cast_type='DIRECTOR')
 
     # Output the list of names not found
     if not_found:

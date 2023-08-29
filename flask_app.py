@@ -76,19 +76,14 @@ def get_device_type():
 
 @app.route('/')
 def hello():
-    user_agent = get_device_type()
-    recommendations = list_reccomendations().get_json()
-    for recommendation in recommendations:
-        # check if value in count is 0 and if it is remove the item
-        if int(recommendation['count']) == 0:
-            recommendations.remove(recommendation)
-    return render_template(f'{user_agent}/index.html',
-                           recommendations=recommendations)
+    user_agent = get_device_type() # Assuming this function already exists in your code
+    recommendations = fetch_recommendations()
+    return render_template(f'{user_agent}/index.html', recommendations=recommendations)
 
 
 @app.route('/api/gen_data')
 def gen_data():
-    # generte_cast_data('actor')
+    generte_cast_data('actor')
     generte_cast_data('director')
     generate_genre_homepage_data()
     return "Data generated"
