@@ -231,29 +231,35 @@ def get_new_recommendations(api_model: str, openai_api_key: str,
 #                                                          movie_type=movie_type)
 
 
-def generate_openai_response(api_model: str, openai_api_key: str,
-                             input_message=str, retry_limit=3):
+def generate_openai_response(api_model: str, openai_api_key: str, input_message=str, retry_limit=3):
     openai.api_key = openai_api_key
     retries = 0
+    response = None  # Initialize response to None
+
     logging.info(f"OpenAI Request Message: {input_message}")
+
     while retries < retry_limit:
         try:
-            response = openai.ChatCompletion.create(
-                model=api_model,
-                messages=input_message
-            )
+            response = openai.ChatCompletion.create(model=api_model, messages=input_message)
             break  # Break out of the loop if the request is successful
         except openai.error.RateLimitError:
             time.sleep(5)  # Wait for 5 seconds before retrying
-            retries += 1
         except openai.error.Timeout as e:
             logging.error(f"Request timed out: {e}")
-            retries += 1
-            if retries < 3:
-                time.sleep(5)  # Wait for 5 seconds before retrying
-            else:
-                return "Request timed out after multiple retries."
-    logging.debug
+            time.sleep(5)  # Wait for 5 seconds before retrying
+        except openai.error.APIError as e:
+            logging.error(f"API Error: {e}")
+            time.sleep(5)  # Wait for 5 seconds before retrying
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {e}")
+            logging.error(f"Last received response: {response}")
+            raise
+
+        retries += 1
+
+    if retries >= retry_limit:
+        return f"Request failed after {retry_limit} retries."
+
     return response
 
 
@@ -399,15 +405,19 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                 OMDB_API_KEY,
                 OPENAI_API_KEY
             )
-            processed_titles.append(title[0])
+            new_dict = {title[0]: rec_uuid}
+            processed_titles.append(new_dict)
         except ValueError as e:
             logging.error(f'Error processing {title} - {str(e)}')
             continue
-
-        set_movie_topic_to_generated(movie_type)
-        if rec_uuid:
-            generte_rec_genre_data(str(rec_uuid))
-        logging.info(f'Completed Processing {title}')
-        count += 1
+        if movie_list is None:
+            logging.error(f'Error processing {title}')
+            continue
+        else:
+            set_movie_topic_to_generated(movie_type)
+            if rec_uuid:
+                generte_rec_genre_data(str(rec_uuid))
+            logging.info(f'Completed Processing {title}')
+            count += 1
 
     return processed_titles

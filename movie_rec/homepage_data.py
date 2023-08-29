@@ -149,7 +149,7 @@ def update_recommendation(session: Session, recommendation_uuid, top_genres):
     return recommendation
 
 
-def get_genre(session: Session, genre_name=None):    
+def get_genre(session: Session, genre_name=None):
     if genre_name:
         genre = session.query(Genre).filter(Genre.name.ilike(genre_name)).first()
         if genre:
@@ -158,7 +158,7 @@ def get_genre(session: Session, genre_name=None):
     # Ensure that the query actually returns something before choosing
     all_genres = session.query(Genre).all()
     if all_genres:
-        return choice(all_genres)
+        return all_genres
     else:
         return None  # Handle this case appropriately
 
@@ -180,7 +180,7 @@ def clear_previous_featured_content(session: Session, genre):
 def add_featured_content(session: Session, genre, uuids):
     for u in uuids:
         content = FeaturedContent(
-            content_type=ContentType.GENRE.value,
+            content_type=ContentType.GENRE.value.upper(),
             group_title=f"Featured in {genre.name}",
             recommendation_uuid=u,
             replaced_at=datetime.utcnow()

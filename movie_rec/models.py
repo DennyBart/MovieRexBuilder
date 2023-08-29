@@ -203,8 +203,9 @@ class FeaturedContent(Base):
     group_title = Column(String(256), nullable=True)
     recommendation_uuid = Column(CHAR(36), ForeignKey(
         'movie_recommendations.uuid'), nullable=False)
-    replaced_at = Column(DateTime, nullable=True)  # New column
+    replaced_at = Column(DateTime, nullable=True, index=True)
     live_list = Column(Boolean, default=True)
+    movie_recommendation = relationship("MovieRecommendations")
 
 
 class Genre(Base):

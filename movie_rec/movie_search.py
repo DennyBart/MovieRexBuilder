@@ -1,11 +1,13 @@
 from datetime import datetime
 import hashlib
+import random
 from dotenv import load_dotenv
+from sqlalchemy.orm import joinedload
 import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 import requests
@@ -24,6 +26,7 @@ from movie_rec.models import (
     APIKey,
     Base,
     CastName,
+    FeaturedContent,
     Genre,
     MovieCast,
     MovieData,
@@ -35,6 +38,7 @@ from movie_rec.models import (
     MovieVideo,
     MoviesNotFound
 )
+from movie_rec.types import ContentType
 
 
 load_dotenv()
@@ -240,7 +244,7 @@ def store_movie_genre(session, new_movie, genre_string):
 
             existing_relation = session.query(MovieGenre).filter_by(
                 movie_uuid=new_movie.uuid,
-                genre_id=genre.id
+                genre_id='Action'
             ).first()
 
             if existing_relation is None:
@@ -335,8 +339,12 @@ def get_recommendations(search=None, limit=50, offset=0):
 
 
 def get_recommendation_name(uuid):
-    return session.query(MovieRecommendations).filter_by(
-        uuid=uuid).first().topic_name
+    recommendation = session.query(MovieRecommendations).filter_by(
+        uuid=uuid).first()
+    if recommendation:
+        return recommendation.topic_name
+    else:
+        return None
 
 
 def get_recommendation_blurb(uuid):
@@ -517,9 +525,47 @@ def generate_and_store_api_key():
     return api_key
 
 
+def get_featured_content(page=1, per_page=10):
+    try:
+        start_from = (page - 1) * per_page
+        query = (session.query(FeaturedContent.id,
+                               FeaturedContent.content_type,
+                               FeaturedContent.group_title,
+                               FeaturedContent.recommendation_uuid,
+                               FeaturedContent.replaced_at)
+                 .order_by(desc(FeaturedContent.replaced_at))
+                 .offset(start_from)
+                 .limit(per_page))
+
+        featured_content = query.all()
+
+        total_records = session.query(FeaturedContent).count()
+        total_pages = total_records // per_page
+        if total_records % per_page > 0:
+            total_pages += 1
+
+        return {
+            'total': total_records,
+            'items': [dict(zip(('id',
+                                'content_type',
+                                'group_title',
+                                'recommendation_uuid',
+                                'replaced_at'),record)) for record in featured_content], # noqa
+            'pages': total_pages
+        }
+    except Exception as e:
+        raise e
+    finally:
+        session.close()
+
+
 # TODO Move
-def generte_cast_data():
-    generate_movie_cast_homepage_data(session, 'director')
+def generte_cast_data(cast_type):
+    if cast_type in ['actor', 'director']:
+        cast = getattr(ContentType, cast_type.upper()).value.upper()
+        return generate_movie_cast_homepage_data(session, cast)
+    else:
+        return None
 
 
 # TODO Move
@@ -536,9 +582,62 @@ def generte_rec_genre_data(recommendation_uuid):
 
 
 def generate_genre_homepage_data():
-    genre_to_search = "Action"  # Replace this with the genre you are interested in or None
-    genre = get_genre(session, genre_to_search)
-    recommendations = get_movie_recommendations(session, genre)
-    uuid_list = [rec.uuid for rec in recommendations]
-    clear_previous_featured_content(session, genre)
-    add_featured_content(session, genre, uuid_list)
+    genre_list = get_genre(session)  # Assuming this returns a list of genres like ['Action', 'Comedy', 'Drama']
+
+    max_retries = 5  # Limit the number of retries
+    retries = 0
+
+    while retries < max_retries:
+        if genre_list:
+            # print("Genres found: {}".format(genre_list.name))
+            # Select a random genre from the list
+            genre_to_search = random.choice(genre_list)
+            print("Genre to search: {}".format(genre_to_search.name))
+            if genre_to_search.name == 'N/A':
+                genre_to_search = random.choice(genre_list)
+        else:
+            genre_to_search = "Action"  # Default genre if no genres are available
+
+        recommendations = get_movie_recommendations(session, genre_to_search)
+        print("Recommendations found for genre {}: {}".format(genre_to_search.name, len(recommendations))) # noqa
+        uuid_list = [rec.uuid for rec in recommendations]
+
+        # If recommendations were found, break out of the loop
+        if uuid_list:
+            break
+
+        retries += 1
+
+    if uuid_list:  # If recommendations were found
+        clear_previous_featured_content(session, genre_to_search)
+        add_featured_content(session, genre_to_search, uuid_list)
+    else:
+        print("No recommendations found after {} retries".format(max_retries))
+
+
+def fetch_recommendations():
+    recommendations = {}
+
+    # Fetch all records from FeaturedContent, including associated MovieRecommendations
+    featured_contents = session.query(FeaturedContent).options(
+        joinedload(FeaturedContent.movie_recommendation)
+    ).all()
+
+    # for featured_content in featured_contents:
+    #     recommendation = featured_content.movie_recommendation
+    #     topic_name = recommendation.topic_name
+
+    #     if topic_name not in recommendations:
+    #         recommendations[topic_name] = []
+
+    #     # Add only the required data from FeaturedContent and MovieRecommendations
+    #     recommendations[topic_name].append({
+    #         "group_title": featured_content.group_title,
+    #         "replaced_at": featured_content.replaced_at,
+    #         "topic_name": recommendation.topic_name,
+    #         "genre_1": recommendation.genre_1,
+    #         "genre_2": recommendation.genre_2,
+    #         "genre_3": recommendation.genre_3
+    #     })
+
+    # return recommendations

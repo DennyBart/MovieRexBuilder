@@ -27,6 +27,7 @@ from movie_rec.openai_requestor import (
 )
 from movie_rec.movie_search import (
     check_db,
+    fetch_recommendations,
     generate_genre_homepage_data,
     generte_cast_data,
     generte_rec_genre_data,
@@ -87,7 +88,8 @@ def hello():
 
 @app.route('/api/gen_data')
 def gen_data():
-    generte_cast_data()
+    # generte_cast_data('actor')
+    generte_cast_data('director')
     generate_genre_homepage_data()
     return "Data generated"
 
@@ -337,9 +339,10 @@ def provide_movie_recommendation_titles():
     return {'generated_titles': sotred_title}
 
 
-# http://localhost:5000/api/generate_recs_in_db?limit=10&value=10
+# http://localhost:5000/api/generate_recs_in_db?limit=10&value=10&blurb=True # noqa
 @app.route('/api/generate_recs_in_db')
 def generate_recs_in_db():
+    blurb = request.args.get('blurb', type=bool, default=False)
     logging.info('Generating recommendations from list')
     limit, value = get_limit_and_value(request)
 
@@ -356,6 +359,12 @@ def generate_recs_in_db():
         OMDB_API_KEY,
         OPENAI_API_KEY
     )
+    # Generate blurb for each recommendation
+    if blurb:
+        # Before: generate_recommendation_blurb(title['uuid'], 10)
+        for title_dict in processed_titles:
+            for key, rec_uuid in title_dict.items():
+                generate_recommendation_blurb(rec_uuid, 10)
 
     if processed_titles == []:
         return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'} # noqa
@@ -576,20 +585,23 @@ def generate_recommendations_genre():
 #     return jsonify(data), 200
 
 
+@app.route('/api/get_homepage_data')
 def frontpage_reccomendations():
-    search = request.args.get('search')
-    limit = request.args.get('limit', type=int, default=50)
-    offset = request.args.get('offset', type=int, default=0)
-    blurb = request.args.get('blurb', type=bool, default=False)
+    recommendations = fetch_recommendations()
+    return jsonify(recommendations)
+    # search = request.args.get('search')
+    # limit = request.args.get('limit', type=int, default=50)
+    # offset = request.args.get('offset', type=int, default=0)
+    # blurb = request.args.get('blurb', type=bool, default=False)
 
-    recommendations = get_recommendations(
-        search=search, limit=limit, offset=offset
-    )
+    # recommendations = get_recommendations(
+    #     search=search, limit=limit, offset=offset
+    # )
 
-    results = [recommendation.to_dict() for recommendation in recommendations]
-    for result in results:
-        if not blurb and 'blurb' in result:
-            del result['blurb']
+    # results = [recommendation.to_dict() for recommendation in recommendations]
+    # for result in results:
+    #     if not blurb and 'blurb' in result:
+    #         del result['blurb']
 
     return jsonify(results)
 

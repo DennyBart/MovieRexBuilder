@@ -14,21 +14,13 @@ down_revision = 'bed1480587a8'
 branch_labels = None
 depends_on = None
 
-# Define ContentType enum for MySQL
-content_types = ('recently_added', 'director', 'actor',
-                 'genre', 'featured_movie')
-ContentType = sa.Enum(*content_types, name='contenttype')
-
 
 def upgrade():
-    # Create ContentType ENUM type
-    ContentType.create(op.get_bind(), checkfirst=False)
-
     # Create featured_content table
     op.create_table(
         'featured_content',
         sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column('content_type', ContentType, nullable=False),
+        sa.Column('content_type', sa.String(256), nullable=False),
         sa.Column('group_title', sa.String(256), nullable=True),
         sa.Column('recommendation_uuid', sa.CHAR(36),
                   sa.ForeignKey('movie_recommendations.uuid'),
@@ -36,6 +28,9 @@ def upgrade():
         sa.Column('replaced_at', sa.DateTime, nullable=True),
         sa.Column('live_list', sa.Boolean, nullable=False)
     )
+
+    # Add an index to the replaced_at column
+    op.create_index('index_replaced_at', 'featured_content', ['replaced_at'], unique=False) # noqa
 
     op.add_column('cast_name',
                   sa.Column('vip', sa.Boolean, nullable=False,
@@ -45,4 +40,3 @@ def upgrade():
 def downgrade() -> None:
     op.drop_column('cast_name', 'vip')
     op.drop_table('featured_content')
-    ContentType.drop(op.get_bind(), checkfirst=False)
