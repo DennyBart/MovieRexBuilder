@@ -11,7 +11,6 @@ from movie_rec.models import (FeaturedContent,
                               MovieRecommendations)
 from movie_rec.models import CastName
 from datetime import datetime
-from random import choice
 from constants import (
     DIRECTOR_HOMEPAGE_HEADER,
     ACTOR_HOMEPAGE_HEADER,
@@ -89,13 +88,18 @@ def generate_movie_cast_homepage_data(session: Session, cast_type: str):
             unique_recommendation_uuids = list(set(list_recommendation_uuids))
             limited_recommendation_uuids = random.sample(unique_recommendation_uuids, min(CAST_PAGE_LIMIT, len(unique_recommendation_uuids)))  # noqa
 
-            header = DIRECTOR_HOMEPAGE_HEADER if cast_type.lower() == 'director' else ACTOR_HOMEPAGE_HEADER  # noqa
+            if cast_type.lower() == 'director':
+                title = f'Director {random_cast_vip.name} {DIRECTOR_HOMEPAGE_HEADER}' # noqa
+            elif cast_type.lower() == 'actor':
+                title = f'{random_cast_vip.name} {ACTOR_HOMEPAGE_HEADER}'
+            else:
+                title = ''
 
             # Populate FeaturedContent table
             for rec_uuid in limited_recommendation_uuids:
                 featured_content = FeaturedContent(
                     content_type=cast_type,
-                    group_title=f'{header} {random_cast_vip.name}',
+                    group_title=title,
                     recommendation_uuid=rec_uuid,
                     replaced_at=datetime.utcnow(),  # set the current date
                     live_list=True  # Set the new column
@@ -105,7 +109,7 @@ def generate_movie_cast_homepage_data(session: Session, cast_type: str):
             session.commit()
 
             return {
-                'header': header,
+                'header': title,
                 'recommendation_uuids': limited_recommendation_uuids,
                 'cast': random_cast_vip
             }
@@ -151,7 +155,7 @@ def update_recommendation(session: Session, recommendation_uuid, top_genres):
 
 def get_genre(session: Session, genre_name=None):
     if genre_name:
-        genre = session.query(Genre).filter(Genre.name.ilike(genre_name)).first()
+        genre = session.query(Genre).filter(Genre.name.ilike(genre_name)).first() # noqa
         if genre:
             return genre
 
@@ -186,7 +190,7 @@ def add_featured_content(session: Session, genre, uuids):
     for u in uuids:
         content = FeaturedContent(
             content_type=ContentType.GENRE.value.upper(),
-            group_title=f"Featured in {genre.name}",
+            group_title=f"Recommendations for {genre.name}",
             recommendation_uuid=u,
             replaced_at=datetime.utcnow()
         )

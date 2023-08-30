@@ -7,7 +7,7 @@ import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from sqlalchemy import create_engine, desc
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 import requests
@@ -15,9 +15,13 @@ import logging
 import urllib.parse
 from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
-from movie_rec.homepage_data import (add_featured_content, clear_previous_featured_content, fetch_genres_for_movies,
+from movie_rec.homepage_data import (add_featured_content,
+                                     clear_previous_featured_content,
+                                     fetch_genres_for_movies,
                                      fetch_movie_uuids,
-                                     generate_movie_cast_homepage_data, get_genre, get_movie_recommendations,
+                                     generate_movie_cast_homepage_data,
+                                     get_genre,
+                                     get_movie_recommendations,
                                      get_top_genres,
                                      update_recommendation)
 from movie_rec.image_video_service import MovieMediaProcessor
@@ -525,40 +529,6 @@ def generate_and_store_api_key():
     return api_key
 
 
-def get_featured_content(page=1, per_page=10):
-    try:
-        start_from = (page - 1) * per_page
-        query = (session.query(FeaturedContent.id,
-                               FeaturedContent.content_type,
-                               FeaturedContent.group_title,
-                               FeaturedContent.recommendation_uuid,
-                               FeaturedContent.replaced_at)
-                 .order_by(desc(FeaturedContent.replaced_at))
-                 .offset(start_from)
-                 .limit(per_page))
-
-        featured_content = query.all()
-
-        total_records = session.query(FeaturedContent).count()
-        total_pages = total_records // per_page
-        if total_records % per_page > 0:
-            total_pages += 1
-
-        return {
-            'total': total_records,
-            'items': [dict(zip(('id',
-                                'content_type',
-                                'group_title',
-                                'recommendation_uuid',
-                                'replaced_at'),record)) for record in featured_content], # noqa
-            'pages': total_pages
-        }
-    except Exception as e:
-        raise e
-    finally:
-        session.close()
-
-
 # TODO Move
 def generte_cast_data(cast_type):
     if cast_type in ['actor', 'director']:
@@ -582,24 +552,21 @@ def generte_rec_genre_data(recommendation_uuid):
 
 
 def generate_genre_homepage_data():
-    genre_list = get_genre(session)  # Assuming this returns a list of genres like ['Action', 'Comedy', 'Drama']
+    genre_list = get_genre(session)  # Assuming this returns a list of genres like ['Action', 'Comedy', 'Drama'] # noqa
 
     max_retries = 5  # Limit the number of retries
     retries = 0
 
     while retries < max_retries:
         if genre_list:
-            # print("Genres found: {}".format(genre_list.name))
             # Select a random genre from the list
             genre_to_search = random.choice(genre_list)
-            print("Genre to search: {}".format(genre_to_search.name))
             if genre_to_search.name == 'N/A':
                 genre_to_search = random.choice(genre_list)
         else:
-            genre_to_search = "Action"  # Default genre if no genres are available
+            genre_to_search = "Action"  # Default genre if no genres are available # noqa
 
         recommendations = get_movie_recommendations(session, genre_to_search)
-        print("Recommendations found for genre {}: {}".format(genre_to_search.name, len(recommendations))) # noqa
         uuid_list = [rec.uuid for rec in recommendations]
 
         # If recommendations were found, break out of the loop
@@ -612,7 +579,8 @@ def generate_genre_homepage_data():
         clear_previous_featured_content(session, genre_to_search)
         add_featured_content(session, genre_to_search, uuid_list)
     else:
-        print("No recommendations found after {} retries".format(max_retries))
+        logging.info("No recommendations found after {} retries".format(
+            max_retries))
 
 
 def fetch_genre_name_by_id(genre_id):
@@ -620,13 +588,18 @@ def fetch_genre_name_by_id(genre_id):
     return genre.name if genre else None
 
 
-def fetch_recommendations():
+def fetch_recommendations(page=1, items_per_page=10):
     recommendations = {}
 
-    # Fetch all records from FeaturedContent, including associated MovieRecommendations
+    # Calculate the offset for pagination
+    offset = (page - 1) * items_per_page
+
+    # Fetch all records from FeaturedContent, sorted by date
+    # and limited for pagination
     featured_contents = session.query(FeaturedContent).options(
         joinedload(FeaturedContent.movie_recommendation)
-    ).all()
+    ).order_by(FeaturedContent.replaced_at.desc()).slice(
+        offset, offset + items_per_page).all()
 
     for featured_content in featured_contents:
         recommendation = featured_content.movie_recommendation
@@ -642,16 +615,15 @@ def fetch_recommendations():
         # Convert the DateTime object to a string in MM-DD-YY format
         replaced_at_date = None
         if featured_content.replaced_at:
-            replaced_at_date = featured_content.replaced_at.strftime('%m-%d-%y')
+            replaced_at_date = featured_content.replaced_at.strftime('%m-%d-%y') # noqa
 
-        # Add only the required data from FeaturedContent and MovieRecommendations
         recommendations[group_title].append({
             "topic_name": recommendation.topic_name,
             "topic_uuid": recommendation.uuid,
             "genre_1": genre_1_name,
             "genre_2": genre_2_name,
             "genre_3": genre_3_name,
-            "replaced_at_date": replaced_at_date  # Now it contains the date in MM-DD-YY format
+            "replaced_at_date": replaced_at_date
         })
 
     return recommendations

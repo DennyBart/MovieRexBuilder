@@ -16,8 +16,8 @@ GENERATION_REC_TITLES = "You are a movie blog writer that provides catch" \
 GENERATION_REC_QUESTION = "Generate 25 catchy movie recomendation titles. Use these as an example: (Must-Watch Movies of All Time) (Iconic Movies That Define the Genre)"
 
 CAST_PAGE_LIMIT = 5
-DIRECTOR_HOMEPAGE_HEADER = 'Director Movie'
-ACTOR_HOMEPAGE_HEADER = 'Actor Movie'
+DIRECTOR_HOMEPAGE_HEADER = 'Featured In'
+ACTOR_HOMEPAGE_HEADER = 'Featured In'
 
 # This will trigger the omdb response of the plot of full or short
 # default is short if not set

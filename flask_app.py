@@ -1,3 +1,4 @@
+import datetime
 import os
 import uuid
 import math
@@ -76,9 +77,15 @@ def get_device_type():
 
 @app.route('/')
 def hello():
-    user_agent = get_device_type() # Assuming this function already exists in your code
-    recommendations = fetch_recommendations()
-    return render_template(f'{user_agent}/index.html', recommendations=recommendations)
+    page = request.args.get('page', default=1, type=int)
+    user_agent = get_device_type()
+    if page < 1:
+        page = 1
+    recommendations = fetch_recommendations(page=page)
+    recommendations['page'] = page
+
+    return render_template(f'{user_agent}/index.html',
+                           recommendations=recommendations)
 
 
 @app.route('/api/gen_data')
@@ -86,7 +93,7 @@ def gen_data():
     generte_cast_data('actor')
     generte_cast_data('director')
     generate_genre_homepage_data()
-    return "Data generated"
+    return f"Data generated: {datetime.datetime.now()}"
 
 
 @app.route('/web/rec/<uuid>')
@@ -582,23 +589,12 @@ def generate_recommendations_genre():
 
 @app.route('/api/get_homepage_data')
 def frontpage_reccomendations():
-    recommendations = fetch_recommendations()
+    page = request.args.get('page', default=1, type=int)
+    if page < 1:
+        page = 1
+    recommendations = fetch_recommendations(page=page)
+    recommendations['page'] = page
     return jsonify(recommendations)
-    # search = request.args.get('search')
-    # limit = request.args.get('limit', type=int, default=50)
-    # offset = request.args.get('offset', type=int, default=0)
-    # blurb = request.args.get('blurb', type=bool, default=False)
-
-    # recommendations = get_recommendations(
-    #     search=search, limit=limit, offset=offset
-    # )
-
-    # results = [recommendation.to_dict() for recommendation in recommendations]
-    # for result in results:
-    #     if not blurb and 'blurb' in result:
-    #         del result['blurb']
-
-    return jsonify(results)
 
 
 def setup_logging():

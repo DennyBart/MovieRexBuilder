@@ -225,13 +225,10 @@ def get_new_recommendations(api_model: str, openai_api_key: str,
     return new_movie_data, new_values
 
 
-# def get_recommendations_from_db(movie_type: str, value: int):
-#     # Get movie recommendations from database
-#     movie_recommendations = get_existing_recommendations(value=value,
-#                                                          movie_type=movie_type)
-
-
-def generate_openai_response(api_model: str, openai_api_key: str, input_message=str, retry_limit=3):
+def generate_openai_response(api_model: str,
+                             openai_api_key: str,
+                             input_message=str,
+                             retry_limit=3):
     openai.api_key = openai_api_key
     retries = 0
     response = None  # Initialize response to None
@@ -240,7 +237,8 @@ def generate_openai_response(api_model: str, openai_api_key: str, input_message=
 
     while retries < retry_limit:
         try:
-            response = openai.ChatCompletion.create(model=api_model, messages=input_message)
+            response = openai.ChatCompletion.create(model=api_model,
+                                                    messages=input_message)
             break  # Break out of the loop if the request is successful
         except openai.error.RateLimitError:
             time.sleep(5)  # Wait for 5 seconds before retrying

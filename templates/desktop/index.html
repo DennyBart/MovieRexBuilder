@@ -156,6 +156,46 @@
             z-index: 10;
         }
 
+        /* Additional Styles for Previous and Next buttons */
+        .paging-button {
+            background-color: #424242;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            margin-right: 10px;  /* Added for spacing between buttons */
+        }
+
+        .paging-container {
+            text-align: left; 
+            margin-top: 20px; 
+            padding-left: 15px; 
+            padding-bottom: 20px;
+        }
+
+        /* Footer styles */
+        .footer a,
+        .footer a:visited {
+            color: white;  /* Or any color you prefer */
+            text-decoration: none; /* Removes underlines */
+        }
+        .footer {
+            background-color: #333333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 <body>
@@ -164,7 +204,7 @@
     </header>
 
     <!-- Loop through recommendation groups -->
-    {% for title, rec_group in recommendations.items() %}
+    {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
         <!-- Display title for each group -->
         <div class="row">
@@ -192,6 +232,29 @@
         </div>
     </section>
     {% endfor %}
+    <div class="paging-container">
+        {% if recommendations and 'page' in recommendations %}
+            {% if recommendations['page'] > 1 %}
+                <a href="/?page={{ recommendations['page'] - 1 }}" class="paging-button">Previous</a>
+            {% endif %}
+            <a href="/?page={{ recommendations['page'] + 1 }}" class="paging-button">Next</a>
+        {% endif %}
+    </div>
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2023 MovieRec. All rights reserved.</p>
+        <p>
+            <a href="/about">About Us</a> |
+            <a href="/contact">Contact</a> |
+            <a href="/privacy">Privacy Policy</a> |
+            <a href="/terms">Terms of Service</a>
+        </p>
+        <p>
+            Follow us on
+            <a href="https://facebook.com/MovieRec">Facebook</a>,
+            <a href="https://twitter.com/MovieRec">Twitter</a>,
+            <a href="https://instagram.com/MovieRec">Instagram</a>
+        </p>
+    </div> 
 </body>
-
 </html>

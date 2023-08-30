@@ -127,6 +127,22 @@
             text-align: right;
         }
 
+        .paging-button {
+            background-color: #424242;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            margin-right: 10px;  /* Added for spacing between buttons */
+        }
+
+        .paging-container {
+            text-align: center;  /* Changed from 'left' to 'center' */
+            margin-top: 20px; 
+            padding-bottom: 20px;
+        }
+
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             .recommendation {
@@ -155,6 +171,29 @@
                 font-size: 1.6em;
             }
         }
+
+        @media (max-width: 768px) {
+            /* ... existing mobile styles ... */
+
+            /* Mobile Footer styles */
+            .footer a,
+            .footer a:visited {
+                color: white;  /* Or any color you prefer */
+                text-decoration: none; /* Removes underlines */
+            }
+            .footer {
+                padding: 10px;
+                font-size: 0.9em; /* Reduce font size for mobile */
+            }
+            .footer p {
+                margin: 5px 0; /* Reduce spacing for mobile */
+            }
+            .footer a {
+                margin: 0 5px; /* Reduce spacing for mobile */
+            }
+        }
+
+
     </style>
 </head>
 
@@ -164,7 +203,7 @@
     </header>
 
     <!-- Loop through recommendation groups -->
-    {% for title, rec_group in recommendations.items() %}
+    {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
         <!-- Display title and replaced_at date for each group -->
         <div class="row">
@@ -191,5 +230,29 @@
         </div>
     </section>
     {% endfor %}
+    <div class="paging-container">
+        {% if recommendations and 'page' in recommendations %}
+            {% if recommendations['page'] > 1 %}
+                <a href="/?page={{ recommendations['page'] - 1 }}" class="paging-button">Previous</a>
+            {% endif %}
+            <a href="/?page={{ recommendations['page'] + 1 }}" class="paging-button">Next</a>
+        {% endif %}
+    </div>
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2023 MovieRec. All rights reserved.</p>
+        <p>
+            <a href="/about">About Us</a> |
+            <a href="/contact">Contact</a> |
+            <a href="/privacy">Privacy Policy</a> |
+            <a href="/terms">Terms of Service</a>
+        </p>
+        <p>
+            Follow us on
+            <a href="https://facebook.com/MovieRec">Facebook</a>,
+            <a href="https://twitter.com/MovieRec">Twitter</a>,
+            <a href="https://instagram.com/MovieRec">Instagram</a>
+        </p>
+    </div>
 </body>
 </html>
