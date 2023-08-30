@@ -619,8 +619,8 @@ def setup_logging():
     )
 
 
+setup_logging()
+check_db()
+
 if __name__ == '__main__':
     app.run(debug=True)
-
-check_db()
-setup_logging()

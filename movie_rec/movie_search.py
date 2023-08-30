@@ -316,7 +316,7 @@ def store_search_titles(titles):
     for title in titles:
         # Remove leading and trailing quotes
         title = title.strip('"')
-        title = title.strip('25 ')
+        title = title.replace('25 ', '')
         if title not in existing_titles:
             logging.info(f'Storing movie topic "{title}" in database')
             movie_rec_search = MovieRecommendationsSearchList(
