@@ -576,7 +576,7 @@ def generate_genre_homepage_data():
         retries += 1
 
     if uuid_list:  # If recommendations were found
-        clear_previous_featured_content(session, genre_to_search)
+        # clear_previous_featured_content(session, genre_to_search)
         add_featured_content(session, genre_to_search, uuid_list)
     else:
         logging.info("No recommendations found after {} retries".format(
