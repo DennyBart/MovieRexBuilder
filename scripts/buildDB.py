@@ -52,8 +52,3 @@ with open(file_path, "r", encoding=encoding) as file, \
         if counter == limit:
             time.sleep(wait_time)
             counter = 0
-
-# except Exception as e:
-#     # Print the traceback message and stop the script
-#     traceback.print_exc()
-#     raise SystemExit(1)

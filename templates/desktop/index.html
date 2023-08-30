@@ -47,8 +47,9 @@
             flex-wrap: wrap;
             gap: 15px;
             padding: 15px;
-            justify-content: center;
+            justify-content: flex-start;  /* Changed from 'center' to 'flex-start' */
         }
+
 
         .recommendation {
             background-color: #424242e6;
@@ -127,10 +128,17 @@
         }
 
         .row-title {
-            font-family: 'Borel', cursive;
+            font-family: 'Roboto', sans-serif;
             font-size: 1.5em;
             margin-right: 20px;
+            margin-left: 10px; /* Adjust as needed */
             flex-shrink: 0;
+        }
+
+        .replaced-at {
+            font-size: 0.8em;
+            margin-left: 20px; /* Adjust as needed */
+            color: grey;  /* Optional: Style it as you see fit */
         }
         /* Additional Styles for set-title positioning */
         .recommendation {
@@ -148,30 +156,105 @@
             z-index: 10;
         }
 
+        /* Additional Styles for Previous and Next buttons */
+        .paging-button {
+            background-color: #424242;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            margin-right: 10px;  /* Added for spacing between buttons */
+        }
+
+        .paging-container {
+            text-align: left; 
+            margin-top: 20px; 
+            padding-left: 15px; 
+            padding-bottom: 20px;
+        }
+
+        /* Footer styles */
+        .footer a,
+        .footer a:visited {
+            color: white;  /* Or any color you prefer */
+            text-decoration: none; /* Removes underlines */
+        }
+        .footer {
+            background-color: #333333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
     </style>
 </head>
-</head>
-
 <body>
     <header>
         <h1><a href="/">MovieRec</a></h1>
     </header>
 
-    <div class="recommendation-container">
-        {% for rec in recommendations %}
-        <div class="recommendation">
-            <div class="rec-img">
-                <a href="/web/rec/{{ rec.uuid }}">
-                    <!-- Check for recommendation_image existence or use default -->
-                    <img src="{{ rec.recommendation_image if rec.recommendation_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image">
-                </a>
-            </div>
-            <div class="topic">
-                <a href="/web/rec/{{ rec.uuid }}">{{ rec.topic_name }}</a>
-            </div>
+    <!-- Loop through recommendation groups -->
+    {% for title, rec_group in recommendations.items() if title != 'page' %}
+    <section>
+        <!-- Display title for each group -->
+        <div class="row">
+            <h2 class="row-title">{{ title }}</h2>
         </div>
-        {% endfor %}
-    </div>
-</body>
 
+        <!-- Display replaced_at date for each group -->
+        <div class="replaced-at">{{ rec_group[0].replaced_at_date }}</div>
+
+        <!-- Display recommendations for the current group -->
+        <div class="recommendation-container">
+            {% for rec in rec_group %}
+            <div class="recommendation">
+                <div class="rec-img">
+                    <a href="/web/rec/{{ rec.topic_uuid }}">
+                        <!-- Check for recommendation_image existence or use default -->
+                        <img src="{{ rec.recommendation_image if rec.recommendation_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image">
+                    </a>
+                </div>
+                <div class="topic">
+                    <a href="/web/rec/{{ rec.topic_uuid }}">{{ rec.topic_name }}</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+    <div class="paging-container">
+        {% if recommendations and 'page' in recommendations %}
+            {% if recommendations['page'] > 1 %}
+                <a href="/?page={{ recommendations['page'] - 1 }}" class="paging-button">Previous</a>
+            {% endif %}
+            <a href="/?page={{ recommendations['page'] + 1 }}" class="paging-button">Next</a>
+        {% endif %}
+    </div>
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2023 MovieRec. All rights reserved.</p>
+        <p>
+            <a href="/about">About Us</a> |
+            <a href="/contact">Contact</a> |
+            <a href="/privacy">Privacy Policy</a> |
+            <a href="/terms">Terms of Service</a>
+        </p>
+        <p>
+            Follow us on
+            <a href="https://facebook.com/MovieRec">Facebook</a>,
+            <a href="https://twitter.com/MovieRec">Twitter</a>,
+            <a href="https://instagram.com/MovieRec">Instagram</a>
+        </p>
+    </div> 
+</body>
 </html>

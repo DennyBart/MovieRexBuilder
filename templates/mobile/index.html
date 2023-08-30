@@ -77,6 +77,19 @@
             height: 100%; /* This ensures the link takes the entire height of the div */
         }
 
+        .row-title {
+            font-family: 'Roboto', sans-serif;
+            color: white;  /* Optional: Style it as you see fit */
+            font-size: 1.5em;
+            margin-right: 20px;
+            margin-left: 10px; /* Adjust as needed */
+            flex-shrink: 0;
+        }
+        .replaced-at {
+            font-size: 0.8em;
+            margin-left: 20px; /* Adjust as needed */
+            color: whitesmoke;  /* Optional: Style it as you see fit */
+        }
 
         .recommendation:hover {
             transform: scale(1.05);
@@ -114,6 +127,22 @@
             text-align: right;
         }
 
+        .paging-button {
+            background-color: #424242;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            margin-right: 10px;  /* Added for spacing between buttons */
+        }
+
+        .paging-container {
+            text-align: center;  /* Changed from 'left' to 'center' */
+            margin-top: 20px; 
+            padding-bottom: 20px;
+        }
+
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             .recommendation {
@@ -142,6 +171,29 @@
                 font-size: 1.6em;
             }
         }
+
+        @media (max-width: 768px) {
+            /* ... existing mobile styles ... */
+
+            /* Mobile Footer styles */
+            .footer a,
+            .footer a:visited {
+                color: white;  /* Or any color you prefer */
+                text-decoration: none; /* Removes underlines */
+            }
+            .footer {
+                padding: 10px;
+                font-size: 0.9em; /* Reduce font size for mobile */
+            }
+            .footer p {
+                margin: 5px 0; /* Reduce spacing for mobile */
+            }
+            .footer a {
+                margin: 0 5px; /* Reduce spacing for mobile */
+            }
+        }
+
+
     </style>
 </head>
 
@@ -150,23 +202,57 @@
         <h1><a href="/">MovieRec</a></h1>
     </header>
 
-    <div class="recommendation-container">
-        {% set counter = 0 %}
-        {% for rec in recommendations %}
-        <div class="recommendation">
-            <a href="/web/rec/{{ rec.uuid }}">
-                <img src="{{ url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
-                <div class="rec-content">
-                    <div class="topic">{{ rec.topic_name }}</div>
-                </div>
-            </a>
+    <!-- Loop through recommendation groups -->
+    {% for title, rec_group in recommendations.items() if title != 'page' %}
+    <section>
+        <!-- Display title and replaced_at date for each group -->
+        <div class="row">
+            <h2 class="row-title">{{ title }}</h2>
+            <div class="replaced-at">Published: {{ rec_group[0].replaced_at_date }}</div>
         </div>
-        {% set counter = counter + 1 %}
-        {% if counter % 5 == 0 %}
-            <!-- Your ad code here -->
+        
+        <div class="recommendation-container">
+            {% set counter = 0 %}
+            {% for rec in rec_group %}
+            <div class="recommendation">
+                <a href="/web/rec/{{ rec.topic_uuid }}">
+                    <img src="{{ rec.recommendation_image if rec.recommendation_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
+                    <div class="rec-content">
+                        <div class="topic">{{ rec.topic_name }}</div>
+                    </div>
+                </a>
+            </div>
+            {% set counter = counter + 1 %}
+            {% if counter % 5 == 0 %}
+                <!-- Your ad code here -->
+            {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+    <div class="paging-container">
+        {% if recommendations and 'page' in recommendations %}
+            {% if recommendations['page'] > 1 %}
+                <a href="/?page={{ recommendations['page'] - 1 }}" class="paging-button">Previous</a>
+            {% endif %}
+            <a href="/?page={{ recommendations['page'] + 1 }}" class="paging-button">Next</a>
         {% endif %}
-        {% endfor %}
+    </div>
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2023 MovieRec. All rights reserved.</p>
+        <p>
+            <a href="/about">About Us</a> |
+            <a href="/contact">Contact</a> |
+            <a href="/privacy">Privacy Policy</a> |
+            <a href="/terms">Terms of Service</a>
+        </p>
+        <p>
+            Follow us on
+            <a href="https://facebook.com/MovieRec">Facebook</a>,
+            <a href="https://twitter.com/MovieRec">Twitter</a>,
+            <a href="https://instagram.com/MovieRec">Instagram</a>
+        </p>
     </div>
 </body>
-
 </html>

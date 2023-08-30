@@ -16,6 +16,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import text
 from datetime import datetime
+from sqlalchemy import Enum as SQLEnum
+
+from movie_rec.types import ContentType
 
 Base = declarative_base()
 
@@ -28,6 +31,7 @@ class CastName(Base):
                   nullable=False)
     name = Column(String(256), nullable=False)
     cast_type = Column(String(16), nullable=False)
+    vip = Column(Boolean, nullable=False, default=False)
     movies = relationship('MovieCast', back_populates='cast')
 
 
@@ -71,6 +75,8 @@ class MovieData(Base):
     production = Column(String(256), nullable=True)
     website = Column(String(256), nullable=True)
     cast = relationship('MovieCast', back_populates='movie')
+    genres = relationship('Genre', secondary='movie_genre',
+                          back_populates='movies')
 
     def to_dict(self):
         return {
@@ -90,6 +96,14 @@ class MovieRecommendations(Base):
     topic_name = Column(String(256), nullable=False)
     date_generated = Column(DateTime, nullable=True)
     blurb = Column(Text)
+    genre_1 = Column(Integer, ForeignKey('genre.id'), nullable=True)
+    genre_2 = Column(Integer, ForeignKey('genre.id'), nullable=True)
+    genre_3 = Column(Integer, ForeignKey('genre.id'), nullable=True)
+
+    # Relationships (if necessary)
+    genre_1_relation = relationship("Genre", foreign_keys=[genre_1])
+    genre_2_relation = relationship("Genre", foreign_keys=[genre_2])
+    genre_3_relation = relationship("Genre", foreign_keys=[genre_3])
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
@@ -177,4 +191,37 @@ class APIKey(Base):
     id = Column(Integer, primary_key=True)
     hashed_key = Column(String(64), unique=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, default=text('CURRENT_TIMESTAMP + INTERVAL 30 DAY'))
+    expires_at = Column(DateTime, default=text(
+        'CURRENT_TIMESTAMP + INTERVAL 30 DAY'))
+
+
+class FeaturedContent(Base):
+    __tablename__ = 'featured_content'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    content_type = Column(SQLEnum(ContentType), nullable=False)
+    group_title = Column(String(256), nullable=True)
+    recommendation_uuid = Column(CHAR(36), ForeignKey(
+        'movie_recommendations.uuid'), nullable=False)
+    replaced_at = Column(DateTime, nullable=True, index=True)
+    live_list = Column(Boolean, default=True)
+    movie_recommendation = relationship("MovieRecommendations")
+
+
+class Genre(Base):
+    __tablename__ = 'genre'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(64), unique=True, nullable=False)
+    movies = relationship('MovieData', secondary='movie_genre',
+                          back_populates='genres')
+
+
+class MovieGenre(Base):
+    __tablename__ = 'movie_genre'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    movie_uuid = Column(CHAR(36), ForeignKey('movie_data.uuid'),
+                        nullable=False)
+    genre_id = Column(Integer, ForeignKey('genre.id'), nullable=False)
+
+    __table_args__ = (UniqueConstraint('movie_uuid', 'genre_id',
+                                       name='unique_movie_genre'),)

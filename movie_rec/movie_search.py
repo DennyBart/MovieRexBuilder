@@ -1,26 +1,40 @@
 from datetime import datetime
 import hashlib
+import random
 from dotenv import load_dotenv
+from sqlalchemy.orm import joinedload
 import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from flask import jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
 import requests
 import logging
 import urllib.parse
 from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
+from movie_rec.homepage_data import (add_featured_content,
+                                     clear_previous_featured_content,
+                                     fetch_genres_for_movies,
+                                     fetch_movie_uuids,
+                                     generate_movie_cast_homepage_data,
+                                     get_genre,
+                                     get_movie_recommendations,
+                                     get_top_genres,
+                                     update_recommendation)
 from movie_rec.image_video_service import MovieMediaProcessor
 
 from movie_rec.models import (
     APIKey,
     Base,
     CastName,
+    FeaturedContent,
+    Genre,
     MovieCast,
     MovieData,
+    MovieGenre,
     MovieImage,
     MovieRecommendationRelation,
     MovieRecommendations,
@@ -28,6 +42,7 @@ from movie_rec.models import (
     MovieVideo,
     MoviesNotFound
 )
+from movie_rec.types import ContentType
 
 
 load_dotenv()
@@ -115,7 +130,7 @@ def process_request_by_name(cast_processor, identifier,
         movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
         logging.debug(f"Movie cast: {movie_dict['cast']} - "
                       f"uuid {movie_data.uuid}")
-        return jsonify(movie_dict)
+        return movie_dict
     logging.info(f"Movie_title {identifier} not found in local database")
     movie_data = search_movie_by_title(identifier, year, api_key)
     if movie_data and movie_data.get('Type') != 'series' and movie_data.get('Type') != 'episode': # noqa
@@ -155,10 +170,10 @@ def process_request(request_type,
                                      identifier,
                                      api_key)
     elif request_type == 'movie_name':
-        response = process_request_by_name(cast_processor, identifier,
-                                           api_key, year, rec_topic)
-        if response:
-            return response
+        process_movie_data = process_request_by_name(cast_processor,
+                                                     identifier,
+                                                     api_key, year, rec_topic)
+        return process_movie_data
 
 
 def query_movie_by_id(identifier):
@@ -203,14 +218,50 @@ def set_movie_topic_to_generated(movie_topic):
 
 
 def store_new_movie(cast_processor, movie_data):
-    new_movie = process_movie_data(cast_processor, movie_data)
-    logging.info(f"Storing new movie {new_movie.title}")
-    imdbid = str(new_movie.imdbid)
-    session.add(new_movie)
-    session.commit()
-    session.close()
-    get_and_store_videos(imdbid)
-    get_and_store_images(imdbid)
+    try:
+        new_movie = process_movie_data(cast_processor, movie_data)
+        logging.info(f"Storing new movie {new_movie.title}")
+        imdbid = str(new_movie.imdbid)
+        session.add(new_movie)
+        session.commit()
+        store_movie_genre(session=session, new_movie=new_movie, genre_string=str(new_movie.genre)) # noqa
+        get_and_store_videos(imdbid)
+        get_and_store_images(imdbid)
+    except IntegrityError as e:
+        logging.error(f"IntegrityError occurred: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+def store_movie_genre(session, new_movie, genre_string):
+    try:
+        genres = genre_string.split(', ')
+
+        for genre_name in genres:
+            genre = session.query(Genre).filter_by(name=genre_name).first()
+
+            if genre is None:
+                genre = Genre(name=genre_name)
+                session.add(genre)
+                session.commit()
+
+            existing_relation = session.query(MovieGenre).filter_by(
+                movie_uuid=new_movie.uuid,
+                genre_id='Action'
+            ).first()
+
+            if existing_relation is None:
+                new_movie_genre = MovieGenre(movie_uuid=new_movie.uuid,
+                                             genre_id=genre.id)
+                session.add(new_movie_genre)
+                session.commit()
+
+            if genre not in new_movie.genres:
+                new_movie.genres.append(genre)
+
+    except IntegrityError as e: # noqa
+        session.rollback()
 
 
 def search_movie_by_id(movie_id, api_key):
@@ -265,7 +316,7 @@ def store_search_titles(titles):
     for title in titles:
         # Remove leading and trailing quotes
         title = title.strip('"')
-        title = title.strip('25 ')
+        title = title.replace('25 ', '')
         if title not in existing_titles:
             logging.info(f'Storing movie topic "{title}" in database')
             movie_rec_search = MovieRecommendationsSearchList(
@@ -292,8 +343,12 @@ def get_recommendations(search=None, limit=50, offset=0):
 
 
 def get_recommendation_name(uuid):
-    return session.query(MovieRecommendations).filter_by(
-        uuid=uuid).first().topic_name
+    recommendation = session.query(MovieRecommendations).filter_by(
+        uuid=uuid).first()
+    if recommendation:
+        return recommendation.topic_name
+    else:
+        return None
 
 
 def get_recommendation_blurb(uuid):
@@ -387,7 +442,8 @@ def get_cast_info(movie_uuid):
 def remove_movie_by_uuid(movie_uuid):
     try:
         # Get movie data
-        movie_data = session.query(MovieData).filter_by(uuid=movie_uuid).first()
+        movie_data = session.query(MovieData).filter_by(
+            uuid=movie_uuid).first()
 
         if not movie_data:  # if movie_data is None or doesn't exist
             logging.warning(f"Movie with uuid {movie_uuid} not found.")
@@ -470,5 +526,104 @@ def generate_and_store_api_key():
         session.close()
 
     # Return the raw API key to the user (it's the only time it'll be visible)
-    print(f'API-KEY = {api_key}')
     return api_key
+
+
+# TODO Move
+def generte_cast_data(cast_type):
+    if cast_type in ['actor', 'director']:
+        cast = getattr(ContentType, cast_type.upper()).value.upper()
+        return generate_movie_cast_homepage_data(session, cast)
+    else:
+        return None
+
+
+# TODO Move
+def generte_rec_genre_data(recommendation_uuid):
+    movie_uuids = fetch_movie_uuids(session, recommendation_uuid)
+    genres = fetch_genres_for_movies(session, movie_uuids)
+    top_genres = get_top_genres(genres)
+
+    updated_recommendation = update_recommendation(session,
+                                                   recommendation_uuid,
+                                                   top_genres)
+
+    return updated_recommendation
+
+
+def generate_genre_homepage_data():
+    genre_list = get_genre(session)  # Assuming this returns a list of genres like ['Action', 'Comedy', 'Drama'] # noqa
+
+    max_retries = 5  # Limit the number of retries
+    retries = 0
+
+    while retries < max_retries:
+        if genre_list:
+            # Select a random genre from the list
+            genre_to_search = random.choice(genre_list)
+            if genre_to_search.name == 'N/A':
+                genre_to_search = random.choice(genre_list)
+        else:
+            genre_to_search = "Action"  # Default genre if no genres are available # noqa
+
+        recommendations = get_movie_recommendations(session, genre_to_search)
+        uuid_list = [rec.uuid for rec in recommendations]
+
+        # If recommendations were found, break out of the loop
+        if uuid_list:
+            break
+
+        retries += 1
+
+    if uuid_list:  # If recommendations were found
+        clear_previous_featured_content(session, genre_to_search)
+        add_featured_content(session, genre_to_search, uuid_list)
+    else:
+        logging.info("No recommendations found after {} retries".format(
+            max_retries))
+
+
+def fetch_genre_name_by_id(genre_id):
+    genre = session.query(Genre).filter(Genre.id == genre_id).first()
+    return genre.name if genre else None
+
+
+def fetch_recommendations(page=1, items_per_page=10):
+    recommendations = {}
+
+    # Calculate the offset for pagination
+    offset = (page - 1) * items_per_page
+
+    # Fetch all records from FeaturedContent, sorted by date
+    # and limited for pagination
+    featured_contents = session.query(FeaturedContent).options(
+        joinedload(FeaturedContent.movie_recommendation)
+    ).order_by(FeaturedContent.replaced_at.desc()).slice(
+        offset, offset + items_per_page).all()
+
+    for featured_content in featured_contents:
+        recommendation = featured_content.movie_recommendation
+        group_title = featured_content.group_title
+
+        if group_title not in recommendations:
+            recommendations[group_title] = []
+
+        genre_1_name = fetch_genre_name_by_id(recommendation.genre_1)
+        genre_2_name = fetch_genre_name_by_id(recommendation.genre_2)
+        genre_3_name = fetch_genre_name_by_id(recommendation.genre_3)
+
+        # Convert the DateTime object to a string in MM-DD-YY format
+        replaced_at_date = None
+        if featured_content.replaced_at:
+            replaced_at_date = featured_content.replaced_at.strftime('%m-%d-%y') # noqa
+
+        recommendations[group_title].append({
+            "topic_name": recommendation.topic_name,
+            "topic_uuid": recommendation.uuid,
+            "genre_1": genre_1_name,
+            "genre_2": genre_2_name,
+            "genre_3": genre_3_name,
+            "replaced_at_date": replaced_at_date
+        })
+
+    return recommendations

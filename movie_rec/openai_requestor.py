@@ -21,6 +21,7 @@ from constants import (
     TOP_MOVIES_FORMAT
 )
 from movie_rec.movie_search import (
+    generte_rec_genre_data,
     process_request,
     query_movie_by_uuid,
     set_movie_topic_to_generated
@@ -94,16 +95,17 @@ def create_movie_list(response):
 def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
     movie_list = []
     for movie in movies:
-        movie_details = process_request('movie_name',
-                                        movie['Movie'],
-                                        omdb_api_key, movie['Year'],
-                                        rec_topic)
-        movie_json_details = json.loads(movie_details)
-        if movie_json_details is not None:
-            data = json.loads(movie_json_details.data)
-            movie_uuid = data.get('uuid')
-            movie_list.append(movie_uuid)
-            logging.info(f"Movie Details: {movie_uuid}")
+        movie_data = process_request('movie_name',
+                                     movie['Movie'],
+                                     omdb_api_key, movie['Year'],
+                                     rec_topic)
+        if movie_data:
+            movie_uuid = movie_data['uuid']  # Assuming 'uuid' is a key in the 'data'  # noqa
+            if movie_uuid:
+                movie_list.append(movie_uuid)
+                logging.info(f"Movie Details: {movie_uuid}")
+        else:
+            logging.warning(f"Failed to fetch details for movie: {movie['Movie']}") # noqa
     return movie_list
 
 
@@ -128,6 +130,7 @@ def store_movie_recommendation(movie_list, movie_type, total):
         session.add(new_movie_recommendation)
     logging.info(f"New Movie Recommendation: {movie_type}")
     session.commit()
+    return rec_uuid
 
 
 def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
@@ -222,35 +225,39 @@ def get_new_recommendations(api_model: str, openai_api_key: str,
     return new_movie_data, new_values
 
 
-# def get_recommendations_from_db(movie_type: str, value: int):
-#     # Get movie recommendations from database
-#     movie_recommendations = get_existing_recommendations(value=value,
-#                                                          movie_type=movie_type)
-
-
-def generate_openai_response(api_model: str, openai_api_key: str,
-                             input_message=str, retry_limit=3):
+def generate_openai_response(api_model: str,
+                             openai_api_key: str,
+                             input_message=str,
+                             retry_limit=3):
     openai.api_key = openai_api_key
     retries = 0
+    response = None  # Initialize response to None
+
     logging.info(f"OpenAI Request Message: {input_message}")
+
     while retries < retry_limit:
         try:
-            response = openai.ChatCompletion.create(
-                model=api_model,
-                messages=input_message
-            )
+            response = openai.ChatCompletion.create(model=api_model,
+                                                    messages=input_message)
             break  # Break out of the loop if the request is successful
         except openai.error.RateLimitError:
             time.sleep(5)  # Wait for 5 seconds before retrying
-            retries += 1
         except openai.error.Timeout as e:
             logging.error(f"Request timed out: {e}")
-            retries += 1
-            if retries < 3:
-                time.sleep(5)  # Wait for 5 seconds before retrying
-            else:
-                return "Request timed out after multiple retries."
-    logging.debug
+            time.sleep(5)  # Wait for 5 seconds before retrying
+        except openai.error.APIError as e:
+            logging.error(f"API Error: {e}")
+            time.sleep(5)  # Wait for 5 seconds before retrying
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {e}")
+            logging.error(f"Last received response: {response}")
+            raise
+
+        retries += 1
+
+    if retries >= retry_limit:
+        return f"Request failed after {retry_limit} retries."
+
     return response
 
 
@@ -263,8 +270,8 @@ def process_new_recommendations(movie_data: list,
     movies = json.loads(resp_json)
 
     movie_list = fetch_movie_details(movies, omdb_api_key, movie_type)
-    store_movie_recommendation(movie_list, movie_type, total)
-    return movie_list
+    rec_uuid = store_movie_recommendation(movie_list, movie_type, total)
+    return movie_list, rec_uuid
 
 
 def get_chatgpt_movie_rec(movie_type: str,
@@ -277,10 +284,10 @@ def get_chatgpt_movie_rec(movie_type: str,
     movie_list_size_limit = 20
     existing_recommendations = get_existing_recommendations(
         value=value,
-        movie_type=movie_type
-        )
+        movie_type=movie_type,
+        uuid=None)
     if existing_recommendations is not None:
-        return existing_recommendations
+        return existing_recommendations, None
     num_attempts = 0
     while num_attempts < 3:
         try:
@@ -292,12 +299,13 @@ def get_chatgpt_movie_rec(movie_type: str,
                                  f"Only {len(new_recommendations)} movies "
                                  f"were found.")
             elif new_recommendations is not None:
-                return process_new_recommendations(
+                movie_list, rec_uuid = process_new_recommendations(
                     new_recommendations, omdb_api_key, movie_type, rec_total)
+                return movie_list, rec_uuid
         except ValueError:
             num_attempts += 1
 
-    return "Error: Failed to retrieve movie recommendations."
+    return None, None
 
 
 def check_movie_recommendation(search_term=None, uuid=None, value=None):
@@ -327,7 +335,7 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
         )
 
     if movie_recommendation is None:
-        return None, None
+        return None, None, None
     else:
         return (movie_recommendation.uuid,
                 movie_recommendation.count,
@@ -372,7 +380,6 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                    OMDB_API_KEY, OPENAI_API_KEY):
     processed_titles = []
     count = 0
-
     for title in titles:
         if count == limit:
             return processed_titles
@@ -388,7 +395,7 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
             {'role': 'user', 'content': f'List {combined_message}'}
         ]
         try:
-            get_chatgpt_movie_rec(
+            movie_list, rec_uuid = get_chatgpt_movie_rec(
                 movie_type,
                 value,
                 input_message,
@@ -396,13 +403,19 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                 OMDB_API_KEY,
                 OPENAI_API_KEY
             )
-            processed_titles.append(title[0])
+            new_dict = {title[0]: rec_uuid}
+            processed_titles.append(new_dict)
         except ValueError as e:
             logging.error(f'Error processing {title} - {str(e)}')
             continue
-
-        set_movie_topic_to_generated(movie_type)
-        logging.info(f'Completed Processing {title}')
-        count += 1
+        if movie_list is None:
+            logging.error(f'Error processing {title}')
+            continue
+        else:
+            set_movie_topic_to_generated(movie_type)
+            if rec_uuid:
+                generte_rec_genre_data(str(rec_uuid))
+            logging.info(f'Completed Processing {title}')
+            count += 1
 
     return processed_titles

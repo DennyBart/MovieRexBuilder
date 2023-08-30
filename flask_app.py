@@ -1,3 +1,4 @@
+import datetime
 import os
 import uuid
 import math
@@ -7,9 +8,7 @@ from flask import (
     jsonify,
     request,
     render_template,
-    make_response,
 )
-import requests
 from constants import (
     GENERATE_PAGE_BLURB,
     GENERATION_REC_TITLES,
@@ -29,7 +28,10 @@ from movie_rec.openai_requestor import (
 )
 from movie_rec.movie_search import (
     check_db,
-    generate_and_store_api_key,
+    fetch_recommendations,
+    generate_genre_homepage_data,
+    generte_cast_data,
+    generte_rec_genre_data,
     get_and_store_images,
     get_and_store_videos,
     get_movie_imdb_id_from_uuid,
@@ -75,14 +77,23 @@ def get_device_type():
 
 @app.route('/')
 def hello():
+    page = request.args.get('page', default=1, type=int)
     user_agent = get_device_type()
-    recommendations = list_reccomendations().get_json()
-    for recommendation in recommendations:
-        # check if value in count is 0 and if it is remove the item
-        if int(recommendation['count']) == 0:
-            recommendations.remove(recommendation)
+    if page < 1:
+        page = 1
+    recommendations = fetch_recommendations(page=page)
+    recommendations['page'] = page
+
     return render_template(f'{user_agent}/index.html',
                            recommendations=recommendations)
+
+
+@app.route('/api/gen_data')
+def gen_data():
+    generte_cast_data('actor')
+    generte_cast_data('director')
+    generate_genre_homepage_data()
+    return f"Data generated: {datetime.datetime.now()}"
 
 
 @app.route('/web/rec/<uuid>')
@@ -102,8 +113,8 @@ def display_recommendation(uuid):
     else:
         return "Error fetching the recommendation", 404
 
-# API Endpoints
 
+# API Endpoints
 # Example: http://127.0.0.1:5000/api/get_movie_id?id=tt1392190
 @app.route('/api/get_movie_id')
 def movie_by_id():
@@ -204,12 +215,12 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
     logging.info(f"Existing recommendations: {existing_recommendations}")
     if existing_recommendations:
         return jsonify(existing_recommendations)
-    movie_list = get_chatgpt_movie_rec(movie_type,
-                                       value,
-                                       input_message,
-                                       OPENAI_API_MODEL,
-                                       OMDB_API_KEY,
-                                       OPENAI_API_KEY)
+    movie_list, rec_uuid = get_chatgpt_movie_rec(movie_type,
+                                                 value,
+                                                 input_message,
+                                                 OPENAI_API_MODEL,
+                                                 OMDB_API_KEY,
+                                                 OPENAI_API_KEY)
     return jsonify(movie_list)
 
 
@@ -330,9 +341,10 @@ def provide_movie_recommendation_titles():
     return {'generated_titles': sotred_title}
 
 
-# http://localhost:5000/api/generate_recs_in_db?limit=10&value=10
+# http://localhost:5000/api/generate_recs_in_db?limit=10&value=10&blurb=True # noqa
 @app.route('/api/generate_recs_in_db')
 def generate_recs_in_db():
+    blurb = request.args.get('blurb', type=bool, default=False)
     logging.info('Generating recommendations from list')
     limit, value = get_limit_and_value(request)
 
@@ -349,6 +361,12 @@ def generate_recs_in_db():
         OMDB_API_KEY,
         OPENAI_API_KEY
     )
+    # Generate blurb for each recommendation
+    if blurb:
+        # Before: generate_recommendation_blurb(title['uuid'], 10)
+        for title_dict in processed_titles:
+            for key, rec_uuid in title_dict.items():
+                generate_recommendation_blurb(rec_uuid, 10)
 
     if processed_titles == []:
         return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'} # noqa
@@ -399,6 +417,7 @@ def process_recommendation_by_uuid(uuid):
             )
         if existing_recommendations:
             # Format json data
+            # TODO Return in a better format
             return jsonify(existing_recommendations)
         else:
             return {'error': 'No recommendations found'}, 404
@@ -545,12 +564,37 @@ def replace_movie_by_id():
         return f'ID:{movie_id} Not Found', 404
 
 
+@app.route('/api/generate_recommendations_genre')
+def generate_recommendations_genre():
+    recommendation_uuid = request.args.get('recommendation_uuid')
+
+    if not recommendation_uuid:
+        return jsonify({"error": "recommendation_uuid is required"}), 400
+
+    gen_rec_data = generte_rec_genre_data(recommendation_uuid)
+
+    if not gen_rec_data:
+        return jsonify({"error": "No such recommendation exists"}), 404
+
+    return jsonify(gen_rec_data.to_dict())
+
+
 # TODO: Secure this endpoint for generation
 # Example: http://127.0.0.1:5000/api/generate_api_key
 # @app.route('/api/generate_api_key')
 # def generate_api_key():
 #     data = generate_and_store_api_key()
 #     return jsonify(data), 200
+
+
+@app.route('/api/get_homepage_data')
+def frontpage_reccomendations():
+    page = request.args.get('page', default=1, type=int)
+    if page < 1:
+        page = 1
+    recommendations = fetch_recommendations(page=page)
+    recommendations['page'] = page
+    return jsonify(recommendations)
 
 
 def setup_logging():
@@ -575,8 +619,8 @@ def setup_logging():
     )
 
 
+setup_logging()
+check_db()
+
 if __name__ == '__main__':
     app.run(debug=True)
-
-check_db()
-setup_logging()
