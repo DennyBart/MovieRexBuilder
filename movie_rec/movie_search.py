@@ -7,7 +7,7 @@ import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, func, or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 import requests
@@ -613,11 +613,12 @@ def fetch_genre_name_by_id(genre_id):
 def generate_rec_list():
     # Get all recommendation_uuids from the database where topic_image is null
     rec_uuids = session.query(MovieRecommendations.uuid).filter(
-        MovieRecommendations.topic_image == '').all()  # noqa
+        or_(MovieRecommendations.topic_image == '',
+            MovieRecommendations.topic_image == None) # noqa
+            ).all()
     # Get a random movie for each rec_uuid
     for rec_uuid_tuple in rec_uuids:
         rec_uuid = rec_uuid_tuple[0]
-        print(f"rec_uuid = {rec_uuid}")
 
         random_movie_tuple = session.query(MovieData.uuid).order_by(
             func.random()).first()
@@ -625,12 +626,12 @@ def generate_rec_list():
         # Check if random_movie_tuple has a value, extract if it does
         if random_movie_tuple:
             random_movie = random_movie_tuple[0]
-            print(f"random_movie = {random_movie}")
 
             # Update the topic_image for the rec_uuid
             set_rec_image(random_movie, rec_uuid)
         else:
-            print("No random movie found.")
+            logging.info("No random movie found.")
+    logging.info(f"Finished generating {len(rec_uuids)} rec list images.")
 
 
 def fetch_recommendations(page=1, items_per_page=10):
