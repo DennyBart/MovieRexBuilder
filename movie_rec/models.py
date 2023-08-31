@@ -94,6 +94,7 @@ class MovieRecommendations(Base):
                   nullable=False)
     count = Column(Integer, nullable=True)
     topic_name = Column(String(256), nullable=False)
+    topic_image = Column(String(256), nullable=True)
     date_generated = Column(DateTime, nullable=True)
     blurb = Column(Text)
     genre_1 = Column(Integer, ForeignKey('genre.id'), nullable=True)

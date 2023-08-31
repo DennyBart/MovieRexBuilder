@@ -221,8 +221,7 @@
                 <div class="rec-img">
                     <a href="/web/rec/{{ rec.topic_uuid }}">
                         <!-- Check for recommendation_image existence or use default -->
-                        <img src="{{ rec.recommendation_image if rec.recommendation_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image">
-                    </a>
+                        <img src="{{ rec.topic_image or url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image">                    </a>
                 </div>
                 <div class="topic">
                     <a href="/web/rec/{{ rec.topic_uuid }}">{{ rec.topic_name }}</a>
