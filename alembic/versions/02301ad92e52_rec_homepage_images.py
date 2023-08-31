@@ -20,7 +20,8 @@ def upgrade():
     # Add `topic_image` column to `movie_recommendations`
     op.add_column(
         'movie_recommendations',
-        sa.Column('topic_image', sa.String(length=256), nullable=True, server_default='')
+        sa.Column('topic_image', sa.String(length=256),
+                  nullable=True, server_default='')
     )
 
 

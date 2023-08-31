@@ -7,7 +7,7 @@ import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 import requests
@@ -47,6 +47,7 @@ from movie_rec.types import ContentType
 load_dotenv()
 THEMOVIEDB_API_KEY = os.environ['THEMOVIEDB_API_KEY']
 DATABASE_URL = os.environ['DATABASE_URL']
+IMAGE_DOMAIN = os.getenv("IMAGE_DOMAIN")
 engine = create_engine(DATABASE_URL, pool_recycle=280)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
@@ -354,22 +355,19 @@ def set_rec_image(movie_uuid, rec_uuid):
     try:
         # Get the IMDb ID from the movie UUID
         imdbid = get_movie_imdb_id_from_uuid(movie_uuid)
-        print(f"imdbID = {imdbid}")
 
         # Get the image URL from the IMDb ID
         img_uri = get_imdb_image_url(imdbid=imdbid)
-        print(f"img_uri = {img_uri}")
 
-        # Update img_uri in topic_image where movie_uuid = MovieRecommendations.uuid
         movie_rec_search = session.query(MovieRecommendations
                                          ).filter_by(uuid=rec_uuid).first()
 
         if movie_rec_search:
-            movie_rec_search.topic_image = img_uri[0]  # Assume the object has an img_uri field
+            movie_rec_search.topic_image = img_uri[0] 
             session.commit()
         else:
             logging.warning(f"No rec found with UUID {rec_uuid}")
-        
+
     except Exception as e:  # Consider catching more specific exceptions
         logging.error(f"Error occurred: {e}")
         session.rollback()
@@ -612,6 +610,29 @@ def fetch_genre_name_by_id(genre_id):
     return genre.name if genre else None
 
 
+def generate_rec_list():
+    # Get all recommendation_uuids from the database where topic_image is null
+    rec_uuids = session.query(MovieRecommendations.uuid).filter(
+        MovieRecommendations.topic_image == '').all()  # noqa
+    # Get a random movie for each rec_uuid
+    for rec_uuid_tuple in rec_uuids:
+        rec_uuid = rec_uuid_tuple[0]
+        print(f"rec_uuid = {rec_uuid}")
+
+        random_movie_tuple = session.query(MovieData.uuid).order_by(
+            func.random()).first()
+
+        # Check if random_movie_tuple has a value, extract if it does
+        if random_movie_tuple:
+            random_movie = random_movie_tuple[0]
+            print(f"random_movie = {random_movie}")
+
+            # Update the topic_image for the rec_uuid
+            set_rec_image(random_movie, rec_uuid)
+        else:
+            print("No random movie found.")
+
+
 def fetch_recommendations(page=1, items_per_page=10):
     recommendations = {}
 
@@ -644,6 +665,7 @@ def fetch_recommendations(page=1, items_per_page=10):
         recommendations[group_title].append({
             "topic_name": recommendation.topic_name,
             "topic_uuid": recommendation.uuid,
+            "topic_image": IMAGE_DOMAIN + recommendation.topic_image,
             "genre_1": genre_1_name,
             "genre_2": genre_2_name,
             "genre_3": genre_3_name,

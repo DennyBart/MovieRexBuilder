@@ -30,6 +30,7 @@ from movie_rec.movie_search import (
     check_db,
     fetch_recommendations,
     generate_genre_homepage_data,
+    generate_rec_list,
     generte_cast_data,
     generte_rec_genre_data,
     get_and_store_images,
@@ -90,6 +91,9 @@ def hello():
 
 @app.route('/api/gen_data')
 def gen_data():
+    gen_rec_list = request.args.get('gen_rec_list', default=False, type=bool)
+    if gen_rec_list:
+        generate_rec_list()
     generte_cast_data('actor')
     generte_cast_data('director')
     generate_genre_homepage_data()
