@@ -16,7 +16,6 @@ import urllib.parse
 from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
 from movie_rec.homepage_data import (add_featured_content,
-                                     clear_previous_featured_content,
                                      fetch_genres_for_movies,
                                      fetch_movie_uuids,
                                      generate_movie_cast_homepage_data,
@@ -349,6 +348,31 @@ def get_recommendation_name(uuid):
         return recommendation.topic_name
     else:
         return None
+
+
+def set_rec_image(movie_uuid, rec_uuid):
+    try:
+        # Get the IMDb ID from the movie UUID
+        imdbid = get_movie_imdb_id_from_uuid(movie_uuid)
+        print(f"imdbID = {imdbid}")
+
+        # Get the image URL from the IMDb ID
+        img_uri = get_imdb_image_url(imdbid=imdbid)
+        print(f"img_uri = {img_uri}")
+
+        # Update img_uri in topic_image where movie_uuid = MovieRecommendations.uuid
+        movie_rec_search = session.query(MovieRecommendations
+                                         ).filter_by(uuid=rec_uuid).first()
+
+        if movie_rec_search:
+            movie_rec_search.topic_image = img_uri[0]  # Assume the object has an img_uri field
+            session.commit()
+        else:
+            logging.warning(f"No rec found with UUID {rec_uuid}")
+        
+    except Exception as e:  # Consider catching more specific exceptions
+        logging.error(f"Error occurred: {e}")
+        session.rollback()
 
 
 def get_recommendation_blurb(uuid):

@@ -1,5 +1,6 @@
 import datetime
 import os
+import random
 import re
 import pandas as pd
 import uuid
@@ -24,7 +25,8 @@ from movie_rec.movie_search import (
     generte_rec_genre_data,
     process_request,
     query_movie_by_uuid,
-    set_movie_topic_to_generated
+    set_movie_topic_to_generated,
+    set_rec_image
 )
 import time
 
@@ -403,6 +405,9 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                 OMDB_API_KEY,
                 OPENAI_API_KEY
             )
+            # get a random number between 0 and len(movie_list)
+            random_movie = random.choice(movie_list)
+            print(f'Random Movie NOW {random_movie}')
             new_dict = {title[0]: rec_uuid}
             processed_titles.append(new_dict)
         except ValueError as e:
@@ -412,9 +417,12 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
             logging.error(f'Error processing {title}')
             continue
         else:
+            print(f'movie_list {movie_list}')
+            # store_rec_movie_imge(movie_list[0].imdbid)
             set_movie_topic_to_generated(movie_type)
             if rec_uuid:
                 generte_rec_genre_data(str(rec_uuid))
+                set_rec_image(random_movie, rec_uuid)
             logging.info(f'Completed Processing {title}')
             count += 1
 

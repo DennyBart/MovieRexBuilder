@@ -143,6 +143,8 @@ class MovieMediaProcessor:
 
     @staticmethod
     def process_image_data(backdrop, movie_data):
+        if backdrop['file_path'].startswith('/'):
+            backdrop['file_path'] = backdrop['file_path'][1:]
         return MovieImage(
             aspect_ratio=backdrop['aspect_ratio'],
             height=backdrop['height'],
