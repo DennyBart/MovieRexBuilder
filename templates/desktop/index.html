@@ -26,6 +26,9 @@
             font-family: 'Borel', cursive;
             padding: 15px;
             background-color: #333333;
+            display: flex; /* Add flex layout */
+            justify-content: space-between; /* Align content */
+            align-items: center;
         }
 
         header h1 {
@@ -40,6 +43,52 @@
             color: white;
             text-decoration: none;
         }
+        
+        /* Add styles for search bar */
+        #searchBar {
+            padding: 5px;
+            border-radius: 5px;
+            margin-right: 20px;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        /* Add styles for search results */
+        /* Add styles for search results */
+        #results {
+            position: absolute;
+            font-family: 'Roboto', sans-serif;
+            top: 100%;  /* Position it right below the search bar */
+            right: 0;  /* Align it to the right edge of the search container */
+            background-color: #333333;
+            color: white;
+            width: 200px;
+            border-radius: 5px;
+            z-index: 99;
+            max-height: 200px;  /* Maximum height */
+            overflow-y: auto;   /* Enable vertical scrolling */
+        }
+
+        #results div {
+            padding: 5px;
+        }
+
+        #results div:hover {
+            background-color: #555555;
+        }
+
+        #results a,
+        #results a:visited {
+            color: white; /* Set text color */
+            text-decoration: none; /* Remove underlines */
+        }
+
+        #results a:hover {
+            text-decoration: underline; /* Add underline on hover */
+        }
+
 
         /* Body styles */
         .recommendation-container {
@@ -201,6 +250,11 @@
 <body>
     <header>
         <h1><a href="/">MovieRec</a></h1>
+        <div class="search-container">
+            <input type="text" id="searchBar" placeholder="Search...">
+            <!-- Container for search results -->
+            <div id="results"></div>
+        </div>
     </header>
 
     <!-- Loop through recommendation groups -->
@@ -255,5 +309,25 @@
             <a href="https://instagram.com/MovieRec">Instagram</a>
         </p>
     </div> 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#searchBar').on('input', function() {
+                let query = $(this).val();
+                if (query) {
+                    $.getJSON(`/search?query=${query}`, function(data) {
+                        $('#results').empty();
+                        data.forEach(function(item) {
+                            let uuid = item.uuid;
+                            let topic_name = item.topic_name;
+                            $('#results').append(`<div><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
+                        });
+                    });
+                } else {
+                    $('#results').empty();
+                }
+            });
+        });
+    </script>    
 </body>
 </html>

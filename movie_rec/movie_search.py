@@ -679,3 +679,24 @@ def fetch_recommendations(page=1, items_per_page=10):
         })
 
     return recommendations
+
+
+def search_movies(query):
+    # Performing a case-insensitive search for both topic_name and genre names
+    search_results = session.query(
+        MovieRecommendations.uuid,
+        MovieRecommendations.topic_name
+    ).join(
+        Genre, or_(
+            Genre.id == MovieRecommendations.genre_1,
+            Genre.id == MovieRecommendations.genre_2,
+        )
+    ).filter(
+        or_(
+            MovieRecommendations.topic_name.ilike(f"%{query}%"),
+            Genre.name.ilike(f"%{query}%")
+        )
+    ).all()
+
+    # Convert the results to a list of dictionaries containing only uuid and topic_name
+    return [{"uuid": uuid, "topic_name": topic_name} for uuid, topic_name in search_results] # noqa
