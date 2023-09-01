@@ -7,7 +7,7 @@ import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from sqlalchemy import create_engine, func, or_
+from sqlalchemy import create_engine, desc, func, or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 import requests
@@ -696,7 +696,9 @@ def search_movies(query):
             MovieRecommendations.topic_name.ilike(f"%{query}%"),
             Genre.name.ilike(f"%{query}%")
         )
+    ).order_by(
+        desc(MovieRecommendations.date_generated)  # Sort by date_generated in descending order
     ).all()
 
     # Convert the results to a list of dictionaries containing only uuid and topic_name
-    return [{"uuid": uuid, "topic_name": topic_name} for uuid, topic_name in search_results] # noqa
+    return [{"uuid": uuid, "topic_name": topic_name} for uuid, topic_name in search_results]  # noqa
