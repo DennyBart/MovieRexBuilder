@@ -216,7 +216,7 @@
             {% for rec in rec_group %}
             <div class="recommendation">
                 <a href="/web/rec/{{ rec.topic_uuid }}">
-                    <img src="{{ rec.recommendation_image if rec.recommendation_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
+                    <img src="{{ rec.topic_image if rec.topic_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
                     <div class="rec-content">
                         <div class="topic">{{ rec.topic_name }}</div>
                     </div>

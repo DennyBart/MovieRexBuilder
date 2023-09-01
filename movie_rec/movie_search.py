@@ -663,10 +663,15 @@ def fetch_recommendations(page=1, items_per_page=10):
         if featured_content.replaced_at:
             replaced_at_date = featured_content.replaced_at.strftime('%m-%d-%y') # noqa
 
+        if recommendation.topic_image != '' or None:
+            image_uri = IMAGE_DOMAIN + recommendation.topic_image
+        else:
+            image_uri = ''
+
         recommendations[group_title].append({
             "topic_name": recommendation.topic_name,
             "topic_uuid": recommendation.uuid,
-            "topic_image": IMAGE_DOMAIN + recommendation.topic_image,
+            "topic_image": image_uri,
             "genre_1": genre_1_name,
             "genre_2": genre_2_name,
             "genre_3": genre_3_name,
