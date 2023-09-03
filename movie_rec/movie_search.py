@@ -706,7 +706,7 @@ def search_movies(query):
     unique_results = set()
     filtered_results = []
 
-    for uuid, topic_name in search_results:
+    for uuid, topic_name in search_results: # noqa
         if (uuid, topic_name) not in unique_results:
             unique_results.add((uuid, topic_name))
             filtered_results.append({"uuid": uuid, "topic_name": topic_name})
