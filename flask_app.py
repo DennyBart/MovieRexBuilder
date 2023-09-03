@@ -121,7 +121,6 @@ def display_recommendation(uuid):
 
 @app.route('/search', methods=['GET'])
 def search():
-    print("HERE")
     query = request.args.get('query', '')
     if not query:
         return jsonify({"error": "Query parameter missing."}), 400

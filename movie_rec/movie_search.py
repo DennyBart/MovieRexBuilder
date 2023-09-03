@@ -699,8 +699,7 @@ def search_movies(query):
             Genre.name.ilike(f"%{query}%")
         )
     ).order_by(
-        desc(MovieRecommendations.date_generated)  # Sort by date_generated in descending order
+        desc(MovieRecommendations.date_generated)
     ).all()
 
-    # Convert the results to a list of dictionaries containing only uuid and topic_name
     return [{"uuid": uuid, "topic_name": topic_name} for uuid, topic_name in search_results]  # noqa
