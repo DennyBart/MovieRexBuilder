@@ -619,13 +619,15 @@ def generate_rec_list():
     # Get a random movie for each rec_uuid
     for rec_uuid_tuple in rec_uuids:
         rec_uuid = rec_uuid_tuple[0]
-
-        random_movie_tuple = session.query(MovieData.uuid).order_by(
-            func.random()).first()
-
+        random_movie_form_rec = session.query(MovieData.uuid).join(
+            MovieRecommendationRelation,
+            MovieRecommendationRelation.movie_uuid == MovieData.uuid
+        ).filter(
+            MovieRecommendationRelation.recommendation_uuid == rec_uuid
+        ).order_by(func.random()).first()
         # Check if random_movie_tuple has a value, extract if it does
-        if random_movie_tuple:
-            random_movie = random_movie_tuple[0]
+        if random_movie_form_rec:
+            random_movie = random_movie_form_rec[0]
 
             # Update the topic_image for the rec_uuid
             set_rec_image(random_movie, rec_uuid)
