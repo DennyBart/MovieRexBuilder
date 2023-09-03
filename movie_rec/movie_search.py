@@ -702,4 +702,13 @@ def search_movies(query):
         desc(MovieRecommendations.date_generated)
     ).all()
 
-    return [{"uuid": uuid, "topic_name": topic_name} for uuid, topic_name in search_results]  # noqa
+    # Removing duplicates
+    unique_results = set()
+    filtered_results = []
+
+    for uuid, topic_name in search_results: # noqa
+        if (uuid, topic_name) not in unique_results:
+            unique_results.add((uuid, topic_name))
+            filtered_results.append({"uuid": uuid, "topic_name": topic_name})
+
+    return filtered_results
