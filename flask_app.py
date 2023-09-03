@@ -45,6 +45,7 @@ from movie_rec.movie_search import (
     query_movie_by_uuid,
     remove_movie_by_uuid,
     replace_movie_uuid,
+    search_movies,
     store_blurb_to_recommendation,
     store_search_titles
 )
@@ -116,6 +117,16 @@ def display_recommendation(uuid):
                                rec_blurb=rec_blurb)
     else:
         return "Error fetching the recommendation", 404
+
+
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('query', '')
+    if not query:
+        return jsonify({"error": "Query parameter missing."}), 400
+
+    results = search_movies(query.lower())
+    return jsonify(results)
 
 
 # API Endpoints
