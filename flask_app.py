@@ -90,17 +90,6 @@ def hello():
                            recommendations=recommendations)
 
 
-@app.route('/api/gen_data')
-def gen_data():
-    gen_rec_list = request.args.get('gen_rec_list', default=False, type=bool)
-    if gen_rec_list:
-        generate_rec_list()
-    generte_cast_data('actor')
-    generte_cast_data('director')
-    generate_genre_homepage_data()
-    return f"Data generated: {datetime.datetime.now()}"
-
-
 @app.route('/web/rec/<uuid>')
 def display_recommendation(uuid):
     device_type = get_device_type()
@@ -130,6 +119,17 @@ def search():
 
 
 # API Endpoints
+@app.route('/api/gen_data')
+def gen_data():
+    gen_rec_list = request.args.get('gen_rec_list', default=False, type=bool)
+    if gen_rec_list:
+        generate_rec_list()
+    generte_cast_data('actor')
+    generte_cast_data('director')
+    generate_genre_homepage_data()
+    return f"Data generated: {datetime.datetime.now()}"
+
+
 # Example: http://127.0.0.1:5000/api/get_movie_id?id=tt1392190
 @app.route('/api/get_movie_id')
 def movie_by_id():

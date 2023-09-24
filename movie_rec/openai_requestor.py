@@ -26,7 +26,8 @@ from movie_rec.movie_search import (
     process_request,
     query_movie_by_uuid,
     set_movie_topic_to_generated,
-    set_rec_image
+    set_rec_image,
+    update_posters_for_recommendation
 )
 import time
 
@@ -147,13 +148,13 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
     # Improved readability for uuid and movie_type check.
     if uuid:
         try:
-            rec_uuid, rec_count, title = check_movie_recommendation(uuid=uuid)
+            rec_uuid, rec_count, title, posters = check_movie_recommendation(uuid=uuid)
         except ValueError as e:
             logging.error(f"ValueError: {e}")
             return None
     elif movie_type:
         try:
-            rec_uuid, rec_count, title = check_movie_recommendation(
+            rec_uuid, rec_count, title, posters = check_movie_recommendation(
                 search_term=movie_type
                 )
         except ValueError as e:
@@ -175,6 +176,17 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
         movie_list = get_related_movies(rec_uuid)
         output_list = [query_movie_by_uuid(movie_uuid).to_dict()
                        for i, movie_uuid in enumerate(movie_list) if i < value]
+        # Check if any poster is None or empty string
+        if any(poster in [None, "", "N/A", "n/a"] for poster in posters):
+            print("Updating posters")
+            new_poster_list = []
+            for movie in output_list:
+                poster_uri = movie['poster']
+                new_poster_list.append(poster_uri)
+                if len(new_poster_list) == 3:
+                    pass
+            update_posters_for_recommendation(rec_uuid, new_poster_list)
+
         formatted_rec_list = format_recommendation_list(output_list,
                                                         rec_data=[title,
                                                                   rec_uuid],
@@ -182,6 +194,7 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
                                                         plot=True,
                                                         media=True,
                                                         info=False)
+        
 
         logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")  # noqa
         logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
@@ -337,11 +350,14 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
         )
 
     if movie_recommendation is None:
-        return None, None, None
+        return None, None, None, None
     else:
         return (movie_recommendation.uuid,
                 movie_recommendation.count,
-                movie_recommendation.topic_name)
+                movie_recommendation.topic_name,
+                [movie_recommendation.poster_1,
+                 movie_recommendation.poster_2,
+                 movie_recommendation.poster_3])
 
 
 def get_related_movies(recommendation_uuid):

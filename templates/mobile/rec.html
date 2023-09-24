@@ -97,6 +97,21 @@
             font-size: 1.1em;
         }
 
+        /* Style for the poster container */
+        .poster {
+            width: 200px; /* Width of the poster */
+            margin: 20px auto; /* Centers the poster with top/bottom margin of 20px */
+        }
+
+        /* Style for the image inside the poster container */
+        .poster img {
+            width: 100%; /* Makes the image take the full width of its container */
+            height: auto; /* This maintains the aspect ratio of the image */
+            display: block; /* Removes any default margins/paddings around the image */
+            border-radius: 5px; /* Optional: Rounds the corners of the image */
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2); /* Optional: Adds a subtle shadow around the image */
+        }
+
         .advertisement {
             border: 1px solid #555;
             padding: 20px;
@@ -193,15 +208,16 @@
     <p class="blurb-content">{{ rec_blurb.blurb }}</p>
     <div class="blurb-line"></div>
     {% endif %}
-
     {% for movie in rec_movie_list %}
     <div class="movie">
         {% if movie.title and movie.year %}
         <h2><span class="movie-number">{{ loop.index }}</span>{{ movie.title }} ({{ movie.year }})</h2>
         {% endif %}
-        <!-- {% if movie.image_key_1 %}
-        <img src="{{ movie.image_key_1 }}" alt="{{ movie.title if movie.title }}">
-        {% endif %} -->
+        <div class="poster">
+            {% if movie.poster %}
+            <img src="{{ movie.poster }}" alt="{{ movie.title if movie.title }}">
+            {% endif %}
+        </div>
         {% if movie.director %}
         <p>
             <strong>Director:</strong>

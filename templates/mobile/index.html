@@ -49,6 +49,29 @@
             color: white;
         }
 
+        /* New styles for the image group */
+        .poster-group {
+            display: flex;
+            position: relative; /* Enables absolute positioning for children */
+        }
+
+        .poster-group img {
+            flex: 1; /* Equally distributes the space among the three images */
+            height: auto; 
+            display: block; 
+            width: 33.33%; /* Divide the container width among the three images */
+            vertical-align: middle; 
+            border: none;
+        }
+
+        .rec-content-group {
+            position: absolute;
+            bottom: 15px; /* Adjust this value to move text up or down */
+            left: 15px;
+            right: 15px;
+            padding: 5px;
+            background-color: rgba(0, 0, 0, 0.5); /* Optional: Adds a semi-transparent background to make the text stand out more */
+        }
 
         .recommendation a,
         .recommendation a:visited {
@@ -275,18 +298,28 @@
         <div class="recommendation-container">
             {% set counter = 0 %}
             {% for rec in rec_group %}
-            <div class="recommendation">
-                <a href="/web/rec/{{ rec.topic_uuid }}">
-                    <img src="{{ rec.topic_image if rec.topic_image else url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image" class="rec-img">
-                    <div class="rec-content">
-                        <div class="topic">{{ rec.topic_name }}</div>
-                    </div>
-                </a>
-            </div>
-            {% set counter = counter + 1 %}
-            {% if counter % 5 == 0 %}
-                <!-- Your ad code here -->
-            {% endif %}
+                <div class="recommendation">
+                    <a href="/web/rec/{{ rec.topic_uuid }}">
+                        <div class="poster-group">
+                            <!-- Check if poster_1 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_1 or url_for('static', filename='default_poster.png') }}" alt="Poster 1">
+                        
+                            <!-- Check if poster_2 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_2 or url_for('static', filename='site_poster.jpg') }}" alt="Poster 2">
+                        
+                            <!-- Check if poster_3 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_3 or url_for('static', filename='default_poster.png') }}" alt="Poster 3">
+                            
+                            <div class="rec-content-group">
+                                <div class="topic">{{ rec.topic_name }}</div>
+                            </div>
+                        </div>                        
+                    </a>
+                </div>
+                {% set counter = counter + 1 %}
+                {% if counter % 5 == 0 %}
+                    <!-- Your ad code here -->
+                {% endif %}
             {% endfor %}
         </div>
     </section>
