@@ -176,16 +176,6 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
         movie_list = get_related_movies(rec_uuid)
         output_list = [query_movie_by_uuid(movie_uuid).to_dict()
                        for i, movie_uuid in enumerate(movie_list) if i < value]
-        # Check if any poster is None or empty string
-        if any(poster in [None, "", "N/A", "n/a"] for poster in posters):
-            print("Updating posters")
-            new_poster_list = []
-            for movie in output_list:
-                poster_uri = movie['poster']
-                new_poster_list.append(poster_uri)
-                if len(new_poster_list) == 3:
-                    pass
-            update_posters_for_recommendation(rec_uuid, new_poster_list)
 
         formatted_rec_list = format_recommendation_list(output_list,
                                                         rec_data=[title,
@@ -194,7 +184,17 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
                                                         plot=True,
                                                         media=True,
                                                         info=False)
-        
+
+        # Update posters for recommendation
+        # Check if any poster is None or empty string
+        if any(poster in [None, "", "N/A", "n/a"] for poster in posters):
+            # Collect the first 7 movie poster URIs
+            first_seven_posters = [movie['poster'] for movie in formatted_rec_list[:7]] # noqa
+
+            # Randomly pick 3 posters from the first 7
+            random_posters = random.sample(first_seven_posters, 3)
+
+            update_posters_for_recommendation(rec_uuid, random_posters)
 
         logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")  # noqa
         logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
