@@ -199,9 +199,9 @@
         {% if movie.title and movie.year %}
         <h2><span class="movie-number">{{ loop.index }}</span>{{ movie.title }} ({{ movie.year }})</h2>
         {% endif %}
-        {% if movie.image_key_1 %}
+        <!-- {% if movie.image_key_1 %}
         <img src="{{ movie.image_key_1 }}" alt="{{ movie.title if movie.title }}">
-        {% endif %}
+        {% endif %} -->
         {% if movie.director %}
         <p>
             <strong>Director:</strong>
