@@ -96,7 +96,7 @@ def display_recommendation(uuid):
     processed_recs = process_recommendation_by_uuid(uuid)
     response_blurb = process_recommendation_blurb(uuid)
     if processed_recs is not None:
-        rec_movie_list = processed_recs.get_json()  # Extract the JSON data from the Response object # noqa
+        rec_movie_list = processed_recs.get_json()
         if response_blurb is not None:
             rec_blurb = response_blurb.get_json()
         else:
@@ -357,6 +357,8 @@ def provide_movie_recommendation_titles():
 
 
 # http://localhost:5000/api/generate_recs_in_db?limit=10&value=10&blurb=True # noqa
+# Limit: How many movies per recommendation
+# Value: How many recommendations to generate
 @app.route('/api/generate_recs_in_db')
 def generate_recs_in_db():
     blurb = request.args.get('blurb', type=bool, default=False)

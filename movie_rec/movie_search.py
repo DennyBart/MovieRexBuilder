@@ -716,7 +716,7 @@ def search_movies(query):
     return filtered_results
 
 
-def update_posters_for_recommendation(recommendation_uuid, top_movies):
+def set_posters_for_recommendation(recommendation_uuid, top_movies):
     try:
         rec = session.query(MovieRecommendations).filter_by(
             uuid=recommendation_uuid).one()
@@ -734,3 +734,24 @@ def update_posters_for_recommendation(recommendation_uuid, top_movies):
     except Exception as e:
         logging.error(f"Error while updating posters: {e}")
         session.rollback()
+
+
+def get_random_posters(movie_uuids):
+    try:
+        # Query the database for movies with the given UUIDs and order them by metascore
+        movies = session.query(MovieData).filter(MovieData.uuid.in_(
+            movie_uuids)).order_by(desc(MovieData.metascore)).all()
+
+        # If there are fewer than 7 movies, use the available movies
+        top_movies = movies[:7]
+
+        # Randomly select three movies from the top_movies
+        selected_movies = random.sample(top_movies, min(3, len(top_movies)))
+
+        # Extract the posters
+        posters = [movie.poster for movie in selected_movies]
+
+        return posters
+
+    finally:
+        session.close()

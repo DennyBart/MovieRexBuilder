@@ -23,11 +23,12 @@ from constants import (
 )
 from movie_rec.movie_search import (
     generte_rec_genre_data,
+    get_random_posters,
     process_request,
     query_movie_by_uuid,
     set_movie_topic_to_generated,
     set_rec_image,
-    update_posters_for_recommendation
+    set_posters_for_recommendation
 )
 import time
 
@@ -194,7 +195,7 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
             # Randomly pick 3 posters from the first 7
             random_posters = random.sample(first_seven_posters, 3)
 
-            update_posters_for_recommendation(rec_uuid, random_posters)
+            set_posters_for_recommendation(rec_uuid, random_posters)
 
         logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")  # noqa
         logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
@@ -436,6 +437,8 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
             if rec_uuid:
                 generte_rec_genre_data(str(rec_uuid))
                 set_rec_image(random_movie, rec_uuid)
+                random_posters = get_random_posters(movie_list)
+                set_posters_for_recommendation(rec_uuid, random_posters)
             logging.info(f'Completed Processing {title}')
             count += 1
 
