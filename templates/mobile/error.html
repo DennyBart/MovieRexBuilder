@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Error - MovieRec.org</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Borel&family=Bungee+Shade&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #333333e6; /* Darker gray background color for the body */
+            margin: 0;
+        }
+
+        header {
+            font-family: 'Borel', cursive;
+            padding: 15px;
+            background-color: #333333;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        header h1 {
+            font-size: 1.8em;
+            text-align: left;
+            margin: 0;
+        }
+
+        header h1 a {
+            color: white;
+            text-decoration: none;
+        }
+
+        header h1 a:visited {
+            color: white;
+        }
+
+        .error {
+            color: white;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.6em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            /* Mobile Footer styles */
+            .footer a,
+            .footer a:visited {
+                color: white;  /* Or any color you prefer */
+                text-decoration: none; /* Removes underlines */
+            }
+            .footer {
+                padding: 10px;
+                font-size: 0.9em; /* Reduce font size for mobile */
+            }
+            .footer p {
+                margin: 5px 0; /* Reduce spacing for mobile */
+            }
+            .footer a {
+                margin: 0 5px; /* Reduce spacing for mobile */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1><a href="/">MovieRec</a></h1>
+    </header>
+
+    <!-- Error Message and Go Back Option -->
+    <section style="text-align: center; padding: 50px;">
+        <div class="error">
+            <h2>Error: Page not found</h2>
+            <p>The page you're looking for doesn't exist or has been moved.</p>
+        </div>
+        <a href="/" style="background-color: #424242; padding: 10px 20px; color: white; text-decoration: none; border-radius: 10px;">Go back to Homepage</a>
+    </section>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2023 MovieRec. All rights reserved.</p>
+        <p>
+            <a href="/about">About Us</a> |
+            <a href="/contact">Contact</a> |
+            <a href="/privacy">Privacy Policy</a> |
+            <a href="/terms">Terms of Service</a>
+        </p>
+        <p>
+            Follow us on
+            <a href="https://facebook.com/MovieRec">Facebook</a>,
+            <a href="https://twitter.com/MovieRec">Twitter</a>,
+            <a href="https://instagram.com/MovieRec">Instagram</a>
+        </p>
+    </div> 
+</body>
+</html>

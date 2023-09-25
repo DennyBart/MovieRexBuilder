@@ -51,6 +51,7 @@ from movie_rec.movie_search import (
 )
 import logging
 from logging.handlers import RotatingFileHandler
+from sqlalchemy.exc import SQLAlchemyError
 OMDB_API_KEY = os.getenv("OMDB_API_KEY")
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_API_MODEL = os.getenv('OPENAI_API_MODEL')
@@ -80,32 +81,56 @@ def get_device_type():
 @app.route('/')
 def hello():
     page = request.args.get('page', default=1, type=int)
-    user_agent = get_device_type()
+    device_type = get_device_type()
     if page < 1:
         page = 1
-    recommendations = fetch_recommendations(page=page)
-    recommendations['page'] = page
+    try:
+        recommendations = fetch_recommendations(page=page)
+        recommendations['page'] = page
 
-    return render_template(f'{user_agent}/index.html',
-                           recommendations=recommendations)
+        return render_template(f'{device_type}/index.html',
+                               recommendations=recommendations)
+    except (SQLAlchemyError, AttributeError, ValueError) as e:
+        # Log the error for debugging purposes
+        logging.debug(f"Error: {e}")
+
+        # Render the error template
+        return render_template(f'{device_type}/error.html'), 500
 
 
 @app.route('/web/rec/<uuid>')
 def display_recommendation(uuid):
     device_type = get_device_type()
-    processed_recs = process_recommendation_by_uuid(uuid)
-    response_blurb = process_recommendation_blurb(uuid)
-    if processed_recs is not None:
+    try:
+        processed_recs = process_recommendation_by_uuid(uuid)
+        if processed_recs is None:
+            raise ValueError("No recommendations found for given UUID.")
+
         rec_movie_list = processed_recs.get_json()
+
+        response_blurb = process_recommendation_blurb(uuid)
         if response_blurb is not None:
             rec_blurb = response_blurb.get_json()
         else:
             rec_blurb = None
+
         return render_template(f'{device_type}/rec.html',
                                rec_movie_list=rec_movie_list,
                                rec_blurb=rec_blurb)
-    else:
-        return "Error fetching the recommendation", 404
+    except (SQLAlchemyError, AttributeError, ValueError) as e:
+        # Log the error for debugging purposes
+        logging.debug(f"Error: {e}")
+
+        # Render the error template
+        return render_template(f'{device_type}/error.html'), 500
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    device_type = get_device_type()
+    # Optionally, you can use a dedicated template for the 404 page
+    # return render_template('404.html'), 404
+    return render_template(f'{device_type}/error.html'), 404
 
 
 @app.route('/search', methods=['GET'])

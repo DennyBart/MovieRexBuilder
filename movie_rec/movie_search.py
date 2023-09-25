@@ -720,7 +720,6 @@ def set_posters_for_recommendation(recommendation_uuid, top_movies):
     try:
         rec = session.query(MovieRecommendations).filter_by(
             uuid=recommendation_uuid).one()
-        print(f"Updating posters for {rec.topic_name}")
 
         # If the top_movies list has data, assign posters
         if len(top_movies) > 0:
@@ -738,7 +737,8 @@ def set_posters_for_recommendation(recommendation_uuid, top_movies):
 
 def get_random_posters(movie_uuids):
     try:
-        # Query the database for movies with the given UUIDs and order them by metascore
+        # Query the database for movies with the given UUIDs and 
+        # order them by metascore
         movies = session.query(MovieData).filter(MovieData.uuid.in_(
             movie_uuids)).order_by(desc(MovieData.metascore)).all()
 

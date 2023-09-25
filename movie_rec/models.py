@@ -111,7 +111,6 @@ class MovieRecommendations(Base):
     poster_2 = Column(String(256), nullable=True)
     poster_3 = Column(String(256), nullable=True)
 
-
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
