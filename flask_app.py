@@ -81,14 +81,21 @@ def get_device_type():
 @app.route('/')
 def hello():
     page = request.args.get('page', default=1, type=int)
-    user_agent = get_device_type()
+    device_type = get_device_type()
     if page < 1:
         page = 1
-    recommendations = fetch_recommendations(page=page)
-    recommendations['page'] = page
+    try:
+        recommendations = fetch_recommendations(page=page)
+        recommendations['page'] = page
 
-    return render_template(f'{user_agent}/index.html',
-                           recommendations=recommendations)
+        return render_template(f'{device_type}/index.html',
+                               recommendations=recommendations)
+    except (SQLAlchemyError, AttributeError, ValueError) as e:
+        # Log the error for debugging purposes
+        logging.debug(f"Error: {e}")
+
+        # Render the error template
+        return render_template(f'{device_type}/error.html'), 500
 
 
 @app.route('/web/rec/<uuid>')
@@ -112,10 +119,18 @@ def display_recommendation(uuid):
                                rec_blurb=rec_blurb)
     except (SQLAlchemyError, AttributeError, ValueError) as e:
         # Log the error for debugging purposes
-        print(f"Error: {e}")
+        logging.debug(f"Error: {e}")
 
         # Render the error template
         return render_template(f'{device_type}/error.html'), 500
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    device_type = get_device_type()
+    # Optionally, you can use a dedicated template for the 404 page
+    # return render_template('404.html'), 404
+    return render_template(f'{device_type}/error.html'), 404
 
 
 @app.route('/search', methods=['GET'])
