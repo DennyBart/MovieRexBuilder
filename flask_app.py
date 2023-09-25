@@ -51,6 +51,7 @@ from movie_rec.movie_search import (
 )
 import logging
 from logging.handlers import RotatingFileHandler
+from sqlalchemy.exc import SQLAlchemyError
 OMDB_API_KEY = os.getenv("OMDB_API_KEY")
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_API_MODEL = os.getenv('OPENAI_API_MODEL')
@@ -93,19 +94,28 @@ def hello():
 @app.route('/web/rec/<uuid>')
 def display_recommendation(uuid):
     device_type = get_device_type()
-    processed_recs = process_recommendation_by_uuid(uuid)
-    response_blurb = process_recommendation_blurb(uuid)
-    if processed_recs is not None:
+    try:
+        processed_recs = process_recommendation_by_uuid(uuid)
+        if processed_recs is None:
+            raise ValueError("No recommendations found for given UUID.")
+
         rec_movie_list = processed_recs.get_json()
+
+        response_blurb = process_recommendation_blurb(uuid)
         if response_blurb is not None:
             rec_blurb = response_blurb.get_json()
         else:
             rec_blurb = None
+
         return render_template(f'{device_type}/rec.html',
                                rec_movie_list=rec_movie_list,
                                rec_blurb=rec_blurb)
-    else:
-        return "Error fetching the recommendation", 404
+    except (SQLAlchemyError, AttributeError, ValueError) as e:
+        # Log the error for debugging purposes
+        print(f"Error: {e}")
+
+        # Render the error template
+        return render_template(f'{device_type}/error.html'), 500
 
 
 @app.route('/search', methods=['GET'])
