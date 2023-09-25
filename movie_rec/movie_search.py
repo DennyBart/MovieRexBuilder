@@ -669,7 +669,6 @@ def fetch_recommendations(page=1, items_per_page=10):
             image_uri = IMAGE_DOMAIN + recommendation.topic_image
         else:
             image_uri = ''
-
         recommendations[group_title].append({
             "topic_name": recommendation.topic_name,
             "topic_uuid": recommendation.uuid,
@@ -677,7 +676,10 @@ def fetch_recommendations(page=1, items_per_page=10):
             "genre_1": genre_1_name,
             "genre_2": genre_2_name,
             "genre_3": genre_3_name,
-            "replaced_at_date": replaced_at_date
+            "replaced_at_date": replaced_at_date,
+            "poster_1": recommendation.poster_1,
+            "poster_2": recommendation.poster_2,
+            "poster_3": recommendation.poster_3,
         })
 
     return recommendations
@@ -712,3 +714,44 @@ def search_movies(query):
             filtered_results.append({"uuid": uuid, "topic_name": topic_name})
 
     return filtered_results
+
+
+def set_posters_for_recommendation(recommendation_uuid, top_movies):
+    try:
+        rec = session.query(MovieRecommendations).filter_by(
+            uuid=recommendation_uuid).one()
+        print(f"Updating posters for {rec.topic_name}")
+
+        # If the top_movies list has data, assign posters
+        if len(top_movies) > 0:
+            rec.poster_1 = top_movies[0]
+        if len(top_movies) > 1:
+            rec.poster_2 = top_movies[1]
+        if len(top_movies) > 2:
+            rec.poster_3 = top_movies[2]
+
+        session.commit()
+    except Exception as e:
+        logging.error(f"Error while updating posters: {e}")
+        session.rollback()
+
+
+def get_random_posters(movie_uuids):
+    try:
+        # Query the database for movies with the given UUIDs and order them by metascore
+        movies = session.query(MovieData).filter(MovieData.uuid.in_(
+            movie_uuids)).order_by(desc(MovieData.metascore)).all()
+
+        # If there are fewer than 7 movies, use the available movies
+        top_movies = movies[:7]
+
+        # Randomly select three movies from the top_movies
+        selected_movies = random.sample(top_movies, min(3, len(top_movies)))
+
+        # Extract the posters
+        posters = [movie.poster for movie in selected_movies]
+
+        return posters
+
+    finally:
+        session.close()

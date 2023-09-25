@@ -130,6 +130,21 @@
             border-radius: 10px;
         }
 
+        /* New styles for the image group */
+        .poster-group {
+            display: flex;
+            position: relative; /* Enables absolute positioning for children */
+        }
+
+        .poster-group img {
+            flex: 1; /* Equally distributes the space among the three images */
+            height: auto; 
+            display: block; 
+            width: 33.33%; /* Divide the container width among the three images */
+            vertical-align: middle; 
+            border: none;
+        }
+
         .topic {
             font-size: 1.4em;
             padding: 0 10px; /* Padding added to push text */
@@ -273,8 +288,17 @@
             <div class="recommendation">
                 <div class="rec-img">
                     <a href="/web/rec/{{ rec.topic_uuid }}">
-                        <!-- Check for recommendation_image existence or use default -->
-                        <img src="{{ rec.topic_image or url_for('static', filename='test_rec_img.png') }}" alt="Recommendation Image">                    </a>
+                        <div class="poster-group">
+                            <!-- Check if poster_1 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_1 or url_for('static', filename='default_poster.png') }}" alt="Poster 1">
+                        
+                            <!-- Check if poster_2 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_2 or url_for('static', filename='site_poster.jpg') }}" alt="Poster 2">
+                        
+                            <!-- Check if poster_3 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_3 or url_for('static', filename='default_poster.png') }}" alt="Poster 3">
+                        </div>
+                    </a>
                 </div>
                 <div class="topic">
                     <a href="/web/rec/{{ rec.topic_uuid }}">{{ rec.topic_name }}</a>

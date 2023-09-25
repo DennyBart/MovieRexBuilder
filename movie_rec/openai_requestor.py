@@ -23,10 +23,12 @@ from constants import (
 )
 from movie_rec.movie_search import (
     generte_rec_genre_data,
+    get_random_posters,
     process_request,
     query_movie_by_uuid,
     set_movie_topic_to_generated,
-    set_rec_image
+    set_rec_image,
+    set_posters_for_recommendation
 )
 import time
 
@@ -147,13 +149,13 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
     # Improved readability for uuid and movie_type check.
     if uuid:
         try:
-            rec_uuid, rec_count, title = check_movie_recommendation(uuid=uuid)
+            rec_uuid, rec_count, title, posters = check_movie_recommendation(uuid=uuid)
         except ValueError as e:
             logging.error(f"ValueError: {e}")
             return None
     elif movie_type:
         try:
-            rec_uuid, rec_count, title = check_movie_recommendation(
+            rec_uuid, rec_count, title, posters = check_movie_recommendation(
                 search_term=movie_type
                 )
         except ValueError as e:
@@ -175,6 +177,7 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
         movie_list = get_related_movies(rec_uuid)
         output_list = [query_movie_by_uuid(movie_uuid).to_dict()
                        for i, movie_uuid in enumerate(movie_list) if i < value]
+
         formatted_rec_list = format_recommendation_list(output_list,
                                                         rec_data=[title,
                                                                   rec_uuid],
@@ -182,6 +185,17 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
                                                         plot=True,
                                                         media=True,
                                                         info=False)
+
+        # Update posters for recommendation
+        # Check if any poster is None or empty string
+        if any(poster in [None, "", "N/A", "n/a"] for poster in posters):
+            # Collect the first 7 movie poster URIs
+            first_seven_posters = [movie['poster'] for movie in formatted_rec_list[:7]] # noqa
+
+            # Randomly pick 3 posters from the first 7
+            random_posters = random.sample(first_seven_posters, 3)
+
+            set_posters_for_recommendation(rec_uuid, random_posters)
 
         logging.info(f"Movie Recommendation UUID: {rec_uuid} - Count: {rec_count}")  # noqa
         logging.debug(f"Movie Recommendation List: {formatted_rec_list}")
@@ -337,11 +351,14 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
         )
 
     if movie_recommendation is None:
-        return None, None, None
+        return None, None, None, None
     else:
         return (movie_recommendation.uuid,
                 movie_recommendation.count,
-                movie_recommendation.topic_name)
+                movie_recommendation.topic_name,
+                [movie_recommendation.poster_1,
+                 movie_recommendation.poster_2,
+                 movie_recommendation.poster_3])
 
 
 def get_related_movies(recommendation_uuid):
@@ -420,6 +437,8 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
             if rec_uuid:
                 generte_rec_genre_data(str(rec_uuid))
                 set_rec_image(random_movie, rec_uuid)
+                random_posters = get_random_posters(movie_list)
+                set_posters_for_recommendation(rec_uuid, random_posters)
             logging.info(f'Completed Processing {title}')
             count += 1
 

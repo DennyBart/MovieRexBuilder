@@ -106,6 +106,12 @@ class MovieRecommendations(Base):
     genre_2_relation = relationship("Genre", foreign_keys=[genre_2])
     genre_3_relation = relationship("Genre", foreign_keys=[genre_3])
 
+    # Poster images
+    poster_1 = Column(String(256), nullable=True)
+    poster_2 = Column(String(256), nullable=True)
+    poster_3 = Column(String(256), nullable=True)
+
+
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 

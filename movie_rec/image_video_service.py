@@ -79,7 +79,6 @@ class MovieMediaProcessor:
                                               ).filter_by(imdbid=imdbid).all()
             return movie_videos
 
-
     def _is_entity_stored(self, imdbid, entity, overwrite):
         logging.debug(f"Checking if entity for movie with IMDB "
                       f"ID {imdbid} is already stored")

@@ -53,6 +53,7 @@ def add_media(output, data_dict, imdbid):
     image_urls = get_imdb_image_url(imdbid)
     video_data = get_imdb_video_url(imdbid)
     # Process image URLs
+    output['poster'] = data_dict.get('poster', None)
     if image_urls:
         for i, url in enumerate(image_urls):
             output[f'image_key_{i+1}'] = IMAGE_DOMAIN + str(url)
