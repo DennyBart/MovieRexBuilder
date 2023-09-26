@@ -341,7 +341,8 @@ def generate_recommendation_blurb(uuid, limit: int):
             return {'error': 'No titles found'}, 400
         existing_recommendation = get_existing_recommendations(uuid=uuid)
         for recommendation in existing_recommendation:
-            item_list.append(recommendation['title'])
+            if recommendation['title']:
+                item_list.append(recommendation['title'])
     except ValueError as e:
         return {'error': str(e)}, 400
     if not item_list:
