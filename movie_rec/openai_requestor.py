@@ -257,6 +257,8 @@ def generate_openai_response(api_model: str,
             response = openai.ChatCompletion.create(model=api_model,
                                                     messages=input_message)
             break  # Break out of the loop if the request is successful
+        except openai.error.ServiceUnavailableError:
+            time.sleep(5)
         except openai.error.RateLimitError:
             time.sleep(5)  # Wait for 5 seconds before retrying
         except openai.error.Timeout as e:
@@ -424,14 +426,15 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                 OPENAI_API_KEY
             )
             # get a random number between 0 and len(movie_list)
-            random_movie = random.choice(movie_list)
+            if movie_list:
+                random_movie = random.choice(movie_list)
+            else:
+                logging.warning(f"Movie list is empty for title: {title}")
+                continue
             new_dict = {title[0]: rec_uuid}
             processed_titles.append(new_dict)
         except ValueError as e:
             logging.error(f'Error processing {title} - {str(e)}')
-            continue
-        if movie_list is None:
-            logging.error(f'Error processing {title}')
             continue
         else:
             set_movie_topic_to_generated(movie_type)

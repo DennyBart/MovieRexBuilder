@@ -37,9 +37,11 @@ from movie_rec.movie_search import (
     get_and_store_videos,
     get_movie_imdb_id_from_uuid,
     get_non_generated_movie_topics,
+    get_rec_movie_list,
     get_recommendation_blurb,
     get_recommendation_name,
     get_recommendations,
+    is_too_similar,
     is_valid_api_key,
     process_request,
     query_movie_by_uuid,
@@ -291,11 +293,18 @@ def generate_movie_recommendation_titles():
         gen_lines = generated_message.split("\n")
         gen_items = [line.split(". ")
                      [1] for line in gen_lines if ". " in line]
-        if gen_items is None:
+        existing_titles = get_rec_movie_list()
+        unique_gen_items = [
+            item for item in gen_items
+            if item not in existing_titles and 
+            not is_too_similar(item, existing_titles)
+        ]
+        print(unique_gen_items)
+        if unique_gen_items is None:
             logging.info("No titles generated")
         else:
-            store_search_titles(gen_items)
-            total_generated_titles.extend(gen_items)
+            store_search_titles(unique_gen_items)
+            total_generated_titles.extend(unique_gen_items)
             logging.info("Total generated titles: "
                          f"{len(total_generated_titles)}")
     return {'generated_titles': total_generated_titles}

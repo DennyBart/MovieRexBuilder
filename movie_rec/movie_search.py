@@ -7,6 +7,7 @@ import os
 import re
 from psycopg2 import OperationalError
 import uuid
+import Levenshtein
 from sqlalchemy import create_engine, desc, func, or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
@@ -207,6 +208,15 @@ def query_movie_by_name(identifier):
 def get_non_generated_movie_topics():
     return session.query(MovieRecommendationsSearchList.title).filter_by(
         is_generated=False).all()
+
+
+def get_rec_movie_list():
+    existing_titles = set(
+        title[0] for title in session.query(
+            MovieRecommendationsSearchList.title).all()
+    )
+    print(existing_titles)
+    return existing_titles
 
 
 def set_movie_topic_to_generated(movie_topic):
@@ -755,3 +765,10 @@ def get_random_posters(movie_uuids):
 
     finally:
         session.close()
+
+
+def is_too_similar(title, title_set, similarity_threshold=0.85):
+    for existing_title in title_set:
+        if Levenshtein.ratio(title, existing_title) > similarity_threshold:
+            return True
+    return False
