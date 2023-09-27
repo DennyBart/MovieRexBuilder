@@ -301,6 +301,8 @@ def get_chatgpt_movie_rec(movie_type: str,
                           openai_api_key: str) -> str:
     # TODO Remove value and set to a global variable int
     movie_list_size_limit = 20
+    minimum_movies_required = 7  # Minimum number of movies in the list
+
     existing_recommendations = get_existing_recommendations(
         value=value,
         movie_type=movie_type,
@@ -320,6 +322,11 @@ def get_chatgpt_movie_rec(movie_type: str,
             elif new_recommendations is not None:
                 movie_list, rec_uuid = process_new_recommendations(
                     new_recommendations, omdb_api_key, movie_type, rec_total)
+                
+                # Check for minimum number of movies in the list
+                if len(movie_list) < minimum_movies_required:
+                    return None, None
+
                 return movie_list, rec_uuid
         except ValueError:
             num_attempts += 1

@@ -1,5 +1,6 @@
 import datetime
 import os
+from random import random
 import uuid
 import math
 from typing import List
@@ -340,9 +341,19 @@ def generate_recommendation_blurb(uuid, limit: int):
         if recommendation_title is None:
             return {'error': 'No titles found'}, 400
         existing_recommendation = get_existing_recommendations(uuid=uuid)
+        items = []
         for recommendation in existing_recommendation:
             if recommendation['title']:
-                item_list.append(recommendation['title'])
+                items.append([recommendation['title'],
+                recommendation['metascore']]) # noqa
+        # Sorting items by metascore
+        items.sort(key=lambda x: x[1], reverse=True)
+        # Select randomly 4 to 7 items from the list top 7 with the high metaascore # noqa
+        items = items[:7]
+        selected_items = random.sample(items, random.randint(4, 7))
+        for item in selected_items:
+            item_list.append(item[0])
+
     except ValueError as e:
         return {'error': str(e)}, 400
     if not item_list:
