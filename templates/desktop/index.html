@@ -259,6 +259,37 @@
             text-decoration: underline;
         }
 
+        /* Additional styles for centered search bar and scroll note */
+        .centered-search {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 70vh; /* Half the height of the viewport */
+            text-align: center;
+        }
+
+        #searchBar {
+            width: 50%; /* Wider search bar */
+            max-width: 600px; /* Maximum width */
+            padding: 10px 15px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .scroll-note {
+            margin-top: 20px;
+            font-style: italic;
+            color: #777;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            #searchBar {
+                width: 80%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -270,7 +301,14 @@
             <div id="results"></div>
         </div>
     </header>
-
+    <!-- Centered search bar with scroll note -->
+    <div class="centered-search">
+        <input type="text" id="searchBar" placeholder="Search...">
+        <p class="scroll-note">Search for a list of movie recommendations</p>
+        <!-- Container for dynamic search results -->
+        <div id="results" style="position: absolute; width: 50%;"></div>
+    </div>
+    
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
@@ -332,6 +370,7 @@
             <a href="https://instagram.com/MovieRec">Instagram</a>
         </p>
     </div> 
+    <!-- Existing jQuery Script -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
