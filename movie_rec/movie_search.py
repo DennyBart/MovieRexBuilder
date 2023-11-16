@@ -663,9 +663,10 @@ def fetch_recommendations(page=1, items_per_page=10):
         # Convert the DateTime object to a string in MM-DD-YY format
         replaced_at_date = None
         if featured_content.replaced_at:
-            replaced_at_date = featured_content.replaced_at.strftime('%m-%d-%y') # noqa
+            replaced_at_date = featured_content.replaced_at.strftime(
+                '%m-%d-%y')
 
-        if recommendation.topic_image != '' or None:
+        if recommendation.topic_image:
             image_uri = IMAGE_DOMAIN + recommendation.topic_image
         else:
             image_uri = ''
