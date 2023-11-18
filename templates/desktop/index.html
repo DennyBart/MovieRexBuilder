@@ -55,6 +55,20 @@
             position: relative;
         }
 
+        /* Adjusted styles for search results */
+        .search-results {
+            position: absolute;
+            top: 36px; /* Adjust based on the height of your search bar */
+            left: 0;
+            background-color: #333333;
+            color: white;
+            width: 100%;
+            border-radius: 5px;
+            z-index: 99;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
         /* Add styles for search results */
         #results {
             position: absolute;
@@ -259,14 +273,89 @@
             text-decoration: underline;
         }
 
-        /* Additional styles for centered search bar and scroll note */
+        .header-search-container {
+            position: relative;
+        }
+
         .centered-search {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 70vh; /* Half the height of the viewport */
+            position: relative; /* This is essential for correct positioning */
             text-align: center;
+        }
+
+        .centered-search .search-bar {
+            width: 1000px; /* Adjust width as needed */
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px; /* Space between search bar and results */
+            margin-top: 200px;
+        }
+
+        .centered-search .search-results {
+            position: absolute;
+            top: 230px; /* Position it right below the search bar */
+            left: 50%;
+            transform: translateX(-50%); /* Center it */
+            width: 1000px; /* Match the width of the search bar */
+            background-color: #333333;
+            color: white;
+            border-radius: 5px;
+            z-index: 99;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 20px; /* Increase font size as needed */
+            font-family: Arial, sans-serif; /* Change to your preferred font */
+        }
+        
+        .centered-search .search-results a,
+        .centered-search .search-results a:visited {
+            color: white; /* Ensures text color is white for both normal and visited states */
+            text-decoration: none; /* Remove underlines */
+        }
+
+        .centered-search .search-results a:hover {
+            text-decoration: underline; /* Add underline on hover */
+        }
+
+        /* Spacer for 70vh space */
+        .search-spacer {
+            height: 40vh;
+        }
+
+        /* Responsive styles for smaller screens */
+        @media (max-width: 768px) {
+            .centered-search .search-bar {
+                width: 80%;
+            }
+        }
+
+        #resultsHeader {
+            position: absolute;
+            top: 100%; /* Position right below the search bar */
+            right: 0;
+            background-color: #333333;
+            color: white;
+            width: 200px; /* Adjust width as needed */
+            border-radius: 5px;
+            z-index: 99;
+            max-height: 200px; /* Maximum height */
+            overflow-y: auto; /* Enable vertical scrolling */
+            font-size: 20px; /* Adjust font size as needed */
+            font-family: Arial, sans-serif; /* Change to your preferred font */
+        }
+
+        #resultsHeader a,
+        #resultsHeader a:visited {
+            color: white; /* Set text color */
+            text-decoration: none; /* Remove underlines */
+        }
+
+        #resultsHeader a:hover {
+            text-decoration: underline; /* Add underline on hover */
         }
 
         #searchBar {
@@ -296,19 +385,17 @@
     <header>
         <h1><a href="/">MovieRec</a></h1>
         <div class="search-container">
-            <input type="text" id="searchBar" placeholder="Search...">
-            <!-- Container for search results -->
-            <div id="results"></div>
+            <input type="text" id="searchBarHeader" class="search-bar" placeholder="Search...">
+            <div id="resultsHeader" class="search-results"></div>
         </div>
     </header>
-    <!-- Centered search bar with scroll note -->
+
     <div class="centered-search">
-        <input type="text" id="searchBar" placeholder="Search...">
-        <p class="scroll-note">Search for a list of movie recommendations</p>
-        <!-- Container for dynamic search results -->
-        <div id="results" style="position: absolute; width: 50%;"></div>
+        <input type="text" id="searchBarCenter" class="search-bar" placeholder="Search...">
+        <div id="resultsCenter" class="search-results"></div>
+        <!-- Spacer div for 70vh space -->
+        <div class="search-spacer"></div>
     </div>
-    
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
@@ -370,25 +457,33 @@
             <a href="https://instagram.com/MovieRec">Instagram</a>
         </p>
     </div> 
-    <!-- Existing jQuery Script -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('#searchBar').on('input', function() {
+            setupSearch('#searchBarCenter', '#resultsCenter');
+        });
+
+        function setupSearch(inputSelector, resultsSelector) {
+            $(inputSelector).on('input', function() {
                 let query = $(this).val();
                 if (query) {
                     $.getJSON(`/search?query=${query}`, function(data) {
-                        $('#results').empty();
+                        $(resultsSelector).empty();
                         data.forEach(function(item) {
                             let uuid = item.uuid;
                             let topic_name = item.topic_name;
-                            $('#results').append(`<div><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
+                            $(resultsSelector).append(`<div><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
                         });
                     });
                 } else {
-                    $('#results').empty();
+                    $(resultsSelector).empty();
                 }
             });
+        }
+
+        $(document).ready(function() {
+            setupSearch('#searchBarHeader', '#resultsHeader');
+            setupSearch('#searchBarCenter', '#resultsCenter');
         });
     </script>
 </body>
