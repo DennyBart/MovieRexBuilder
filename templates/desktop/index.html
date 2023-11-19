@@ -287,7 +287,7 @@
         }
 
         .centered-search .search-bar {
-            width: 1000px; /* Adjust width as needed */
+            width: 80%; /* Adjust width as needed */
             padding: 5px;
             border-radius: 5px;
             border: 1px solid #ccc;
@@ -300,7 +300,7 @@
             top: 230px; /* Position it right below the search bar */
             left: 50%;
             transform: translateX(-50%); /* Center it */
-            width: 1000px; /* Match the width of the search bar */
+            width: 80%; /* Match the width of the search bar */
             background-color: #333333;
             color: white;
             border-radius: 5px;
@@ -390,12 +390,15 @@
         </div>
     </header>
 
-    <div class="centered-search">
-        <input type="text" id="searchBarCenter" class="search-bar" placeholder="Search...">
-        <div id="resultsCenter" class="search-results"></div>
-        <!-- Spacer div for 70vh space -->
-        <div class="search-spacer"></div>
-    </div>
+    <!-- Show search bar only if page = 1 -->
+    {% if recommendations and 'page' in recommendations and recommendations['page'] == 1 %}
+        <div class="centered-search">
+            <input type="text" id="searchBarCenter" class="search-bar" placeholder="Search...">
+            <div id="resultsCenter" class="search-results"></div>
+            <!-- Spacer div for 70vh space -->
+            <div class="search-spacer"></div>
+        </div>
+    {% endif %}
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>

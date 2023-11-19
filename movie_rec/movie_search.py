@@ -9,7 +9,7 @@ from psycopg2 import OperationalError
 import uuid
 from sqlalchemy import create_engine, desc, func, or_
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import requests
 import logging
 import urllib.parse
@@ -687,34 +687,50 @@ def fetch_recommendations(page=1, items_per_page=10):
 
 
 def search_movies(query):
-    # Performing a case-insensitive search for both topic_name and genre names
-    search_results = session.query(
-        MovieRecommendations.uuid,
-        MovieRecommendations.topic_name
-    ).join(
-        Genre, or_(
-            Genre.id == MovieRecommendations.genre_1,
-            Genre.id == MovieRecommendations.genre_2,
-        )
-    ).filter(
-        or_(
-            MovieRecommendations.topic_name.ilike(f"%{query}%"),
-            Genre.name.ilike(f"%{query}%")
-        )
-    ).order_by(
-        desc(MovieRecommendations.date_generated)
-    ).all()
+    try:
+        # Start a transaction
+        session.begin()
 
-    # Removing duplicates
-    unique_results = set()
-    filtered_results = []
+        # Performing a case-insensitive search for both topic_name 
+        # and genre names
+        search_results = session.query(
+            MovieRecommendations.uuid,
+            MovieRecommendations.topic_name
+        ).join(
+            Genre, or_(
+                Genre.id == MovieRecommendations.genre_1,
+                Genre.id == MovieRecommendations.genre_2,
+            )
+        ).filter(
+            or_(
+                MovieRecommendations.topic_name.ilike(f"%{query}%"),
+                Genre.name.ilike(f"%{query}%")
+            )
+        ).order_by(
+            desc(MovieRecommendations.date_generated)
+        ).all()
 
-    for uuid, topic_name in search_results: # noqa
-        if (uuid, topic_name) not in unique_results:
-            unique_results.add((uuid, topic_name))
-            filtered_results.append({"uuid": uuid, "topic_name": topic_name})
+        # Commit the transaction
+        session.commit()
 
-    return filtered_results
+        # Removing duplicates
+        unique_results = set()
+        filtered_results = []
+
+        for uuids, topic_name in search_results:
+            if (uuids, topic_name) not in unique_results:
+                unique_results.add((uuids, topic_name))
+                filtered_results.append({"uuid": uuids,
+                                         "topic_name": topic_name})
+
+        return filtered_results
+
+    except SQLAlchemyError as e:
+        # Roll back the transaction on error
+        session.rollback()
+        # Log the error and re-raise it or handle it as appropriate
+        print(f"An error occurred: {e}")
+        raise
 
 
 def set_posters_for_recommendation(recommendation_uuid, top_movies):
