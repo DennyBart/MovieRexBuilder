@@ -31,13 +31,7 @@ from movie_rec.movie_search import (
     set_posters_for_recommendation
 )
 import time
-
-# Replace with your own database URL
 DATABASE_URL = os.environ['DATABASE_URL']
-engine = create_engine(DATABASE_URL, pool_recycle=280)
-Base.metadata.bind = engine
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
 
 
 def create_movie_list(response):
@@ -114,6 +108,11 @@ def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
 
 
 def store_movie_recommendation(movie_list, movie_type, total):
+    engine = create_engine(DATABASE_URL, pool_recycle=280)
+    Base.metadata.bind = engine
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+
     unique_movie_list = list(set(movie_list))
 
     rec_uuid = str(uuid.uuid4())
@@ -326,6 +325,10 @@ def get_chatgpt_movie_rec(movie_type: str,
 
 
 def check_movie_recommendation(search_term=None, uuid=None, value=None):
+    engine = create_engine(DATABASE_URL, pool_recycle=280)
+    Base.metadata.bind = engine
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
     # Raise an exception if both search_term and uuid are None
     if search_term is None and uuid is None:
         raise ValueError(
@@ -350,7 +353,8 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
             # .filter(MovieRecommendations.count == value)
             .first()
         )
-
+    session.commit()
+    session.close()
     if movie_recommendation is None:
         return None, None, None, None
     else:
@@ -363,6 +367,10 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
 
 
 def get_related_movies(recommendation_uuid):
+    engine = create_engine(DATABASE_URL, pool_recycle=280)
+    Base.metadata.bind = engine
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
     # Query the relation table to get all associated movie UUIDs
     movie_relations = session.query(MovieRecommendationRelation) \
         .join(MovieData, MovieRecommendationRelation.
@@ -370,7 +378,8 @@ def get_related_movies(recommendation_uuid):
         .filter(MovieRecommendationRelation.
                 recommendation_uuid == recommendation_uuid) \
         .filter(~MovieData.plot.in_(["N/A", " N/A"])).all()
-
+    session.commit()
+    session.close()
     # Create a list to hold all the movie_uuid values
     related_movies = [relation.movie_uuid for relation in movie_relations]
 
