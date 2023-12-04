@@ -90,7 +90,6 @@ def store_failed_request(title, year, rec_topic=None):
         searched_at=datetime.utcnow()
     )
     session.add(not_found_movie)
-    session.commit()
     session.close()
 
 
@@ -166,8 +165,6 @@ def process_request(request_type,
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     cast_processor = CastProcessor(session)
-    session.commit()
-    session.close()
     logging.info(f'Process request: {request_type}')
     if request_type == 'movie_id':
         return process_request_by_id(cast_processor,
@@ -177,6 +174,7 @@ def process_request(request_type,
         process_movie_data = process_request_by_name(cast_processor,
                                                      identifier,
                                                      api_key, year, rec_topic)
+        session.close()
         return process_movie_data
 
 
@@ -186,7 +184,6 @@ def query_movie_by_id(identifier):
     session = DBSession()
     movie_data = session.query(MovieData).filter(
         MovieData.imdbid == identifier).first()
-    session.commit()
     session.close()
     return movie_data
 
@@ -210,7 +207,6 @@ def query_movie_by_uuid(uuid):
     session = DBSession()
     movie_data = session.query(MovieData).filter(
         MovieData.uuid == uuid).first()
-    session.commit()
     session.close()
     return movie_data
 
@@ -221,7 +217,6 @@ def query_movie_by_name(identifier):
     session = DBSession()
     movie_data = session.query(MovieData).filter(
         MovieData.title.ilike(identifier)).first()
-    session.commit()
     session.close()
     return movie_data
 
@@ -232,7 +227,6 @@ def get_non_generated_movie_topics():
     session = DBSession()
     movie_rec = session.query(MovieRecommendationsSearchList.title).filter_by(
         is_generated=False).all()
-    session.commit()
     session.close()
     return movie_rec
 
@@ -244,7 +238,6 @@ def set_movie_topic_to_generated(movie_topic):
     movie_topic = session.query(MovieRecommendationsSearchList).filter_by(
         title=movie_topic).first()
     movie_topic.is_generated = True
-    session.commit()
     session.close()
 
 
@@ -366,7 +359,6 @@ def store_search_titles(titles):
             session.add(movie_rec_search)
             processed_titles.append(title)
 
-    session.commit()
     session.close()
     return processed_titles
 
@@ -442,7 +434,6 @@ def store_blurb_to_recommendation(uuid, blurb):
     recommendation = session.query(MovieRecommendations).filter_by(
         uuid=uuid).first()
     recommendation.blurb = blurb
-    session.commit()
     session.close()
 
 
