@@ -353,7 +353,8 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
             # .filter(MovieRecommendations.count == value)
             .first()
         )
-
+    session.commit()
+    session.close()
     if movie_recommendation is None:
         return None, None, None, None
     else:
@@ -377,7 +378,8 @@ def get_related_movies(recommendation_uuid):
         .filter(MovieRecommendationRelation.
                 recommendation_uuid == recommendation_uuid) \
         .filter(~MovieData.plot.in_(["N/A", " N/A"])).all()
-
+    session.commit()
+    session.close()
     # Create a list to hold all the movie_uuid values
     related_movies = [relation.movie_uuid for relation in movie_relations]
 

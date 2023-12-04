@@ -166,6 +166,8 @@ def process_request(request_type,
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     cast_processor = CastProcessor(session)
+    session.commit()
+    session.close()
     logging.info(f'Process request: {request_type}')
     if request_type == 'movie_id':
         return process_request_by_id(cast_processor,
@@ -182,8 +184,11 @@ def query_movie_by_id(identifier):
     engine = create_engine(DATABASE_URL, pool_recycle=280)
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    return session.query(MovieData).filter(
+    movie_data = session.query(MovieData).filter(
         MovieData.imdbid == identifier).first()
+    session.commit()
+    session.close()
+    return movie_data
 
 
 def check_db():
@@ -203,24 +208,33 @@ def query_movie_by_uuid(uuid):
     engine = create_engine(DATABASE_URL, pool_recycle=280)
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    return session.query(MovieData).filter(
+    movie_data = session.query(MovieData).filter(
         MovieData.uuid == uuid).first()
+    session.commit()
+    session.close()
+    return movie_data
 
 
 def query_movie_by_name(identifier):
     engine = create_engine(DATABASE_URL, pool_recycle=280)
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    return session.query(MovieData).filter(
+    movie_data = session.query(MovieData).filter(
         MovieData.title.ilike(identifier)).first()
+    session.commit()
+    session.close()
+    return movie_data
 
 
 def get_non_generated_movie_topics():
     engine = create_engine(DATABASE_URL, pool_recycle=280)
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    return session.query(MovieRecommendationsSearchList.title).filter_by(
+    movie_rec = session.query(MovieRecommendationsSearchList.title).filter_by(
         is_generated=False).all()
+    session.commit()
+    session.close()
+    return movie_rec
 
 
 def set_movie_topic_to_generated(movie_topic):
@@ -282,6 +296,8 @@ def store_movie_genre(session, new_movie, genre_string):
 
     except IntegrityError as e: # noqa
         session.rollback()
+    finally:
+        session.close()
 
 
 def search_movie_by_id(movie_id, api_key):
@@ -374,6 +390,7 @@ def get_recommendation_name(uuid):
     session = DBSession()
     recommendation = session.query(MovieRecommendations).filter_by(
         uuid=uuid).first()
+    session.close()
     if recommendation:
         return recommendation.topic_name
     else:
@@ -403,6 +420,8 @@ def set_rec_image(movie_uuid, rec_uuid):
     except Exception as e:  # Consider catching more specific exceptions
         logging.error(f"Error occurred: {e}")
         session.rollback()
+    finally:
+        session.close()
 
 
 def get_recommendation_blurb(uuid):
@@ -412,6 +431,7 @@ def get_recommendation_blurb(uuid):
     # Get the blurb for the given uuid.
     # Return None if no matching record found.
     record = session.query(MovieRecommendations).filter_by(uuid=uuid).first()
+    session.close()
     return record.blurb if record else None
 
 
@@ -431,6 +451,7 @@ def get_movie_imdb_id_from_uuid(uuid):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     result = session.query(MovieData.imdbid).filter_by(uuid=uuid).first()
+    session.close()
     if result is not None:
         return result[0]
     else:
@@ -478,6 +499,7 @@ def get_imdb_image_url(imdbid: str):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     movie_media_processor = MovieMediaProcessor(session)
+    session.close()
     return movie_media_processor.get_movie_image(imdbid)
 
 
@@ -486,6 +508,7 @@ def get_imdb_video_url(imdbid: str):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     movie_media_processor = MovieMediaProcessor(session)
+    session.close()
     return movie_media_processor.get_movie_video(imdbid)
 
 
@@ -513,7 +536,7 @@ def get_cast_info(movie_uuid):
                 cast_info['directors'].append(cast_name.name)
             elif cast_name.cast_type == 'writer':
                 cast_info['writers'].append(cast_name.name)
-
+    session.close()
     return cast_info
 
 
@@ -592,6 +615,7 @@ def is_valid_api_key(api_key):
         hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
         key_record = session.query(APIKey).filter(
             APIKey.hashed_key == hashed_key).first()
+        session.close()
         if key_record and key_record.expires_at > datetime.utcnow():
             return True
     return False
@@ -771,6 +795,9 @@ def fetch_recommendations(page=1, items_per_page=10):
 
 
 def search_movies(query):
+    engine = create_engine(DATABASE_URL, pool_recycle=280)
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
     # Performing a case-insensitive search for both topic_name and genre names
     search_results = session.query(
         MovieRecommendations.uuid,
@@ -788,7 +815,7 @@ def search_movies(query):
     ).order_by(
         desc(MovieRecommendations.date_generated)
     ).all()
-
+    session.close()
     # Removing duplicates
     unique_results = set()
     filtered_results = []
@@ -821,6 +848,8 @@ def set_posters_for_recommendation(recommendation_uuid, top_movies):
     except Exception as e:
         logging.error(f"Error while updating posters: {e}")
         session.rollback()
+    finally:
+        session.close()
 
 
 def get_random_posters(movie_uuids):
