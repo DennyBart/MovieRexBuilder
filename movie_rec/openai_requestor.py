@@ -353,7 +353,6 @@ def check_movie_recommendation(search_term=None, uuid=None, value=None):
             # .filter(MovieRecommendations.count == value)
             .first()
         )
-    session.commit()
     session.close()
     if movie_recommendation is None:
         return None, None, None, None
