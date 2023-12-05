@@ -15,6 +15,7 @@ import logging
 import urllib.parse
 from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
+from movie_rec.database import get_db_session
 from movie_rec.homepage_data import (add_featured_content,
                                      fetch_genres_for_movies,
                                      fetch_movie_uuids,
@@ -79,17 +80,14 @@ def process_movie_data(cast_processor, movie_data):
 
 
 def store_failed_request(title, year, rec_topic=None):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    not_found_movie = MoviesNotFound(
-        title=title,
-        year=year,
-        rec_topic=rec_topic,
-        searched_at=datetime.utcnow()
-    )
-    session.add(not_found_movie)
-    session.close()
+    with get_db_session() as session:
+        not_found_movie = MoviesNotFound(
+            title=title,
+            year=year,
+            rec_topic=rec_topic,
+            searched_at=datetime.utcnow()
+        )
+        session.add(not_found_movie)
 
 
 def process_request_by_id(cast_processor, identifier, api_key):
@@ -160,31 +158,27 @@ def process_request(request_type,
                     api_key,
                     year=None,
                     rec_topic=None):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    cast_processor = CastProcessor(session)
-    logging.info(f'Process request: {request_type}')
-    if request_type == 'movie_id':
-        return process_request_by_id(cast_processor,
-                                     identifier,
-                                     api_key)
-    elif request_type == 'movie_name':
-        process_movie_data = process_request_by_name(cast_processor,
-                                                     identifier,
-                                                     api_key, year, rec_topic)
-        session.close()
-        return process_movie_data
+    with get_db_session() as session:
+        cast_processor = CastProcessor(session)
+        logging.info(f'Process request: {request_type}')
+        if request_type == 'movie_id':
+            return process_request_by_id(cast_processor,
+                                         identifier,
+                                         api_key)
+        elif request_type == 'movie_name':
+            process_movie_data = process_request_by_name(cast_processor,
+                                                         identifier,
+                                                         api_key,
+                                                         year,
+                                                         rec_topic)
+            return process_movie_data
 
 
 def query_movie_by_id(identifier):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_data = session.query(MovieData).filter(
-        MovieData.imdbid == identifier).first()
-    session.close()
-    return movie_data
+    with get_db_session() as session:
+        movie_data = session.query(MovieData).filter(
+            MovieData.imdbid == identifier).first()
+        return movie_data
 
 
 def check_db():
@@ -201,63 +195,49 @@ class DBNotFoundError(Exception):
 
 
 def query_movie_by_uuid(uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_data = session.query(MovieData).filter(
-        MovieData.uuid == uuid).first()
-    session.close()
-    return movie_data
+    with get_db_session() as session:
+        movie_data = session.query(MovieData).filter(
+            MovieData.uuid == uuid).first()
+        return movie_data
 
 
 def query_movie_by_name(identifier):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_data = session.query(MovieData).filter(
-        MovieData.title.ilike(identifier)).first()
-    session.close()
-    return movie_data
+    with get_db_session() as session:
+        movie_data = session.query(MovieData).filter(
+            MovieData.title.ilike(identifier)).first()
+        return movie_data
 
 
 def get_non_generated_movie_topics():
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_rec = session.query(MovieRecommendationsSearchList.title).filter_by(
-        is_generated=False).all()
-    session.close()
-    return movie_rec
+    with get_db_session() as session:
+        movie_rec = session.query(MovieRecommendationsSearchList.title
+                                  ).filter_by(is_generated=False).all()
+        return movie_rec
 
 
 def set_movie_topic_to_generated(movie_topic):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_topic = session.query(MovieRecommendationsSearchList).filter_by(
-        title=movie_topic).first()
-    movie_topic.is_generated = True
-    session.close()
+    with get_db_session() as session:
+        movie_topic = session.query(MovieRecommendationsSearchList).filter_by(
+            title=movie_topic).first()
+        movie_topic.is_generated = True
 
 
 def store_new_movie(cast_processor, movie_data):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    try:
+    with get_db_session() as session:
         new_movie = process_movie_data(cast_processor, movie_data)
         logging.info(f"Storing new movie {new_movie.title}")
         imdbid = str(new_movie.imdbid)
         session.add(new_movie)
-        session.commit()
-        store_movie_genre(session=session, new_movie=new_movie, genre_string=str(new_movie.genre)) # noqa
-        get_and_store_videos(imdbid)
-        get_and_store_images(imdbid)
-    except IntegrityError as e:
-        logging.error(f"IntegrityError occurred: {e}")
-        session.rollback()
-    finally:
-        session.close()
+
+        try:
+            session.commit()
+            store_movie_genre(session=session, new_movie=new_movie,
+                              genre_string=str(new_movie.genre))
+            get_and_store_videos(imdbid)
+            get_and_store_images(imdbid)
+        except IntegrityError as e:
+            logging.error(f"IntegrityError occurred: {e}")
+            session.rollback()
 
 
 def store_movie_genre(session, new_movie, genre_string):
@@ -270,26 +250,26 @@ def store_movie_genre(session, new_movie, genre_string):
             if genre is None:
                 genre = Genre(name=genre_name)
                 session.add(genre)
-                session.commit()
+                session.flush()  # Flush to get the genre ID without committing the entire transaction # noqa
 
             existing_relation = session.query(MovieGenre).filter_by(
                 movie_uuid=new_movie.uuid,
-                genre_id='Action'
+                genre_id=genre.id
             ).first()
 
             if existing_relation is None:
                 new_movie_genre = MovieGenre(movie_uuid=new_movie.uuid,
                                              genre_id=genre.id)
                 session.add(new_movie_genre)
-                session.commit()
 
             if genre not in new_movie.genres:
                 new_movie.genres.append(genre)
 
-    except IntegrityError as e: # noqa
+        session.commit()
+    except IntegrityError as e:
         session.rollback()
-    finally:
-        session.close()
+        # Consider logging or re-raising the exception
+        logging.error(f"IntegrityError occurred: {e}")
 
 
 def search_movie_by_id(movie_id, api_key):
@@ -336,235 +316,174 @@ def search_movie_by_title(title, year, api_key):
 
 
 def store_search_titles(titles):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    # Fetch all titles from the database
-    existing_titles_query = session.query(MovieRecommendationsSearchList.title)
-    existing_titles = {row[0] for row in existing_titles_query}
+    with get_db_session() as session:
+        existing_titles_query = session.query(
+            MovieRecommendationsSearchList.title)
+        existing_titles = {row[0] for row in existing_titles_query}
+        processed_titles = []
+        for title in titles:
+            title = title.strip('"').replace('25 ', '')
+            if title not in existing_titles:
+                logging.info(f'Storing movie topic "{title}" in database')
+                movie_rec_search = MovieRecommendationsSearchList(
+                    title=title, 
+                    is_generated=False, 
+                    generated_at=datetime.now()
+                )
+                session.add(movie_rec_search)
+                processed_titles.append(title)
 
-    # Process titles
-    processed_titles = []
-    for title in titles:
-        # Remove leading and trailing quotes
-        title = title.strip('"')
-        title = title.replace('25 ', '')
-        if title not in existing_titles:
-            logging.info(f'Storing movie topic "{title}" in database')
-            movie_rec_search = MovieRecommendationsSearchList(
-                title=title,
-                is_generated=False,
-                generated_at=datetime.now()
-            )
-            session.add(movie_rec_search)
-            processed_titles.append(title)
-
-    session.close()
-    return processed_titles
+        session.commit()
+        return processed_titles
 
 
 def get_recommendations(search=None, limit=50, offset=0):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    query = session.query(MovieRecommendations)
+    with get_db_session() as session:
+        query = session.query(MovieRecommendations)
 
-    if search:
-        query = query.filter(MovieRecommendations.
-                             topic_name.ilike(f'%{search}%'))
-    recommendations = query.offset(offset).limit(limit).all()
-    return recommendations
+        if search:
+            query = query.filter(MovieRecommendations.
+                                 topic_name.ilike(f'%{search}%'))
+        recommendations = query.offset(offset).limit(limit).all()
+        return recommendations
 
 
 def get_recommendation_name(uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    recommendation = session.query(MovieRecommendations).filter_by(
-        uuid=uuid).first()
-    session.close()
-    if recommendation:
-        return recommendation.topic_name
-    else:
-        return None
+    with get_db_session() as session:
+        recommendation = session.query(MovieRecommendations).filter_by(
+            uuid=uuid).first()
+        session.close()
+        if recommendation:
+            return recommendation.topic_name
+        else:
+            return None
 
 
 def set_rec_image(movie_uuid, rec_uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    try:
-        # Get the IMDb ID from the movie UUID
+    with get_db_session() as session:
         imdbid = get_movie_imdb_id_from_uuid(movie_uuid)
-
-        # Get the image URL from the IMDb ID
         img_uri = get_imdb_image_url(imdbid=imdbid)
 
-        movie_rec_search = session.query(MovieRecommendations
-                                         ).filter_by(uuid=rec_uuid).first()
+        movie_rec_search = session.query(MovieRecommendations).filter_by(
+            uuid=rec_uuid).first()
 
         if movie_rec_search:
-            movie_rec_search.topic_image = img_uri[0] 
+            movie_rec_search.topic_image = img_uri[0] if img_uri else None
             session.commit()
         else:
             logging.warning(f"No rec found with UUID {rec_uuid}")
 
-    except Exception as e:  # Consider catching more specific exceptions
-        logging.error(f"Error occurred: {e}")
-        session.rollback()
-    finally:
-        session.close()
-
 
 def get_recommendation_blurb(uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    # Get the blurb for the given uuid.
-    # Return None if no matching record found.
-    record = session.query(MovieRecommendations).filter_by(uuid=uuid).first()
-    session.close()
-    return record.blurb if record else None
+    with get_db_session() as session:
+        # Get the blurb for the given uuid.
+        # Return None if no matching record found.
+        record = session.query(MovieRecommendations).filter_by(
+            uuid=uuid).first()
+        return record.blurb if record else None
 
 
 def store_blurb_to_recommendation(uuid, blurb):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    recommendation = session.query(MovieRecommendations).filter_by(
-        uuid=uuid).first()
-    recommendation.blurb = blurb
-    session.close()
+    with get_db_session() as session:
+        recommendation = session.query(MovieRecommendations).filter_by(
+            uuid=uuid).first()
+        recommendation.blurb = blurb
 
 
 def get_movie_imdb_id_from_uuid(uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    result = session.query(MovieData.imdbid).filter_by(uuid=uuid).first()
-    session.close()
-    if result is not None:
-        return result[0]
-    else:
-        return None
+    with get_db_session() as session:
+        result = session.query(MovieData.imdbid).filter_by(uuid=uuid).first()
+        if result is not None:
+            return result[0]
+        else:
+            return None
 
 
 def get_and_store_images(imdbid: str,
                          include_image_language: str = 'en,null',
                          overwrite: bool = False):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_media_processor = MovieMediaProcessor(session)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {THEMOVIEDB_API_KEY}"
-    }
-    session.close()
-    return movie_media_processor.tmdb_request(
-        imdbid, 'images', include_image_language, headers,
-        overwrite, MovieImage, 5,
-        movie_media_processor.process_image_data)
+    with get_db_session() as session:
+        movie_media_processor = MovieMediaProcessor(session)
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {THEMOVIEDB_API_KEY}"
+        }
+        return movie_media_processor.tmdb_request(
+            imdbid, 'images', include_image_language, headers,
+            overwrite, MovieImage, 5,
+            movie_media_processor.process_image_data)
 
 
 def get_and_store_videos(imdbid: str,
                          language: str = 'en-US',
                          overwrite: bool = False):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_media_processor = MovieMediaProcessor(session)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {THEMOVIEDB_API_KEY}"
-    }
-    session.close()
-    return movie_media_processor.tmdb_request(
-        imdbid, 'videos', language, headers,
-        overwrite, MovieVideo, 10,
-        movie_media_processor.process_video_data)
+    with get_db_session() as session:
+        movie_media_processor = MovieMediaProcessor(session)
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {THEMOVIEDB_API_KEY}"
+        }
+        return movie_media_processor.tmdb_request(
+            imdbid, 'videos', language, headers,
+            overwrite, MovieVideo, 10,
+            movie_media_processor.process_video_data)
 
 
 def get_imdb_image_url(imdbid: str):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_media_processor = MovieMediaProcessor(session)
-    session.close()
-    return movie_media_processor.get_movie_image(imdbid)
+    with get_db_session() as session:
+        movie_media_processor = MovieMediaProcessor(session)
+        return movie_media_processor.get_movie_image(imdbid)
 
 
 def get_imdb_video_url(imdbid: str):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_media_processor = MovieMediaProcessor(session)
-    session.close()
-    return movie_media_processor.get_movie_video(imdbid)
+    with get_db_session() as session:
+        movie_media_processor = MovieMediaProcessor(session)
+        return movie_media_processor.get_movie_video(imdbid)
 
 
 def get_cast_info(movie_uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    # Query the 'movie_cast' table to get cast_ids
-    movie_casts = session.query(MovieCast).filter_by(
-        movie_uuid=movie_uuid).all()
+    with get_db_session() as session:
+        movie_casts = session.query(MovieCast).filter_by(
+            movie_uuid=movie_uuid).all()
+        cast_info = {'actors': [], 'directors': [], 'writers': []}
 
-    # Initialize dictionary to hold cast info
-    cast_info = {'actors': [], 'directors': [], 'writers': []}
+        for movie_cast in movie_casts:
+            cast_name = session.query(CastName).filter_by(
+                uuid=movie_cast.cast_id).first()
+            if cast_name:
+                cast_type = cast_name.cast_type
+                cast_info[cast_type].append(cast_name.name) if cast_type in cast_info else None # noqa
 
-    # Loop through the movie_casts list and fill cast_info dict
-    for movie_cast in movie_casts:
-        # Get cast_name object using cast_id
-        cast_name = session.query(CastName).filter_by(
-            uuid=movie_cast.cast_id).first()
-
-        if cast_name:
-            if cast_name.cast_type == 'actor':
-                cast_info['actors'].append(cast_name.name)
-            elif cast_name.cast_type == 'director':
-                cast_info['directors'].append(cast_name.name)
-            elif cast_name.cast_type == 'writer':
-                cast_info['writers'].append(cast_name.name)
-    session.close()
     return cast_info
 
 
 def remove_movie_by_uuid(movie_uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    try:
-        # Get movie data
+    """
+    Remove movie and related data by UUID.
+
+    Parameters:
+    - movie_uuid (str): The UUID of the movie to be removed.
+
+    No return value.
+    """
+    with get_db_session() as session:
         movie_data = session.query(MovieData).filter_by(
             uuid=movie_uuid).first()
 
-        if not movie_data:  # if movie_data is None or doesn't exist
+        if not movie_data:
             logging.warning(f"Movie with uuid {movie_uuid} not found.")
             return
 
-        imdbid = movie_data.imdbid  # retrieve imdbid from the movie_data
+        imdbid = movie_data.imdbid
 
-        # Remove movie-cast associations
-        session.query(MovieCast).filter(MovieCast.movie_uuid == movie_uuid).delete() # noqa
-
-        # Remove movie-recommendation relations
-        session.query(MovieData).filter(MovieData.uuid == movie_uuid).delete()
-
-        # Remove movie images
-        session.query(MovieImage).filter(MovieImage.imdbid == imdbid).delete()
-
-        # Remove movie videos
-        session.query(MovieVideo).filter(MovieVideo.imdbid == imdbid).delete()
+        # Perform deletion operations within a single session
+        session.query(MovieCast).filter_by(movie_uuid=movie_uuid).delete()
+        session.query(MovieData).filter_by(uuid=movie_uuid).delete()
+        session.query(MovieImage).filter_by(imdbid=imdbid).delete()
+        session.query(MovieVideo).filter_by(imdbid=imdbid).delete()
 
         session.commit()
-        logging.info(f'Removed all data related to uuid {movie_uuid} and imdbid {imdbid} Movie Data') # noqa
-    except Exception as e:
-        logging.error(f"Error occurred: {e}")
-        session.rollback()
-    finally:
-        session.close()
+        logging.info(f'Removed all data related to uuid {movie_uuid} and imdbid {imdbid}.') # noqa
 
 
 def replace_movie_uuid(original_uuid, new_uuid):
@@ -572,166 +491,138 @@ def replace_movie_uuid(original_uuid, new_uuid):
     Replace the movie_uuid in the MovieRecommendationRelation table.
 
     Parameters:
-    - original_uuid (str): The original UUID that needs to be replaced.
-    - new_uuid (str): The new UUID value that will replace the original.
+    - original_uuid (str): The original UUID to be replaced.
+    - new_uuid (str): The new UUID to use.
 
     Returns:
     - int: Number of rows updated.
     """
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    try:
+    with get_db_session() as session:
         updated_rows = session.query(MovieRecommendationRelation) \
-                              .filter(MovieRecommendationRelation.
-                                      movie_uuid == original_uuid) \
-                              .update({MovieRecommendationRelation.
-                                       movie_uuid: new_uuid})
-
+                              .filter(MovieRecommendationRelation.movie_uuid == original_uuid) \
+                              .update({MovieRecommendationRelation.movie_uuid: new_uuid}) # noqa
         session.commit()
-        logging.info(f'REC UUID {str(original_uuid)} has been replaced with {str(new_uuid)}') # noqa
+        logging.info(f'REC UUID {original_uuid} replaced with {new_uuid}')
         return updated_rows
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
 
 
 def is_valid_api_key(api_key):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    if api_key is not None:
-        hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
-        key_record = session.query(APIKey).filter(
-            APIKey.hashed_key == hashed_key).first()
-        session.close()
-        if key_record and key_record.expires_at > datetime.utcnow():
-            return True
-    return False
+    with get_db_session() as session:
+        if api_key is not None:
+            hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
+            key_record = session.query(APIKey).filter(
+                APIKey.hashed_key == hashed_key).first()
+            session.close()
+            if key_record and key_record.expires_at > datetime.utcnow():
+                return True
+        return False
 
 
 def generate_and_store_api_key():
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    try:
-        # Generate a simple UUID based API key
-        api_key = str(uuid.uuid4())
-        hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
-        # Store the hashed key in the database
-        new_key_record = APIKey(hashed_key=hashed_key)
-        session.add(new_key_record)
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
+    with get_db_session() as session:
+        try:
+            # Generate a simple UUID based API key
+            api_key = str(uuid.uuid4())
+            hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
+            # Store the hashed key in the database
+            new_key_record = APIKey(hashed_key=hashed_key)
+            session.add(new_key_record)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
 
-    # Return the raw API key to the user (it's the only time it'll be visible)
-    return api_key
+        # Return the raw API key to the user (it's the only time it'll be visible) # noqa
+        return api_key
 
 
 # TODO Move
 def generte_cast_data(cast_type):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    if cast_type in ['actor', 'director']:
-        cast = getattr(ContentType, cast_type.upper()).value.upper()
-        return generate_movie_cast_homepage_data(session, cast)
-    else:
-        return None
+    with get_db_session() as session:
+        if cast_type in ['actor', 'director']:
+            cast = getattr(ContentType, cast_type.upper()).value.upper()
+            return generate_movie_cast_homepage_data(session, cast)
+        else:
+            return None
 
 
 # TODO Move
 def generte_rec_genre_data(recommendation_uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    movie_uuids = fetch_movie_uuids(session, recommendation_uuid)
-    genres = fetch_genres_for_movies(session, movie_uuids)
-    top_genres = get_top_genres(genres)
+    with get_db_session() as session:
+        movie_uuids = fetch_movie_uuids(session, recommendation_uuid)
+        genres = fetch_genres_for_movies(session, movie_uuids)
+        top_genres = get_top_genres(genres)
 
-    updated_recommendation = update_recommendation(session,
-                                                   recommendation_uuid,
-                                                   top_genres)
+        updated_recommendation = update_recommendation(session,
+                                                       recommendation_uuid,
+                                                       top_genres)
 
-    return updated_recommendation
+        return updated_recommendation
 
 
 def generate_genre_homepage_data():
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    genre_list = get_genre(session)  # Assuming this returns a list of genres like ['Action', 'Comedy', 'Drama'] # noqa
+    genre_list = []
+    with get_db_session() as session:
+        genre_list = get_genre(session)  # Fetch genres only once
 
-    max_retries = 5  # Limit the number of retries
+    genre_list = [genre for genre in genre_list if genre.name != 'N/A']
+
+    max_retries = 5
     retries = 0
+    uuid_list = []
 
-    while retries < max_retries:
-        if genre_list:
-            # Select a random genre from the list
-            genre_to_search = random.choice(genre_list)
-            if genre_to_search.name == 'N/A':
-                genre_to_search = random.choice(genre_list)
-        else:
-            genre_to_search = "Action"  # Default genre if no genres are available # noqa
+    while retries < max_retries and not uuid_list:
+        genre_to_search = random.choice(genre_list) if genre_list else "Action"
 
-        recommendations = get_movie_recommendations(session, genre_to_search)
-        uuid_list = [rec.uuid for rec in recommendations]
-
-        # If recommendations were found, break out of the loop
-        if uuid_list:
-            break
+        with get_db_session() as session:
+            recommendations = get_movie_recommendations(session,
+                                                        genre_to_search)
+            uuid_list = [rec.uuid for rec in recommendations]
 
         retries += 1
 
-    if uuid_list:  # If recommendations were found
-        # clear_previous_featured_content(session, genre_to_search)
-        add_featured_content(session, genre_to_search, uuid_list)
+    if uuid_list:
+        with get_db_session() as session:
+            # Ensure you have a session for these operations
+            # clear_previous_featured_content(session, genre_to_search)
+            add_featured_content(session, genre_to_search, uuid_list)
     else:
-        logging.info("No recommendations found after {} retries".format(
-            max_retries))
+        logging.info(f"No recommendations found after {max_retries} retries")
 
 
 def fetch_genre_name_by_id(genre_id):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    genre = session.query(Genre).filter(Genre.id == genre_id).first()
-    return genre.name if genre else None
+    with get_db_session() as session:
+        genre = session.query(Genre).filter(Genre.id == genre_id).first()
+        return genre.name if genre else None
 
 
 def generate_rec_list():
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    # Get all recommendation_uuids from the database where topic_image is null
-    rec_uuids = session.query(MovieRecommendations.uuid).filter(
-        or_(MovieRecommendations.topic_image == '',
-            MovieRecommendations.topic_image == None) # noqa
-            ).all()
-    # Get a random movie for each rec_uuid
-    for rec_uuid_tuple in rec_uuids:
-        rec_uuid = rec_uuid_tuple[0]
-        random_movie_form_rec = session.query(MovieData.uuid).join(
-            MovieRecommendationRelation,
-            MovieRecommendationRelation.movie_uuid == MovieData.uuid
-        ).filter(
-            MovieRecommendationRelation.recommendation_uuid == rec_uuid
-        ).order_by(func.random()).first()
-        # Check if random_movie_tuple has a value, extract if it does
-        if random_movie_form_rec:
-            random_movie = random_movie_form_rec[0]
+    with get_db_session() as session:
+        # Get all recommendation_uuids from the database where topic_image is null # noqa
+        rec_uuids = session.query(MovieRecommendations.uuid).filter(
+            or_(MovieRecommendations.topic_image == '',
+                MovieRecommendations.topic_image == None) # noqa
+                ).all()
+        # Get a random movie for each rec_uuid
+        for rec_uuid_tuple in rec_uuids:
+            rec_uuid = rec_uuid_tuple[0]
+            random_movie_form_rec = session.query(MovieData.uuid).join(
+                MovieRecommendationRelation,
+                MovieRecommendationRelation.movie_uuid == MovieData.uuid
+            ).filter(
+                MovieRecommendationRelation.recommendation_uuid == rec_uuid
+            ).order_by(func.random()).first()
+            # Check if random_movie_tuple has a value, extract if it does
+            if random_movie_form_rec:
+                random_movie = random_movie_form_rec[0]
 
-            # Update the topic_image for the rec_uuid
-            set_rec_image(random_movie, rec_uuid)
-        else:
-            logging.info("No random movie found.")
-    logging.info(f"Finished generating {len(rec_uuids)} rec list images.")
+                # Update the topic_image for the rec_uuid
+                set_rec_image(random_movie, rec_uuid)
+            else:
+                logging.info("No random movie found.")
+        logging.info(f"Finished generating {len(rec_uuids)} rec list images.")
 
 
 def fetch_recommendations(page=1, items_per_page=10):
@@ -786,68 +677,58 @@ def fetch_recommendations(page=1, items_per_page=10):
 
 
 def search_movies(query):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    # Performing a case-insensitive search for both topic_name and genre names
-    search_results = session.query(
-        MovieRecommendations.uuid,
-        MovieRecommendations.topic_name
-    ).join(
-        Genre, or_(
-            Genre.id == MovieRecommendations.genre_1,
-            Genre.id == MovieRecommendations.genre_2,
-        )
-    ).filter(
-        or_(
-            MovieRecommendations.topic_name.ilike(f"%{query}%"),
-            Genre.name.ilike(f"%{query}%")
-        )
-    ).order_by(
-        desc(MovieRecommendations.date_generated)
-    ).all()
-    session.close()
-    # Removing duplicates
-    unique_results = set()
-    filtered_results = []
+    with get_db_session() as session:
+        # Performing a case-insensitive search for both topic_name and genre names # noqa
+        search_results = session.query(
+            MovieRecommendations.uuid,
+            MovieRecommendations.topic_name
+        ).join(
+            Genre, or_(
+                Genre.id == MovieRecommendations.genre_1,
+                Genre.id == MovieRecommendations.genre_2,
+            )
+        ).filter(
+            or_(
+                MovieRecommendations.topic_name.ilike(f"%{query}%"),
+                Genre.name.ilike(f"%{query}%")
+            )
+        ).order_by(
+            desc(MovieRecommendations.date_generated)
+        ).all()
+        # Removing duplicates
+        unique_results = set()
+        filtered_results = []
 
-    for uuid, topic_name in search_results: # noqa
-        if (uuid, topic_name) not in unique_results:
-            unique_results.add((uuid, topic_name))
-            filtered_results.append({"uuid": uuid, "topic_name": topic_name})
+        for uuid, topic_name in search_results: # noqa
+            if (uuid, topic_name) not in unique_results:
+                unique_results.add((uuid, topic_name))
+                filtered_results.append({"uuid": uuid, "topic_name": topic_name}) # noqa
 
-    return filtered_results
+        return filtered_results
 
 
 def set_posters_for_recommendation(recommendation_uuid, top_movies):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    try:
-        rec = session.query(MovieRecommendations).filter_by(
-            uuid=recommendation_uuid).one()
+    with get_db_session() as session:
+        try:
+            rec = session.query(MovieRecommendations).filter_by(
+                uuid=recommendation_uuid).one()
 
-        # If the top_movies list has data, assign posters
-        if len(top_movies) > 0:
-            rec.poster_1 = top_movies[0]
-        if len(top_movies) > 1:
-            rec.poster_2 = top_movies[1]
-        if len(top_movies) > 2:
-            rec.poster_3 = top_movies[2]
+            # If the top_movies list has data, assign posters
+            if len(top_movies) > 0:
+                rec.poster_1 = top_movies[0]
+            if len(top_movies) > 1:
+                rec.poster_2 = top_movies[1]
+            if len(top_movies) > 2:
+                rec.poster_3 = top_movies[2]
 
-        session.commit()
-    except Exception as e:
-        logging.error(f"Error while updating posters: {e}")
-        session.rollback()
-    finally:
-        session.close()
+            session.commit()
+        except Exception as e:
+            logging.error(f"Error while updating posters: {e}")
+            session.rollback()
 
 
 def get_random_posters(movie_uuids):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    try:
+    with get_db_session() as session:
         # Query the database for movies with the given UUIDs and 
         # order them by metascore
         movies = session.query(MovieData).filter(MovieData.uuid.in_(
@@ -863,6 +744,3 @@ def get_random_posters(movie_uuids):
         posters = [movie.poster for movie in selected_movies]
 
         return posters
-
-    finally:
-        session.close()

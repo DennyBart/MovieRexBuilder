@@ -1,5 +1,4 @@
 import datetime
-import os
 import random
 import re
 import pandas as pd
@@ -7,14 +6,12 @@ import uuid
 import openai
 import logging
 import json
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
 from movie_rec.data_converter import format_recommendation_list
+from movie_rec.database import get_db_session
 from movie_rec.models import (
     MovieData,
     MovieRecommendationRelation,
     MovieRecommendations,
-    Base
 )
 from constants import (
     MOVIE_CRITIC_BOT_MESSAGE,
@@ -31,7 +28,6 @@ from movie_rec.movie_search import (
     set_posters_for_recommendation
 )
 import time
-DATABASE_URL = os.environ['DATABASE_URL']
 
 
 def create_movie_list(response):
@@ -107,34 +103,30 @@ def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
     return movie_list
 
 
-def store_movie_recommendation(movie_list, movie_type, total):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    Base.metadata.bind = engine
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
+def store_movie_recommendation(movie_list, movie_type):
+    with get_db_session() as session:
+        unique_movie_list = list(set(movie_list))
 
-    unique_movie_list = list(set(movie_list))
-
-    rec_uuid = str(uuid.uuid4())
-    new_recommendations = MovieRecommendations(
-        uuid=rec_uuid,
-        topic_name=str(movie_type),
-        count=len(unique_movie_list),
-        date_generated=datetime.datetime.now()
-    )
-    session.add(new_recommendations)
-    session.commit()
-    for movie_uuid in unique_movie_list:
-        # add movie uuid and recomendation uuid to MovieRecommendation
-        new_movie_recommendation = MovieRecommendationRelation(
-            recommendation_uuid=rec_uuid,
-            movie_uuid=movie_uuid
+        rec_uuid = str(uuid.uuid4())
+        new_recommendations = MovieRecommendations(
+            uuid=rec_uuid,
+            topic_name=str(movie_type),
+            count=len(unique_movie_list),
+            date_generated=datetime.datetime.now()
         )
-        session.add(new_movie_recommendation)
-    logging.info(f"New Movie Recommendation: {movie_type}")
-    session.commit()
-    session.close()
-    return rec_uuid
+        session.add(new_recommendations)
+        session.flush()  # Flush to ensure 'new_recommendations' is in the session before adding relations # noqa
+
+        relations = [
+            MovieRecommendationRelation(recommendation_uuid=rec_uuid, movie_uuid=movie_uuid) # noqa
+            for movie_uuid in unique_movie_list
+        ]
+        session.bulk_save_objects(relations)
+
+        logging.info(f"New Movie Recommendation: {movie_type} with {len(unique_movie_list)} movies") # noqa
+        session.commit()
+
+        return rec_uuid
 
 
 def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
@@ -325,64 +317,45 @@ def get_chatgpt_movie_rec(movie_type: str,
     return None, None
 
 
-def check_movie_recommendation(search_term=None, uuid=None, value=None):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    Base.metadata.bind = engine
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    # Raise an exception if both search_term and uuid are None
-    if search_term is None and uuid is None:
-        raise ValueError(
-            "At least one of search_term or uuid must be provided."
-        )
+def check_movie_recommendation(search_term=None, uuid=None):
+    with get_db_session() as session:
+        if search_term is None and uuid is None:
+            raise ValueError("At least one of search_term or uuid must be provided.") # noqa
 
-    # Initialize movie_recommendation
-    movie_recommendation = None
+        movie_recommendation = None
 
-    # If uuid is provided, prioritize it over search_term
-    if uuid is not None:
-        movie_recommendation = (
-            session.query(MovieRecommendations)
-            .filter(MovieRecommendations.uuid == uuid)
-            .first()
-        )
-    else:
-        # Use '%' as a wildcard to find similar topic names
-        movie_recommendation = (
-            session.query(MovieRecommendations)
-            .filter(MovieRecommendations.topic_name.ilike(f"%{search_term}%"))
-            # .filter(MovieRecommendations.count == value)
-            .first()
-        )
-    session.close()
-    if movie_recommendation is None:
-        return None, None, None, None
-    else:
-        return (movie_recommendation.uuid,
-                movie_recommendation.count,
-                movie_recommendation.topic_name,
-                [movie_recommendation.poster_1,
-                 movie_recommendation.poster_2,
-                 movie_recommendation.poster_3])
+        if uuid is not None:
+            movie_recommendation = session.query(MovieRecommendations).filter(
+                MovieRecommendations.uuid == uuid).first()
+        elif search_term is not None:
+            movie_recommendation = session.query(MovieRecommendations).filter(
+                MovieRecommendations.topic_name.ilike(f"%{search_term}%")).first() # noqa
+
+        if movie_recommendation is None:
+            return None, None, None, None
+        else:
+            return (movie_recommendation.uuid,
+                    movie_recommendation.count,
+                    movie_recommendation.topic_name,
+                    [movie_recommendation.poster_1,
+                     movie_recommendation.poster_2,
+                     movie_recommendation.poster_3])
 
 
 def get_related_movies(recommendation_uuid):
-    engine = create_engine(DATABASE_URL, pool_recycle=280)
-    Base.metadata.bind = engine
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-    # Query the relation table to get all associated movie UUIDs
-    movie_relations = session.query(MovieRecommendationRelation) \
-        .join(MovieData, MovieRecommendationRelation.
-              movie_uuid == MovieData.uuid) \
-        .filter(MovieRecommendationRelation.
-                recommendation_uuid == recommendation_uuid) \
-        .filter(~MovieData.plot.in_(["N/A", " N/A"])).all()
-    session.close()
-    # Create a list to hold all the movie_uuid values
-    related_movies = [relation.movie_uuid for relation in movie_relations]
+    with get_db_session() as session:
+        # Query the relation table to get all associated movie UUIDs
+        movie_relations = session.query(MovieRecommendationRelation) \
+            .join(MovieData, MovieRecommendationRelation.
+                  movie_uuid == MovieData.uuid) \
+            .filter(MovieRecommendationRelation.
+                    recommendation_uuid == recommendation_uuid) \
+            .filter(~MovieData.plot.in_(["N/A", " N/A"])).all()
+        session.close()
+        # Create a list to hold all the movie_uuid values
+        related_movies = [relation.movie_uuid for relation in movie_relations]
 
-    return related_movies
+        return related_movies
 
 
 def get_limit_and_value(request):
