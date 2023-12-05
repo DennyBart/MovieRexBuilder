@@ -27,7 +27,6 @@ from movie_rec.image_video_service import MovieMediaProcessor
 
 from movie_rec.models import (
     APIKey,
-    Base,
     CastName,
     FeaturedContent,
     Genre,
@@ -312,14 +311,15 @@ def search_movie_by_id(movie_id, api_key):
 
 # "http://127.0.0.1:5000/movies?title=Swallow&year=2019"
 def search_movie_by_title(title, year, api_key):
+    # check if year is a float and remove the decmial if so
     plot = OMDB_PLOT
     encoded_title = urllib.parse.quote_plus(title)
     logging.info(f"Searching OMDB for movie with "
-                 f"title {title} and year {year}")
+                 f"title {title} and year {int(year)}")
     if plot == 'full':
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}&plot={plot}"  # noqa
+        url = f"http://www.omdbapi.com/?t={encoded_title}&y={int(year)}&apikey={api_key}&plot={plot}"  # noqa
     else:
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={year}&apikey={api_key}" # noqa
+        url = f"http://www.omdbapi.com/?t={encoded_title}&y={int(year)}&apikey={api_key}" # noqa
     try:
         response = requests.get(url)
         data = response.json()
