@@ -133,6 +133,7 @@ def store_movie_recommendation(movie_list, movie_type, total):
         session.add(new_movie_recommendation)
     logging.info(f"New Movie Recommendation: {movie_type}")
     session.commit()
+    session.close()
     return rec_uuid
 
 
@@ -377,7 +378,6 @@ def get_related_movies(recommendation_uuid):
         .filter(MovieRecommendationRelation.
                 recommendation_uuid == recommendation_uuid) \
         .filter(~MovieData.plot.in_(["N/A", " N/A"])).all()
-    session.commit()
     session.close()
     # Create a list to hold all the movie_uuid values
     related_movies = [relation.movie_uuid for relation in movie_relations]
