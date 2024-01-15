@@ -95,6 +95,7 @@ def process_request_by_id(cast_processor, identifier, api_key):
     if movie_data:
         logging.info(f"Movie_ID {identifier} found in local database")
         movie_dict = movie_data.to_dict()
+        print("Cast processor: ")
         movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
         return movie_dict
 
@@ -122,6 +123,7 @@ def process_request_by_name(cast_processor, identifier,
         logging.info(f"Movie_title {identifier} {year} "
                      f"found in local database")
         movie_dict = movie_data.to_dict()
+        print("Movie uuid: {}".format(movie_data.uuid))
         movie_dict["cast"] = cast_processor.get_movie_cast(movie_data.uuid)
         logging.debug(f"Movie cast: {movie_dict['cast']} - "
                       f"uuid {movie_data.uuid}")
@@ -220,56 +222,64 @@ def set_movie_topic_to_generated(movie_topic):
         movie_topic = session.query(MovieRecommendationsSearchList).filter_by(
             title=movie_topic).first()
         movie_topic.is_generated = True
+        session.commit()
 
 
 def store_new_movie(cast_processor, movie_data):
     with get_db_session() as session:
-        new_movie = process_movie_data(cast_processor, movie_data)
-        logging.info(f"Storing new movie {new_movie.title}")
-        imdbid = str(new_movie.imdbid)
-        session.add(new_movie)
-
         try:
+            new_movie = process_movie_data(cast_processor, movie_data)
+            logging.info(f"Storing new movie {new_movie.title}")
+
+            # Merge new_movie into the session (handles both new and existing instances)
+            new_movie = session.merge(new_movie)
+
             session.commit()
-            store_movie_genre(session=session, new_movie=new_movie,
-                              genre_string=str(new_movie.genre))
-            get_and_store_videos(imdbid)
-            get_and_store_images(imdbid)
+            logging.info(f"Movie {new_movie.title} stored successfully")
         except IntegrityError as e:
             logging.error(f"IntegrityError occurred: {e}")
             session.rollback()
+            return False  # Indicate failure
+
+    # These functions should be called within a session if they need access to database
+    with get_db_session() as session:
+        logging.info(f"Storing movie {new_movie.title} genres")
+        store_movie_genre(new_movie, genre_string=str(new_movie.genre))
+        get_and_store_videos(str(new_movie.imdbid))
+        get_and_store_images(str(new_movie.imdbid))
+
+    return True  # Indicate success
 
 
-def store_movie_genre(session, new_movie, genre_string):
-    try:
-        genres = genre_string.split(', ')
+def store_movie_genre(new_movie, genre_string):
+    with get_db_session() as session:
+        try:
+            # Merge the new_movie object into the current session
+            new_movie = session.merge(new_movie)
 
-        for genre_name in genres:
-            genre = session.query(Genre).filter_by(name=genre_name).first()
+            genres = genre_string.split(', ')
 
-            if genre is None:
-                genre = Genre(name=genre_name)
-                session.add(genre)
-                session.flush()  # Flush to get the genre ID without committing the entire transaction # noqa
+            for genre_name in genres:
+                logging.info(f"Storing genre {genre_name}")
+                genre = session.query(Genre).filter_by(name=genre_name).first()
 
-            existing_relation = session.query(MovieGenre).filter_by(
-                movie_uuid=new_movie.uuid,
-                genre_id=genre.id
-            ).first()
+                if genre is None:
+                    logging.info(f"Genre {genre_name} not found in database")
+                    genre = Genre(name=genre_name)
+                    session.add(genre)
+                    session.flush()
 
-            if existing_relation is None:
-                new_movie_genre = MovieGenre(movie_uuid=new_movie.uuid,
-                                             genre_id=genre.id)
-                session.add(new_movie_genre)
+                logging.info(f"Storing movie {new_movie.title} genre {genre_name}")
 
-            if genre not in new_movie.genres:
-                new_movie.genres.append(genre)
+                if genre not in new_movie.genres:
+                    new_movie.genres.append(genre)
 
-        session.commit()
-    except IntegrityError as e:
-        session.rollback()
-        # Consider logging or re-raising the exception
-        logging.error(f"IntegrityError occurred: {e}")
+                session.flush()
+
+            session.commit()
+        except IntegrityError as e:
+            session.rollback()
+            logging.error(f"IntegrityError occurred: {str(e)}")
 
 
 def search_movie_by_id(movie_id, api_key):

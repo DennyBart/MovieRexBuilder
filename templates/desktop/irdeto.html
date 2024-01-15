@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irdeto Stream Finder</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Borel&family=Bungee+Shade&display=swap" rel="stylesheet">
+
+    <style>
+        /* Base styles for the entire page */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #333333e6;
+            margin: 0;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            justify-content: center;
+        }
+
+        /* Header styles */
+        header {
+            font-family: 'Borel', cursive;
+            padding: 15px;
+            background-color: #333333;
+            display: flex; 
+            justify-content: center; /* Align content to center */
+            align-items: center;
+            flex-direction: column;
+        }
+
+        header h1 {
+            font-size: 1.8em;
+            text-align: center;
+            margin: 0;
+            color: white;
+        }
+
+        header h1 a, header h1 a:visited {
+            color: white;
+            text-decoration: none;
+        }
+
+        /* Styles for search bar */
+        #searchBar {
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .search-container {
+            position: relative;
+            margin-top: 20px; /* Add margin above the search bar */
+        }
+
+        /* Styles for search results */
+        #results {
+            position: absolute;
+            font-family: 'Roboto', sans-serif;
+            top: 100%;  
+            right: 0;
+            background-color: #333333;
+            color: white;
+            width: 200px;
+            border-radius: 5px;
+            z-index: 99;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #results div {
+            padding: 5px;
+        }
+
+        #results div:hover {
+            background-color: #555555;
+        }
+
+        #results a, #results a:visited {
+            color: white;
+            text-decoration: none;
+        }
+
+        #results a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.6em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><a href="/">Irdeto Stream Fetcher</a></h1>
+        <div class="search-container">
+            <input type="text" id="searchBar" placeholder="Search...">
+            <!-- Container for search results -->
+            <div id="results"></div>
+        </div>
+    </header>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#searchBar').on('input', function() {
+                let query = $(this).val();
+                if (query) {
+                    $.getJSON(`/search?query=${query}`, function(data) {
+                        $('#results').empty();
+                        data.forEach(function(item) {
+                            let name = item.name;
+                            let topic_name = item.topic_name;
+                            $('#results').append(`<div><a href="/web/movie/${name}">${topic_name}</a></div>`);
+                        });
+                    });
+                } else {
+                    $('#results').empty();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

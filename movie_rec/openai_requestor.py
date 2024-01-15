@@ -16,7 +16,8 @@ from movie_rec.models import (
 from constants import (
     MOVIE_CRITIC_BOT_MESSAGE,
     TOP_FORMAT,
-    TOP_MOVIES_FORMAT
+    TOP_MOVIES_FORMAT,
+    MINIMIUM_MOVIE_GENERATION_SUM
 )
 from movie_rec.movie_search import (
     generte_rec_genre_data,
@@ -279,7 +280,7 @@ def process_new_recommendations(movie_data: list,
     movies = json.loads(resp_json)
 
     movie_list = fetch_movie_details(movies, omdb_api_key, movie_type)
-    rec_uuid = store_movie_recommendation(movie_list, movie_type, total)
+    rec_uuid = store_movie_recommendation(movie_list, movie_type)
     return movie_list, rec_uuid
 
 
@@ -289,8 +290,8 @@ def get_chatgpt_movie_rec(movie_type: str,
                           api_model: str,
                           omdb_api_key: str,
                           openai_api_key: str) -> str:
-    # TODO Remove value and set to a global variable int
-    movie_list_size_limit = 20
+    # See constants for config number
+    movie_list_size_limit = MINIMIUM_MOVIE_GENERATION_SUM
     existing_recommendations = get_existing_recommendations(
         value=value,
         movie_type=movie_type,
@@ -302,7 +303,6 @@ def get_chatgpt_movie_rec(movie_type: str,
         try:
             new_recommendations, rec_total = get_new_recommendations(
                 api_model, openai_api_key, movie_type, value, input_message)
-            # Rerun if less than 10 movies found
             if len(new_recommendations) < movie_list_size_limit:
                 raise ValueError(f"Not all movies were found. "
                                  f"Only {len(new_recommendations)} movies "
@@ -313,7 +313,7 @@ def get_chatgpt_movie_rec(movie_type: str,
                 return movie_list, rec_uuid
         except ValueError:
             num_attempts += 1
-
+    print(f"Failed to generate recommendations for {movie_type}")
     return None, None
 
 
@@ -404,17 +404,17 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                 OMDB_API_KEY,
                 OPENAI_API_KEY
             )
+        except ValueError as e:
+            print(f'Error processing {title} - {str(e)}')
+            continue
+        if movie_list is None:
+            print(f'Error processing {title}')
+            continue
+        else:
             # get a random number between 0 and len(movie_list)
             random_movie = random.choice(movie_list)
             new_dict = {title[0]: rec_uuid}
             processed_titles.append(new_dict)
-        except ValueError as e:
-            logging.error(f'Error processing {title} - {str(e)}')
-            continue
-        if movie_list is None:
-            logging.error(f'Error processing {title}')
-            continue
-        else:
             set_movie_topic_to_generated(movie_type)
             if rec_uuid:
                 generte_rec_genre_data(str(rec_uuid))
