@@ -1,4 +1,5 @@
 import uuid
+from movie_rec.database import get_db_session
 from movie_rec.models import CastName, MovieData
 from sqlalchemy.orm import joinedload
 
@@ -26,22 +27,23 @@ class CastProcessor:
         return cast_instances
 
     def get_movie_cast(self, movie_uuid):
-        # Fetch the movie by UUID and eager-load the cast
-        movie = self.session.query(MovieData)\
-            .options(joinedload(MovieData.cast))\
-            .filter(MovieData.uuid == movie_uuid)\
-            .one()
+        with get_db_session() as session:
+            # Fetch the movie by UUID and eager-load the cast
+            movie = session.query(MovieData)\
+                .options(joinedload(MovieData.cast))\
+                .filter(MovieData.uuid == movie_uuid)\
+                .one()
 
-        # Organize the cast by their type
-        cast_by_type = {
-            'actor': [],
-            'director': [],
-            'writer': []
-        }
+            # Organize the cast by their type
+            cast_by_type = {
+                'actor': [],
+                'director': [],
+                'writer': []
+            }
 
-        for movie_cast in movie.cast:
-            cast_by_type[movie_cast.cast.cast_type].append(
-                movie_cast.cast.name)
+            for movie_cast in movie.cast:
+                cast_by_type[movie_cast.cast.cast_type].append(
+                    movie_cast.cast.name)
 
-        # Return cast_by_type as a Python dictionary
-        return cast_by_type
+            # Return cast_by_type as a Python dictionary
+            return cast_by_type

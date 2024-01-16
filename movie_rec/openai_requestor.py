@@ -1,5 +1,4 @@
 import datetime
-import os
 import random
 import re
 import pandas as pd
@@ -7,19 +6,18 @@ import uuid
 import openai
 import logging
 import json
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
 from movie_rec.data_converter import format_recommendation_list
+from movie_rec.database import get_db_session
 from movie_rec.models import (
     MovieData,
     MovieRecommendationRelation,
     MovieRecommendations,
-    Base
 )
 from constants import (
     MOVIE_CRITIC_BOT_MESSAGE,
     TOP_FORMAT,
-    TOP_MOVIES_FORMAT
+    TOP_MOVIES_FORMAT,
+    MINIMIUM_MOVIE_GENERATION_SUM
 )
 from movie_rec.movie_search import (
     generte_rec_genre_data,
@@ -31,13 +29,6 @@ from movie_rec.movie_search import (
     set_posters_for_recommendation
 )
 import time
-
-# Replace with your own database URL
-DATABASE_URL = os.environ['DATABASE_URL']
-engine = create_engine(DATABASE_URL, pool_recycle=280)
-Base.metadata.bind = engine
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
 
 
 def create_movie_list(response):
@@ -113,28 +104,30 @@ def fetch_movie_details(movies, omdb_api_key, rec_topic=None):
     return movie_list
 
 
-def store_movie_recommendation(movie_list, movie_type, total):
-    unique_movie_list = list(set(movie_list))
+def store_movie_recommendation(movie_list, movie_type):
+    with get_db_session() as session:
+        unique_movie_list = list(set(movie_list))
 
-    rec_uuid = str(uuid.uuid4())
-    new_recommendations = MovieRecommendations(
-        uuid=rec_uuid,
-        topic_name=str(movie_type),
-        count=len(unique_movie_list),
-        date_generated=datetime.datetime.now()
-    )
-    session.add(new_recommendations)
-    session.commit()
-    for movie_uuid in unique_movie_list:
-        # add movie uuid and recomendation uuid to MovieRecommendation
-        new_movie_recommendation = MovieRecommendationRelation(
-            recommendation_uuid=rec_uuid,
-            movie_uuid=movie_uuid
+        rec_uuid = str(uuid.uuid4())
+        new_recommendations = MovieRecommendations(
+            uuid=rec_uuid,
+            topic_name=str(movie_type),
+            count=len(unique_movie_list),
+            date_generated=datetime.datetime.now()
         )
-        session.add(new_movie_recommendation)
-    logging.info(f"New Movie Recommendation: {movie_type}")
-    session.commit()
-    return rec_uuid
+        session.add(new_recommendations)
+        session.flush()  # Flush to ensure 'new_recommendations' is in the session before adding relations # noqa
+
+        relations = [
+            MovieRecommendationRelation(recommendation_uuid=rec_uuid, movie_uuid=movie_uuid) # noqa
+            for movie_uuid in unique_movie_list
+        ]
+        session.bulk_save_objects(relations)
+
+        logging.info(f"New Movie Recommendation: {movie_type} with {len(unique_movie_list)} movies") # noqa
+        session.commit()
+
+        return rec_uuid
 
 
 def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
@@ -287,7 +280,7 @@ def process_new_recommendations(movie_data: list,
     movies = json.loads(resp_json)
 
     movie_list = fetch_movie_details(movies, omdb_api_key, movie_type)
-    rec_uuid = store_movie_recommendation(movie_list, movie_type, total)
+    rec_uuid = store_movie_recommendation(movie_list, movie_type)
     return movie_list, rec_uuid
 
 
@@ -297,8 +290,8 @@ def get_chatgpt_movie_rec(movie_type: str,
                           api_model: str,
                           omdb_api_key: str,
                           openai_api_key: str) -> str:
-    # TODO Remove value and set to a global variable int
-    movie_list_size_limit = 20
+    # See constants for config number
+    movie_list_size_limit = MINIMIUM_MOVIE_GENERATION_SUM
     existing_recommendations = get_existing_recommendations(
         value=value,
         movie_type=movie_type,
@@ -310,7 +303,6 @@ def get_chatgpt_movie_rec(movie_type: str,
         try:
             new_recommendations, rec_total = get_new_recommendations(
                 api_model, openai_api_key, movie_type, value, input_message)
-            # Rerun if less than 10 movies found
             if len(new_recommendations) < movie_list_size_limit:
                 raise ValueError(f"Not all movies were found. "
                                  f"Only {len(new_recommendations)} movies "
@@ -321,60 +313,49 @@ def get_chatgpt_movie_rec(movie_type: str,
                 return movie_list, rec_uuid
         except ValueError:
             num_attempts += 1
-
+    print(f"Failed to generate recommendations for {movie_type}")
     return None, None
 
 
-def check_movie_recommendation(search_term=None, uuid=None, value=None):
-    # Raise an exception if both search_term and uuid are None
-    if search_term is None and uuid is None:
-        raise ValueError(
-            "At least one of search_term or uuid must be provided."
-        )
+def check_movie_recommendation(search_term=None, uuid=None):
+    with get_db_session() as session:
+        if search_term is None and uuid is None:
+            raise ValueError("At least one of search_term or uuid must be provided.") # noqa
 
-    # Initialize movie_recommendation
-    movie_recommendation = None
+        movie_recommendation = None
 
-    # If uuid is provided, prioritize it over search_term
-    if uuid is not None:
-        movie_recommendation = (
-            session.query(MovieRecommendations)
-            .filter(MovieRecommendations.uuid == uuid)
-            .first()
-        )
-    else:
-        # Use '%' as a wildcard to find similar topic names
-        movie_recommendation = (
-            session.query(MovieRecommendations)
-            .filter(MovieRecommendations.topic_name.ilike(f"%{search_term}%"))
-            # .filter(MovieRecommendations.count == value)
-            .first()
-        )
+        if uuid is not None:
+            movie_recommendation = session.query(MovieRecommendations).filter(
+                MovieRecommendations.uuid == uuid).first()
+        elif search_term is not None:
+            movie_recommendation = session.query(MovieRecommendations).filter(
+                MovieRecommendations.topic_name.ilike(f"%{search_term}%")).first() # noqa
 
-    if movie_recommendation is None:
-        return None, None, None, None
-    else:
-        return (movie_recommendation.uuid,
-                movie_recommendation.count,
-                movie_recommendation.topic_name,
-                [movie_recommendation.poster_1,
-                 movie_recommendation.poster_2,
-                 movie_recommendation.poster_3])
+        if movie_recommendation is None:
+            return None, None, None, None
+        else:
+            return (movie_recommendation.uuid,
+                    movie_recommendation.count,
+                    movie_recommendation.topic_name,
+                    [movie_recommendation.poster_1,
+                     movie_recommendation.poster_2,
+                     movie_recommendation.poster_3])
 
 
 def get_related_movies(recommendation_uuid):
-    # Query the relation table to get all associated movie UUIDs
-    movie_relations = session.query(MovieRecommendationRelation) \
-        .join(MovieData, MovieRecommendationRelation.
-              movie_uuid == MovieData.uuid) \
-        .filter(MovieRecommendationRelation.
-                recommendation_uuid == recommendation_uuid) \
-        .filter(~MovieData.plot.in_(["N/A", " N/A"])).all()
+    with get_db_session() as session:
+        # Query the relation table to get all associated movie UUIDs
+        movie_relations = session.query(MovieRecommendationRelation) \
+            .join(MovieData, MovieRecommendationRelation.
+                  movie_uuid == MovieData.uuid) \
+            .filter(MovieRecommendationRelation.
+                    recommendation_uuid == recommendation_uuid) \
+            .filter(~MovieData.plot.in_(["N/A", " N/A"])).all()
+        session.close()
+        # Create a list to hold all the movie_uuid values
+        related_movies = [relation.movie_uuid for relation in movie_relations]
 
-    # Create a list to hold all the movie_uuid values
-    related_movies = [relation.movie_uuid for relation in movie_relations]
-
-    return related_movies
+        return related_movies
 
 
 def get_limit_and_value(request):
@@ -423,17 +404,17 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                 OMDB_API_KEY,
                 OPENAI_API_KEY
             )
+        except ValueError as e:
+            print(f'Error processing {title} - {str(e)}')
+            continue
+        if movie_list is None:
+            print(f'Error processing {title}')
+            continue
+        else:
             # get a random number between 0 and len(movie_list)
             random_movie = random.choice(movie_list)
             new_dict = {title[0]: rec_uuid}
             processed_titles.append(new_dict)
-        except ValueError as e:
-            logging.error(f'Error processing {title} - {str(e)}')
-            continue
-        if movie_list is None:
-            logging.error(f'Error processing {title}')
-            continue
-        else:
             set_movie_topic_to_generated(movie_type)
             if rec_uuid:
                 generte_rec_genre_data(str(rec_uuid))

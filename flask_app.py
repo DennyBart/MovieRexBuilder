@@ -395,6 +395,7 @@ def generate_recs_in_db():
     except ValueError as e:
         return {'error': str(e)}, 400
 
+    logging.info('Processing titles')
     processed_titles = process_titles(
         titles,
         limit,
