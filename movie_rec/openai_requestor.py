@@ -358,10 +358,8 @@ def get_related_movies(recommendation_uuid):
         return related_movies
 
 
-def get_limit_and_value(request):
+def check_limit_and_value(limit, value):
     try:
-        limit = request.args.get('limit')
-        value = request.args.get('value')
         if value is None or value.strip() == '':
             value = 10
         else:

@@ -24,7 +24,7 @@ from movie_rec.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
     get_existing_recommendations,
-    get_limit_and_value,
+    check_limit_and_value,
     process_titles
 )
 from movie_rec.movie_search import (
@@ -389,13 +389,29 @@ def provide_movie_recommendation_titles():
 # http://localhost:5000/api/generate_recs_in_db?limit=10&value=10&blurb=True # noqa
 # Limit: How many movies per recommendation
 # Value: How many recommendations to generate
-@app.route('/api/generate_recs_in_db')
+@app.route('/api/generate_recs_in_db', methods=['POST'])
 def generate_recs_in_db():
-    blurb_str = request.args.get('blurb', type=str, default='False').lower()
-    # Convert string to boolean
+    # Ensure that data is not None
+    data = request.json
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    blurb_str = data.get('blurb', 'False').lower()
     blurb = blurb_str == 'true'
-    logging.info('Generating recommendations from list')
-    limit, value = get_limit_and_value(request)
+
+    # Get 'limit' and 'value' with default values and validation
+    limit = data.get('limit', 1)
+    value = data.get('value', 20)
+
+    try:
+        limit = int(limit) if limit not in [None, ''] else 1
+        value = int(value) if value not in [None, ''] else 20
+    except ValueError:
+        return jsonify({'error': 'Invalid input for limit or value'}), 400
+    if value > 20:
+        return jsonify({'error': 'Value cannot be more than 20'}), 400
+    if limit > 100:
+        return jsonify({'error': 'Limit cannot be more than 100'}), 400
 
     try:
         titles = get_non_generated_movie_topics()
