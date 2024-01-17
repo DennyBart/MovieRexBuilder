@@ -17,6 +17,7 @@ from constants import (
     TOP_MOVIES_FORMAT,
     GENERATION_REC_QUESTION,
     LOG_FILE,
+    BLURB_GEN_MAX_TRIES
 )
 from movie_rec.data_converter import format_recommendation_list
 from movie_rec.openai_requestor import (
@@ -347,7 +348,7 @@ def generate_recommendation_blurb(uuid, limit: int):
         {'role': 'user', 'content': ai_question}
     ]
 
-    max_tries = 3
+    max_tries = BLURB_GEN_MAX_TRIES
     logging.info(f"Generating blurb for {recommendation_title} {uuid}")
     for i in range(max_tries):
         blurb = generate_openai_response(
@@ -386,7 +387,9 @@ def provide_movie_recommendation_titles():
 # Value: How many recommendations to generate
 @app.route('/api/generate_recs_in_db')
 def generate_recs_in_db():
-    blurb = request.args.get('blurb', type=bool, default=False)
+    blurb_str = request.args.get('blurb', type=str, default='False').lower()
+    # Convert string to boolean
+    blurb = blurb_str == 'true'
     logging.info('Generating recommendations from list')
     limit, value = get_limit_and_value(request)
 
