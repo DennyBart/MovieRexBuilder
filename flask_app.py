@@ -405,7 +405,7 @@ def generate_recs_in_db():
         OPENAI_API_KEY
     )
     # Generate blurb for each recommendation
-    if blurb:
+    if blurb is True:
         # Before: generate_recommendation_blurb(title['uuid'], 10)
         for title_dict in processed_titles:
             for key, rec_uuid in title_dict.items():
