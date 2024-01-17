@@ -398,6 +398,7 @@ def store_blurb_to_recommendation(uuid, blurb):
         recommendation = session.query(MovieRecommendations).filter_by(
             uuid=uuid).first()
         recommendation.blurb = blurb
+        session.commit()
 
 
 def get_movie_imdb_id_from_uuid(uuid):
