@@ -10,7 +10,7 @@ from movie_rec.models import (FeaturedContent,
                               MovieRecommendationRelation,
                               MovieRecommendations)
 from movie_rec.models import CastName
-from datetime import datetime
+from datetime import datetime, timezone
 from constants import (
     DIRECTOR_HOMEPAGE_HEADER,
     ACTOR_HOMEPAGE_HEADER,
@@ -190,9 +190,35 @@ def add_featured_content(session: Session, genre, uuids):
     for u in uuids:
         content = FeaturedContent(
             content_type=ContentType.GENRE.value.upper(),
-            group_title=f"Recommendations for {genre.name}",
+            group_title=f"{genre.name}",
             recommendation_uuid=u,
             replaced_at=datetime.utcnow()
         )
         session.add(content)
+    session.commit()
+
+
+def disable_featured_content(session: Session, recommendation_uuids: list):
+    """
+    Takes the list of uuids and disables them by setting the live_list
+
+    Args:
+    session (Session): Database session object.
+    recommendation_uuids (list): List of recommendation UUIDs to update.
+    """
+    # Ensure that the current time is in GMT
+    current_time_gmt = datetime.utcnow().replace(tzinfo=timezone.utc)
+
+    # Iterate through each recommendation UUID and update
+    for uuid in recommendation_uuids:
+        # Query for the featured content by UUID
+        content = session.query(FeaturedContent).filter(
+            FeaturedContent.recommendation_uuid == uuid).one_or_none()
+
+        # If the content exists, update it
+        if content:
+            content.live_list = True
+            content.replaced_at = current_time_gmt
+
+    # Commit the changes to the database
     session.commit()

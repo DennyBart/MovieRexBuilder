@@ -192,6 +192,14 @@
 
         .row-title {
             font-family: 'Roboto', sans-serif;
+            font-size: 1.2em;
+            margin-right: 20px;
+            margin-left: 10px; /* Adjust as needed */
+            flex-shrink: 0;
+        }
+
+        .page-title {
+            font-family: 'Roboto', sans-serif;
             font-size: 1.5em;
             margin-right: 20px;
             margin-left: 10px; /* Adjust as needed */
@@ -270,7 +278,7 @@
             <div id="results"></div>
         </div>
     </header>
-
+    <h2 class="page-title">Recommendations List</h2>
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
