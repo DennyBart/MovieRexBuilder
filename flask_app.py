@@ -629,12 +629,15 @@ def generate_recommendations_genre():
     return jsonify(gen_rec_data.to_dict())
 
 
-# TODO: Secure this endpoint for generation
 # Example: http://127.0.0.1:5000/api/generate_api_key
-@app.route('/api/generate_api_key')
+@app.route('/api/generate_api_key', methods=['POST'])
 def generate_api_key():
+    # This will always require to have a valid API key before generating a new one # noqa
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
     data = generate_and_store_api_key()
-    return jsonify(data), 200
+    return jsonify(f'Generated API Key: {data}'), 200
 
 
 @app.route('/api/get_homepage_data')
