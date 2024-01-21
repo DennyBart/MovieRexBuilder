@@ -10,7 +10,7 @@ from movie_rec.models import (FeaturedContent,
                               MovieRecommendationRelation,
                               MovieRecommendations)
 from movie_rec.models import CastName
-from datetime import datetime
+from datetime import datetime, timezone
 from constants import (
     DIRECTOR_HOMEPAGE_HEADER,
     ACTOR_HOMEPAGE_HEADER,
@@ -190,7 +190,7 @@ def add_featured_content(session: Session, genre, uuids):
     for u in uuids:
         content = FeaturedContent(
             content_type=ContentType.GENRE.value.upper(),
-            group_title=f"Recommendations for {genre.name}",
+            group_title=f"{genre.name}",
             recommendation_uuid=u,
             replaced_at=datetime.utcnow()
         )

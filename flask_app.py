@@ -31,7 +31,7 @@ from movie_rec.movie_search import (
     check_db,
     fetch_recommendations,
     generate_genre_homepage_data,
-    generate_rec_list,
+    generate_and_store_api_key,
     generte_cast_data,
     generte_rec_genre_data,
     get_and_store_images,
@@ -80,7 +80,7 @@ def get_device_type():
 
 
 @app.route('/')
-def hello():
+def landing_page():
     page = request.args.get('page', default=1, type=int)
     device_type = get_device_type()
     if page < 1:
@@ -144,16 +144,20 @@ def search():
     return jsonify(results)
 
 
+# Description: This endpoint is used to generate the data for the homepage
+# Example: http://localhost:5000/api/gen_homepage_data?gen_rec_list=True
 # API Endpoints
-@app.route('/api/gen_data')
+@app.route('/api/gen_homepage_data', methods=['POST'])
 def gen_data():
-    gen_rec_list = request.args.get('gen_rec_list', default=False, type=bool)
-    if gen_rec_list:
-        generate_rec_list()
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
+
     generte_cast_data('actor')
     generte_cast_data('director')
     generate_genre_homepage_data()
-    return f"Data generated: {datetime.datetime.now()}"
+
+    return jsonify(message=f"Data generated: {datetime.datetime.now().isoformat()}") # noqa
 
 
 # Example: http://127.0.0.1:5000/api/get_movie_id?id=tt1392190
@@ -625,12 +629,15 @@ def generate_recommendations_genre():
     return jsonify(gen_rec_data.to_dict())
 
 
-# TODO: Secure this endpoint for generation
 # Example: http://127.0.0.1:5000/api/generate_api_key
-# @app.route('/api/generate_api_key')
-# def generate_api_key():
-#     data = generate_and_store_api_key()
-#     return jsonify(data), 200
+@app.route('/api/generate_api_key', methods=['POST'])
+def generate_api_key():
+    # This will always require to have a valid API key before generating a new one # noqa
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
+    data = generate_and_store_api_key()
+    return jsonify(f'Generated API Key: {data}'), 200
 
 
 @app.route('/api/get_homepage_data')

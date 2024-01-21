@@ -7,13 +7,15 @@ import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from sqlalchemy import create_engine, desc, func, or_
+from sqlalchemy import create_engine, desc, or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 import requests
 import logging
 import urllib.parse
-from constants import OMDB_PLOT
+from constants import (
+    OMDB_PLOT,
+    MAX_TITLE_COUNT)
 from movie_rec.cast_service import CastProcessor
 from movie_rec.database import get_db_session
 from movie_rec.homepage_data import (add_featured_content,
@@ -33,7 +35,6 @@ from movie_rec.models import (
     Genre,
     MovieCast,
     MovieData,
-    MovieGenre,
     MovieImage,
     MovieRecommendationRelation,
     MovieRecommendations,
@@ -519,6 +520,7 @@ def replace_movie_uuid(original_uuid, new_uuid):
 
 def is_valid_api_key(api_key):
     with get_db_session() as session:
+        print(f'Api key: {api_key}')
         if api_key is not None:
             hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
             key_record = session.query(APIKey).filter(
@@ -596,9 +598,13 @@ def generate_genre_homepage_data():
 
     if uuid_list:
         with get_db_session() as session:
+            print(f"Found {len(uuid_list)} recommendations for {genre_to_search}") # noqa
+            if len(uuid_list) > MAX_TITLE_COUNT:
+                uuid_list = random.sample(uuid_list, MAX_TITLE_COUNT)
             # Ensure you have a session for these operations
             # clear_previous_featured_content(session, genre_to_search)
             add_featured_content(session, genre_to_search, uuid_list)
+            # Make a call to mark the old data as idsabled
     else:
         logging.info(f"No recommendations found after {max_retries} retries")
 
@@ -609,31 +615,32 @@ def fetch_genre_name_by_id(genre_id):
         return genre.name if genre else None
 
 
-def generate_rec_list():
-    with get_db_session() as session:
-        # Get all recommendation_uuids from the database where topic_image is null # noqa
-        rec_uuids = session.query(MovieRecommendations.uuid).filter(
-            or_(MovieRecommendations.topic_image == '',
-                MovieRecommendations.topic_image == None) # noqa
-                ).all()
-        # Get a random movie for each rec_uuid
-        for rec_uuid_tuple in rec_uuids:
-            rec_uuid = rec_uuid_tuple[0]
-            random_movie_form_rec = session.query(MovieData.uuid).join(
-                MovieRecommendationRelation,
-                MovieRecommendationRelation.movie_uuid == MovieData.uuid
-            ).filter(
-                MovieRecommendationRelation.recommendation_uuid == rec_uuid
-            ).order_by(func.random()).first()
-            # Check if random_movie_tuple has a value, extract if it does
-            if random_movie_form_rec:
-                random_movie = random_movie_form_rec[0]
+# Deprecated - Originally used as a one-time script to generate images data
+# def generate_rec_list():
+#     with get_db_session() as session:
+#         # Get all recommendation_uuids from the database where topic_image is null # noqa
+#         rec_uuids = session.query(MovieRecommendations.uuid).filter(
+#             or_(MovieRecommendations.topic_image == '',
+#                 MovieRecommendations.topic_image == None) # noqa
+#                 ).all()
+#         # Get a random movie for each rec_uuid
+#         for rec_uuid_tuple in rec_uuids:
+#             rec_uuid = rec_uuid_tuple[0]
+#             random_movie_form_rec = session.query(MovieData.uuid).join(
+#                 MovieRecommendationRelation,
+#                 MovieRecommendationRelation.movie_uuid == MovieData.uuid
+#             ).filter(
+#                 MovieRecommendationRelation.recommendation_uuid == rec_uuid
+#             ).order_by(func.random()).first()
+#             # Check if random_movie_tuple has a value, extract if it does
+#             if random_movie_form_rec:
+#                 random_movie = random_movie_form_rec[0]
 
-                # Update the topic_image for the rec_uuid
-                set_rec_image(random_movie, rec_uuid)
-            else:
-                logging.info("No random movie found.")
-        logging.info(f"Finished generating {len(rec_uuids)} rec list images.")
+#                 # Update the topic_image for the rec_uuid
+#                 set_rec_image(random_movie, rec_uuid)
+#             else:
+#                 logging.info("No random movie found.")
+#         logging.info(f"Finished generating {len(rec_uuids)} rec list images.")
 
 
 def fetch_recommendations(page=1, items_per_page=10):
