@@ -1,5 +1,6 @@
 import datetime
 import os
+import threading
 import uuid
 import math
 from typing import List
@@ -391,6 +392,9 @@ def provide_movie_recommendation_titles():
 # Value: How many recommendations to generate
 @app.route('/api/generate_recs_in_db', methods=['POST'])
 def generate_recs_in_db():
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
     # Ensure that data is not None
     data = request.json
     if not data:
@@ -418,6 +422,13 @@ def generate_recs_in_db():
     except ValueError as e:
         return {'error': str(e)}, 400
 
+    threading.Thread(target=process_data_in_background, args=(
+        blurb, limit, value, titles)).start()
+    # Return the response immediately
+    return jsonify({'message': 'Recommendation data generation in progress'}), 202 # noqa
+
+
+def process_data_in_background(blurb, limit, value, titles):
     logging.info('Processing titles')
     processed_titles = process_titles(
         titles,
@@ -427,17 +438,10 @@ def generate_recs_in_db():
         OMDB_API_KEY,
         OPENAI_API_KEY
     )
-    # Generate blurb for each recommendation
-    if blurb is True:
-        # Before: generate_recommendation_blurb(title['uuid'], 10)
+    if blurb:
         for title_dict in processed_titles:
             for key, rec_uuid in title_dict.items():
                 generate_recommendation_blurb(rec_uuid, 10)
-
-    if processed_titles == []:
-        return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'} # noqa
-    else:
-        return {'completed_topic_list': processed_titles}
 
 
 # http://localhost:5000/list_recommendations?search=Comedy&blurb=True&limit=10&offset=0 # noqa
@@ -653,7 +657,7 @@ def generate_api_key():
     if not is_valid_api_key(api_key):
         return jsonify(error="Invalid or missing API key (x-api-key)"), 403
     data = generate_and_store_api_key()
-    return jsonify(f'Generated API Key: {data}'), 200
+    return jsonify({'Generated API Key': f'{data}'}), 200
 
 
 @app.route('/api/get_homepage_data')
