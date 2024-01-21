@@ -615,7 +615,7 @@ def fetch_genre_name_by_id(genre_id):
         return genre.name if genre else None
 
 
-# Deprecated
+# Deprecated - Originally used as a one-time script to generate images data
 # def generate_rec_list():
 #     with get_db_session() as session:
 #         # Get all recommendation_uuids from the database where topic_image is null # noqa
