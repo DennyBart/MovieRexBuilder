@@ -1,4 +1,4 @@
-# MovieRexDev1 Flask API Documentation
+# MovieRecs Flask API Documentation
 
 ## General Information
 - **Base URL:** The base URL for all endpoints will depend on where the Flask app is hosted.
