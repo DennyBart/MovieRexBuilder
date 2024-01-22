@@ -452,9 +452,9 @@ def generate_recs_in_db():
     blurb_str = data.get('blurb', 'False').lower()
     blurb = blurb_str == 'true'
 
-    # Get 'limit' and 'value' with default values and validation
-    limit = data.get('limit', 1)
-    value = data.get('value', 20)
+    # Get 'limit' and 'total_titles' with default values and validation
+    limit = data.get('generation_title_limit', 1)
+    value = data.get('total_titles', 20)
 
     try:
         limit = int(limit) if limit not in [None, ''] else 1
