@@ -478,20 +478,23 @@ def generate_recs_in_db():
 
 
 def process_data_in_background(blurb, limit, value, titles):
-    logging.info('Processing titles')
-    processed_titles = process_titles(
-        titles,
-        limit,
-        value,
-        OPENAI_API_MODEL,
-        OMDB_API_KEY,
-        OPENAI_API_KEY
-    )
-    logging.info(f'Finished processing titles: {processed_titles}')
-    if blurb:
-        for title_dict in processed_titles:
-            for key, rec_uuid in title_dict.items():
-                generate_recommendation_blurb(rec_uuid, 10)
+    try:
+        logging.info('Processing titles')
+        processed_titles = process_titles(
+            titles,
+            limit,
+            value,
+            OPENAI_API_MODEL,
+            OMDB_API_KEY,
+            OPENAI_API_KEY
+        )
+        logging.info(f'Finished processing titles: {processed_titles}')
+        if blurb:
+            for title_dict in processed_titles:
+                for key, rec_uuid in title_dict.items():
+                    generate_recommendation_blurb(rec_uuid, 10)
+    except Exception as e:
+        logging.error(f"Error in process_data_in_background: {e}")
 
 
 # Example Request: GET http://***/list_recommendations?search=Comedy&blurb=True&limit=10&offset=0 # noqa
