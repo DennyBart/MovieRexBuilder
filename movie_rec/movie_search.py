@@ -301,17 +301,23 @@ def search_movie_by_id(movie_id, api_key):
         return None
 
 
-# "http://127.0.0.1:5000/movies?title=Swallow&year=2019"
 def search_movie_by_title(title, year, api_key):
-    # check if year is a float and remove the decmial if so
     plot = OMDB_PLOT
     encoded_title = urllib.parse.quote_plus(title)
-    logging.info(f"Searching OMDB for movie with "
-                 f"title {title} and year {int(year)}")
-    if plot == 'full':
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={int(year)}&apikey={api_key}&plot={plot}"  # noqa
+    year_str = str(year).split('.')[0] if year else None  # Convert to string and split if it's a float, handle None # noqa
+
+    if year_str:
+        logging.info(f"Searching OMDB for movie with title {title} and year {year_str}") # noqa
+        year_param = f"&y={int(year_str)}"
     else:
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={int(year)}&apikey={api_key}" # noqa
+        logging.info(f"Searching OMDB for movie with title {title} without specifying year") # noqa
+        year_param = ''
+
+    if plot == 'full':
+        url = f"http://www.omdbapi.com/?t={encoded_title}{year_param}&apikey={api_key}&plot={plot}"
+    else:
+        url = f"http://www.omdbapi.com/?t={encoded_title}{year_param}&apikey={api_key}"
+
     try:
         response = requests.get(url)
         data = response.json()
@@ -322,8 +328,7 @@ def search_movie_by_title(title, year, api_key):
         else:
             return None
     except requests.exceptions.ConnectionError as e:
-        logging.error("ConnectionError occurred while searching "
-                      f"movie by title: {e}")
+        logging.error(f"ConnectionError occurred while searching movie by title: {e}") # noqa
         return None
 
 
