@@ -1,6 +1,5 @@
 import datetime
 import os
-import threading
 import uuid
 import math
 from typing import List
@@ -465,26 +464,21 @@ def generate_recs_in_db():
         return jsonify({'error': 'total_titles cannot be more than 20'}), 400
     if value < 7:
         return jsonify({'error': 'total_titles cannot be less than 7'}), 400
-    if limit > 100:
-        return jsonify({'error': 'generation_title_limit cannot be more than 100'}), 400 # noqa
+    if limit > 20:
+        return jsonify({'error': 'generation_title_limit cannot be more than 20'}), 400 # noqa
 
     try:
         titles = get_non_generated_movie_topics()
     except ValueError as e:
         return {'error': str(e)}, 400
+    if limit > len(titles):
+        return jsonify({'error': 'generation_title_limit cannot be more than total_titles, generate more titles'}), 400 # noqa
 
-    if limit > 20:
-        # Using threading to process the data in the background for large genration # noqa
-        threading.Thread(target=process_data_in_background, args=(
-            blurb, limit, value, titles)).start()
-        # Return the response immediately
-        return jsonify({'message': f'Processing {limit} recommendation titles'}), 202 # noqa
-    else:
-        processed = process_data_in_background(blurb, limit, value, titles)
-        return jsonify(f'{processed}'), 200 # noqa
+    processed = process_data(blurb, limit, value, titles)
+    return jsonify(f'{processed}'), 200 # noqa
 
 
-def process_data_in_background(blurb, limit, value, titles):
+def process_data(blurb, limit, value, titles):
     try:
         logging.info('Processing titles')
         processed_titles = process_titles(

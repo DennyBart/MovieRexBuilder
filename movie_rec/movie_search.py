@@ -314,9 +314,9 @@ def search_movie_by_title(title, year, api_key):
         year_param = ''
 
     if plot == 'full':
-        url = f"http://www.omdbapi.com/?t={encoded_title}{year_param}&apikey={api_key}&plot={plot}"
+        url = f"http://www.omdbapi.com/?t={encoded_title}{year_param}&apikey={api_key}&plot={plot}" # noqa
     else:
-        url = f"http://www.omdbapi.com/?t={encoded_title}{year_param}&apikey={api_key}"
+        url = f"http://www.omdbapi.com/?t={encoded_title}{year_param}&apikey={api_key}" # noqa
 
     try:
         response = requests.get(url)
