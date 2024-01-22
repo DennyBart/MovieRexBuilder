@@ -462,19 +462,26 @@ def generate_recs_in_db():
     except ValueError:
         return jsonify({'error': 'Invalid input for limit or value'}), 400
     if value > 20:
-        return jsonify({'error': 'Value cannot be more than 20'}), 400
+        return jsonify({'error': 'total_titles cannot be more than 20'}), 400
+    if value < 7:
+        return jsonify({'error': 'total_titles cannot be less than 7'}), 400
     if limit > 100:
-        return jsonify({'error': 'Limit cannot be more than 100'}), 400
+        return jsonify({'error': 'generation_title_limit cannot be more than 100'}), 400 # noqa
 
     try:
         titles = get_non_generated_movie_topics()
     except ValueError as e:
         return {'error': str(e)}, 400
 
-    threading.Thread(target=process_data_in_background, args=(
-        blurb, limit, value, titles)).start()
-    # Return the response immediately
-    return jsonify({'message': 'Recommendation data generation in progress'}), 202 # noqa
+    if limit > 20:
+        # Using threading to process the data in the background for large genration # noqa
+        threading.Thread(target=process_data_in_background, args=(
+            blurb, limit, value, titles)).start()
+        # Return the response immediately
+        return jsonify({'message': f'Processing {limit} recommendation titles'}), 202 # noqa
+    else:
+        processed = process_data_in_background(blurb, limit, value, titles)
+        return jsonify(f'{processed}'), 200 # noqa
 
 
 def process_data_in_background(blurb, limit, value, titles):
@@ -493,6 +500,7 @@ def process_data_in_background(blurb, limit, value, titles):
             for title_dict in processed_titles:
                 for key, rec_uuid in title_dict.items():
                     generate_recommendation_blurb(rec_uuid, 10)
+        return processed_titles
     except Exception as e:
         logging.error(f"Error in process_data_in_background: {e}")
 
