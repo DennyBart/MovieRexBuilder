@@ -379,6 +379,8 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                    OMDB_API_KEY, OPENAI_API_KEY):
     processed_titles = []
     count = 0
+    print(f'Generating {value} titles')
+    print(f'Generating {titles} titles')
     for title in titles:
         if count == limit:
             return processed_titles
