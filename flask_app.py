@@ -487,6 +487,7 @@ def process_data_in_background(blurb, limit, value, titles):
         OMDB_API_KEY,
         OPENAI_API_KEY
     )
+    logging.info(f'Finished processing titles: {processed_titles}')
     if blurb:
         for title_dict in processed_titles:
             for key, rec_uuid in title_dict.items():
