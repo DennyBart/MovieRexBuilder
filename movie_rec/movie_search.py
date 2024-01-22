@@ -232,7 +232,8 @@ def store_new_movie(cast_processor, movie_data):
             new_movie = process_movie_data(cast_processor, movie_data)
             logging.info(f"Storing new movie {new_movie.title}")
 
-            # Merge new_movie into the session (handles both new and existing instances)
+            # Merge new_movie into the session
+            # (handles both new and existing instances)
             new_movie = session.merge(new_movie)
 
             session.commit()
@@ -242,7 +243,6 @@ def store_new_movie(cast_processor, movie_data):
             session.rollback()
             return False  # Indicate failure
 
-    # These functions should be called within a session if they need access to database
     with get_db_session() as session:
         logging.info(f"Storing movie {new_movie.title} genres")
         store_movie_genre(new_movie, genre_string=str(new_movie.genre))
@@ -270,7 +270,8 @@ def store_movie_genre(new_movie, genre_string):
                     session.add(genre)
                     session.flush()
 
-                logging.info(f"Storing movie {new_movie.title} genre {genre_name}")
+                logging.info(f"Storing movie {new_movie.title} genre "
+                             f"{genre_name}")
 
                 if genre not in new_movie.genres:
                     new_movie.genres.append(genre)
@@ -520,7 +521,7 @@ def replace_movie_uuid(original_uuid, new_uuid):
 
 def is_valid_api_key(api_key):
     with get_db_session() as session:
-        print(f'Api key: {api_key}')
+        logging.info(f'Api key request: {api_key}')
         if api_key is not None:
             hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
             key_record = session.query(APIKey).filter(
@@ -640,7 +641,7 @@ def fetch_genre_name_by_id(genre_id):
 #                 set_rec_image(random_movie, rec_uuid)
 #             else:
 #                 logging.info("No random movie found.")
-#         logging.info(f"Finished generating {len(rec_uuids)} rec list images.")
+#         logging.info(f"Finished generating {len(rec_uuids)} rec list images.") # noqa
 
 
 def fetch_recommendations(page=1, items_per_page=10):
