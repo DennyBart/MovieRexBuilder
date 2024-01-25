@@ -475,7 +475,7 @@ def generate_recs_in_db():
         return jsonify({'error': 'generation_title_limit cannot be more than total_titles, generate more titles'}), 400 # noqa
 
     processed = process_data(blurb, limit, value, titles)
-    return jsonify(f'{processed}'), 200 # noqa
+    return jsonify(processed), 200 # noqa
 
 
 def process_data(blurb, limit, value, titles):
