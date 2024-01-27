@@ -24,7 +24,6 @@ from movie_rec.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
     get_existing_recommendations,
-    get_limit_and_value,
     process_titles
 )
 from movie_rec.movie_search import (
@@ -79,6 +78,7 @@ def get_device_type():
         return 'desktop'
 
 
+# Loads the homepage
 @app.route('/')
 def landing_page():
     page = request.args.get('page', default=1, type=int)
@@ -99,6 +99,7 @@ def landing_page():
         return render_template(f'{device_type}/error.html'), 500
 
 
+# Returns a movie recommendation data by uuid
 @app.route('/web/rec/<uuid>')
 def display_recommendation(uuid):
     device_type = get_device_type()
@@ -126,6 +127,7 @@ def display_recommendation(uuid):
         return render_template(f'{device_type}/error.html'), 500
 
 
+# TODO - Move to somewhere else
 @app.errorhandler(404)
 def page_not_found(e):
     device_type = get_device_type()
@@ -134,6 +136,7 @@ def page_not_found(e):
     return render_template(f'{device_type}/error.html'), 404
 
 
+# Site search functionality
 @app.route('/search', methods=['GET'])
 def search():
     query = request.args.get('query', '')
@@ -144,9 +147,7 @@ def search():
     return jsonify(results)
 
 
-# Description: This endpoint is used to generate the data for the homepage
-# Example: http://localhost:5000/api/gen_homepage_data?gen_rec_list=True
-# API Endpoints
+# Generates data for the homepage
 @app.route('/api/gen_homepage_data', methods=['POST'])
 def gen_data():
     api_key = request.headers.get('x-api-key')
@@ -160,7 +161,8 @@ def gen_data():
     return jsonify(message=f"Data generated: {datetime.datetime.now().isoformat()}") # noqa
 
 
-# Example: http://127.0.0.1:5000/api/get_movie_id?id=tt1392190
+# Example Request: GET http://***/api/get_movie_id?id=tt1392190
+# Get movie data by imdbid
 @app.route('/api/get_movie_id')
 def movie_by_id():
     movie_id = request.args.get('id')
@@ -176,7 +178,8 @@ def movie_by_id():
         return f'ID:{movie_id} Not Found', 404
 
 
-# Example: http://127.0.0.1:5000/api/get_movie_uuid?uuid=88841ced-35c5-4828-be5c-f0cfe4732192 # noqa
+# Example Request: GET http://***/api/get_movie_uuid?uuid=88841ced-35c5-4828-be5c-f0cfe4732192 # noqa
+# Get movie data by uuid
 @app.route('/api/get_movie_uuid')
 def movie_by_uuid():
     movie_uuid = request.args.get('uuid')
@@ -196,7 +199,8 @@ def movie_by_uuid():
         return jsonify({'error': 'Movie uuid not found'}), 404
 
 
-# Example: http://127.0.0.1:5000/api/get_movie_name?title=Goodfellas&year=1990
+# Example Request: GET http://***/api/get_movie_name?title=Goodfellas&year=1990
+# Get movie data by title and year
 @app.route('/api/get_movie_name')
 def movies_name():
     title = request.args.get('title')
@@ -217,20 +221,36 @@ def movies_name():
         return f'Title:{title} Year:{year} Not Found', 404
 
 
-# http://127.0.0.1:5000/api/add_recommendation?movie_type=war&value=10
-@app.route('/api/add_recommendation')
-def ask_chatgpt():
-    movie_type = request.args.get('movie_type')
-    value = request.args.get('value')
-    if value is None or value == 0 or value == ' ':
-        input_value = 20
-    else:
+# Add a new movie recommendation manually
+@app.route('/api/add_recommendation', methods=['POST'])
+def add_recommendation():
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
+
+    # Retrieve data from the request body
+    data = request.json
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    movie_type = data.get('movie_type')
+    value = data.get('value', 20)  # Default value is 20 if not provided
+
+    try:
         input_value = int(value)
-    if movie_type is None:
-        return jsonify({'error': 'Invalid movie type or value'}), 400
-    return generate_rec_movie_list(
-        movie_type=movie_type,
-        value=input_value)
+    except ValueError:
+        return jsonify({'error': 'Value must be an integer'}), 400
+
+    if input_value <= 0:
+        input_value = 20
+
+    if not movie_type:
+        return jsonify({'error': 'Invalid movie type'}), 400
+
+    movies_data_generated = generate_rec_movie_list(movie_type=movie_type,
+                                                    value=input_value)
+    if movies_data_generated:
+        return jsonify(f'Generated {input_value} {movie_type} movies'), 200
 
 
 def generate_rec_movie_list(value, uuid=None, movie_type=None):
@@ -269,16 +289,29 @@ def generate_rec_movie_list(value, uuid=None, movie_type=None):
     return jsonify(movie_list)
 
 
-# http://localhost:5000/api/process_movie_rec_titles?total=25
-@app.route('/api/process_movie_rec_titles')
+# Generates recommendation data from the "to be generated" list - 25 at a time
+@app.route('/api/generate_movie_rec_titles', methods=['POST'])
 def generate_movie_recommendation_titles():
-    generate_total = int(request.args.get('total'))
-    if generate_total is None or generate_total < 25 or generate_total == ' ':
-        return {'error': 'Invalid total - minimium is 25'}, 400
-    else:
-        total_request = math.ceil(generate_total / 25)
-        if total_request > 10:
-            return {'error': 'Total request cannot be more than 250'}, 400
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
+    # Retrieve data from the request body
+    data = request.json
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    try:
+        generate_total = int(data.get('total', 0))
+    except ValueError:
+        return jsonify({'error': 'Invalid total - must be a number'}), 400
+
+    if generate_total < 25:
+        return jsonify({'error': 'Invalid total - minimum is 25'}), 400
+
+    total_request = math.ceil(generate_total / 25)
+    if total_request > 10:
+        return jsonify({'error': 'Total request cannot be more than 250'}), 400
+
     ai_question = GENERATION_REC_QUESTION
     openai_message = [
         {'role': 'system', 'content': GENERATION_REC_TITLES},
@@ -299,6 +332,7 @@ def generate_movie_recommendation_titles():
         if gen_items is None:
             logging.info("No titles generated")
         else:
+            # TODO: Check that the titles are not used before
             store_search_titles(gen_items)
             total_generated_titles.extend(gen_items)
             logging.info("Total generated titles: "
@@ -306,29 +340,43 @@ def generate_movie_recommendation_titles():
     return {'generated_titles': total_generated_titles}
 
 
-# http://localhost:5000/api/generate_rec_blurb?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131&limit=10 # noqa
-@app.route('/api/generate_rec_blurb')
+# API endpoint to generate a blurb for a recommendation
+@app.route('/api/generate_rec_blurb', methods=['POST'])
 def generate_blurb():
-    uuid = request.args.get('uuid')
-    limit = request.args.get('limit')
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
+    # Retrieve data from the request body
+    data = request.json
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
 
-    # check if uuid is valid
+    uuid = data.get('uuid')
+    limit = data.get('limit', 10)  # Default value is 10 if not provided
+
+    # Check if uuid is valid
     if uuid is None:
-        return 'Missing uuid', 400
+        return jsonify({'error': 'Missing uuid'}), 400
     if not is_valid_uuid(uuid):
-        return 'Invalid uuid', 400
-    if limit is None or limit == 0 or limit == ' ':
+        return jsonify({'error': 'Invalid uuid'}), 400
+
+    try:
+        limit = int(limit)
+    except ValueError:
+        return jsonify({'error': 'Limit must be an integer'}), 400
+
+    if limit <= 0:
         limit = 10
 
-    return generate_recommendation_blurb(uuid, (limit))
+    return generate_recommendation_blurb(uuid, limit)
 
 
-# TODO - Refactor this 
+# TODO - Move to somewhere else
 def contains_items(s: str, items: List[str]) -> bool:
     return sum(item in s for item in items) >= 3
 
 
-# TODO - Refactor this
+# TODO - Move to somewhere else
 def generate_recommendation_blurb(uuid, limit: int):
     item_list = []
     try:
@@ -374,9 +422,13 @@ def generate_recommendation_blurb(uuid, limit: int):
             'after maximum attempts'}
 
 
-# http://localhost:5000/api/provide_movie_rec_titles -d '{"titles": ["Best Comedy Movies", "Best Action Movies"]}' -H "Content-Type: application/json" -X POST - # noqa
+# API Endpoint to add a recommendation title to the
+# "to be generated" list
 @app.route('/api/provide_movie_rec_titles', methods=['POST'])
 def provide_movie_recommendation_titles():
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
     search_titles = request.json.get('titles')
 
     if search_titles is None or not isinstance(search_titles, list):
@@ -386,45 +438,70 @@ def provide_movie_recommendation_titles():
     return {'generated_titles': sotred_title}
 
 
-# http://localhost:5000/api/generate_recs_in_db?limit=10&value=10&blurb=True # noqa
-# Limit: How many movies per recommendation
-# Value: How many recommendations to generate
-@app.route('/api/generate_recs_in_db')
+# Generates the items on the "to be generated" list
+@app.route('/api/generate_recs_in_db', methods=['POST'])
 def generate_recs_in_db():
-    blurb_str = request.args.get('blurb', type=str, default='False').lower()
-    # Convert string to boolean
+    api_key = request.headers.get('x-api-key')
+    if not is_valid_api_key(api_key):
+        return jsonify(error="Invalid or missing API key (x-api-key)"), 403
+    # Ensure that data is not None
+    data = request.json
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    blurb_str = data.get('blurb', 'False').lower()
     blurb = blurb_str == 'true'
-    logging.info('Generating recommendations from list')
-    limit, value = get_limit_and_value(request)
+
+    # Get 'limit' and 'total_titles' with default values and validation
+    limit = data.get('generation_title_limit', 1)
+    value = data.get('total_titles', 20)
+
+    try:
+        limit = int(limit) if limit not in [None, ''] else 1
+        value = int(value) if value not in [None, ''] else 20
+    except ValueError:
+        return jsonify({'error': 'Invalid input for limit or value'}), 400
+    if value > 20:
+        return jsonify({'error': 'total_titles cannot be more than 20'}), 400
+    if value < 7:
+        return jsonify({'error': 'total_titles cannot be less than 7'}), 400
+    if limit > 20:
+        return jsonify({'error': 'generation_title_limit cannot be more than 20'}), 400 # noqa
 
     try:
         titles = get_non_generated_movie_topics()
     except ValueError as e:
         return {'error': str(e)}, 400
+    if limit > len(titles):
+        return jsonify({'error': 'generation_title_limit cannot be more than total_titles, generate more titles'}), 400 # noqa
 
-    logging.info('Processing titles')
-    processed_titles = process_titles(
-        titles,
-        limit,
-        value,
-        OPENAI_API_MODEL,
-        OMDB_API_KEY,
-        OPENAI_API_KEY
-    )
-    # Generate blurb for each recommendation
-    if blurb is True:
-        # Before: generate_recommendation_blurb(title['uuid'], 10)
-        for title_dict in processed_titles:
-            for key, rec_uuid in title_dict.items():
-                generate_recommendation_blurb(rec_uuid, 10)
-
-    if processed_titles == []:
-        return {'completed_topic_list': processed_titles, 'message': 'No topics to process in list'} # noqa
-    else:
-        return {'completed_topic_list': processed_titles}
+    processed = process_data(blurb, limit, value, titles)
+    return jsonify(processed), 200 # noqa
 
 
-# http://localhost:5000/list_recommendations?search=Comedy&blurb=True&limit=10&offset=0 # noqa
+def process_data(blurb, limit, value, titles):
+    try:
+        logging.info('Processing titles')
+        processed_titles = process_titles(
+            titles,
+            limit,
+            value,
+            OPENAI_API_MODEL,
+            OMDB_API_KEY,
+            OPENAI_API_KEY
+        )
+        logging.info(f'Finished processing titles: {processed_titles}')
+        if blurb:
+            for title_dict in processed_titles:
+                for key, rec_uuid in title_dict.items():
+                    generate_recommendation_blurb(rec_uuid, 10)
+        return processed_titles
+    except Exception as e:
+        logging.error(f"Error in process_data_in_background: {e}")
+
+
+# Example Request: GET http://***/list_recommendations?search=Comedy&blurb=True&limit=10&offset=0 # noqa
+# Get recommendation data
 @app.route('/api/list_recommendations')
 def list_reccomendations():
     search = request.args.get('search')
@@ -444,7 +521,8 @@ def list_reccomendations():
     return jsonify(results)
 
 
-# http://localhost:5000/api/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10 # noqa
+# Example Request: GET http://***/api/get_recommendation?uuid=8d2c1f01-ef70-46f6-b8a4-f8db0f44b131?limit=10 # noqa
+# Get already generated recommendation data by uuid
 @app.route('/api/get_recommendation_by_uuid')
 def get_recommendation_by_uuid():
     uuid = request.args.get('uuid')
@@ -475,7 +553,8 @@ def process_recommendation_by_uuid(uuid):
         return {'error': str(e)}, 400
 
 
-# http://127.0.0.1:5000/api/get_recommendation_by_title?search=Character Driven Movies # noqa
+# Example Request: GET http://***/api/get_recommendation_by_title?search=Character Driven Movies # noqa
+# Get already generated recommendation data by title
 @app.route('/api/get_recommendation_by_title')
 def get_recommendation_by_title():
     try:
@@ -499,7 +578,8 @@ def get_recommendation_by_title():
         return {'error': str(e)}, 400
 
 
-# http://localhost:5000/api/get_recommendation_blurb?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f # noqa
+# Example Request: GET http://***/api/get_recommendation_blurb?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f # noqa
+# Get already generated recommendation blurb data
 @app.route('/api/get_recommendation_blurb')
 def get_recommendations_blurb():
     # get uuid from the request
@@ -532,7 +612,8 @@ def process_recommendation_blurb(uuid):
         return None
 
 
-# http://localhost:5000/api/get_movie_videos?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True # noqa
+# Example Request: GET http://***/api/get_movie_videos?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=True # noqa
+# Get movie video data and overwrite if overwrite is set to True
 @app.route('/api/get_movie_videos')
 def get_movie_videos():
     # get uuid from the request
@@ -560,7 +641,8 @@ def get_movie_videos():
         return 'No recommendation found for this UUID', 404
 
 
-# http://localhost:5000/api/get_movie_images?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=true # noqa
+# Example Request: GET http://***/api/get_movie_images?uuid=3773a5d9-abea-49b2-8751-4b51bf4fe35f&overwrite=true # noqa
+# Get movie image data and overwrite if overwrite is set to True
 @app.route('/api/get_movie_images')
 def get_movie_images():
     # get uuid from the request
@@ -588,7 +670,8 @@ def get_movie_images():
         return 'No recommendation found for this UUID', 404
 
 
-# Example: http://127.0.0.1:5000/api/replace_movie_id?imbdid=tt1392190&replace_uuid=88841ced-35c5-4828-be5c-f0cfe4732192 # noqa
+# Example Request: GET http://***/api/replace_movie_id?imbdid=tt1392190&replace_uuid=88841ced-35c5-4828-be5c-f0cfe4732192 # noqa
+# Replace movie data for a movie uuid - Useful for correcting movie data
 @app.route('/api/replace_movie_id')
 def replace_movie_by_id():
     api_key = request.headers.get('x-api-key')
@@ -614,6 +697,8 @@ def replace_movie_by_id():
         return f'ID:{movie_id} Not Found', 404
 
 
+# Generate recommendations gnere data
+# TODO Depricate as not needed any more
 @app.route('/api/generate_recommendations_genre')
 def generate_recommendations_genre():
     recommendation_uuid = request.args.get('recommendation_uuid')
@@ -629,7 +714,7 @@ def generate_recommendations_genre():
     return jsonify(gen_rec_data.to_dict())
 
 
-# Example: http://127.0.0.1:5000/api/generate_api_key
+# API Key generation endpoint
 @app.route('/api/generate_api_key', methods=['POST'])
 def generate_api_key():
     # This will always require to have a valid API key before generating a new one # noqa
@@ -637,9 +722,10 @@ def generate_api_key():
     if not is_valid_api_key(api_key):
         return jsonify(error="Invalid or missing API key (x-api-key)"), 403
     data = generate_and_store_api_key()
-    return jsonify(f'Generated API Key: {data}'), 200
+    return jsonify({'Generated API Key': f'{data}'}), 200
 
 
+# Get recommendation data only
 @app.route('/api/get_homepage_data')
 def frontpage_reccomendations():
     page = request.args.get('page', default=1, type=int)

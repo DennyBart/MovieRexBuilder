@@ -358,10 +358,8 @@ def get_related_movies(recommendation_uuid):
         return related_movies
 
 
-def get_limit_and_value(request):
+def check_limit_and_value(limit, value):
     try:
-        limit = request.args.get('limit')
-        value = request.args.get('value')
         if value is None or value.strip() == '':
             value = 10
         else:
@@ -405,10 +403,10 @@ def process_titles(titles, limit, value, OPENAI_API_MODEL,
                 OPENAI_API_KEY
             )
         except ValueError as e:
-            print(f'Error processing {title} - {str(e)}')
+            logging.error(f'Error processing {title} - {str(e)}')
             continue
         if movie_list is None:
-            print(f'Error processing {title}')
+            logging.error(f'Error processing {title}')
             continue
         else:
             # get a random number between 0 and len(movie_list)

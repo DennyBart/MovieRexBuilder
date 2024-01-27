@@ -232,7 +232,8 @@ def store_new_movie(cast_processor, movie_data):
             new_movie = process_movie_data(cast_processor, movie_data)
             logging.info(f"Storing new movie {new_movie.title}")
 
-            # Merge new_movie into the session (handles both new and existing instances)
+            # Merge new_movie into the session
+            # (handles both new and existing instances)
             new_movie = session.merge(new_movie)
 
             session.commit()
@@ -242,7 +243,6 @@ def store_new_movie(cast_processor, movie_data):
             session.rollback()
             return False  # Indicate failure
 
-    # These functions should be called within a session if they need access to database
     with get_db_session() as session:
         logging.info(f"Storing movie {new_movie.title} genres")
         store_movie_genre(new_movie, genre_string=str(new_movie.genre))
@@ -270,7 +270,8 @@ def store_movie_genre(new_movie, genre_string):
                     session.add(genre)
                     session.flush()
 
-                logging.info(f"Storing movie {new_movie.title} genre {genre_name}")
+                logging.info(f"Storing movie {new_movie.title} genre "
+                             f"{genre_name}")
 
                 if genre not in new_movie.genres:
                     new_movie.genres.append(genre)
@@ -300,17 +301,23 @@ def search_movie_by_id(movie_id, api_key):
         return None
 
 
-# "http://127.0.0.1:5000/movies?title=Swallow&year=2019"
 def search_movie_by_title(title, year, api_key):
-    # check if year is a float and remove the decmial if so
     plot = OMDB_PLOT
     encoded_title = urllib.parse.quote_plus(title)
-    logging.info(f"Searching OMDB for movie with "
-                 f"title {title} and year {int(year)}")
-    if plot == 'full':
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={int(year)}&apikey={api_key}&plot={plot}"  # noqa
+    year_str = str(year).split('.')[0] if year else None  # Convert to string and split if it's a float, handle None # noqa
+
+    if year_str:
+        logging.info(f"Searching OMDB for movie with title {title} and year {year_str}") # noqa
+        year_param = f"&y={int(year_str)}"
     else:
-        url = f"http://www.omdbapi.com/?t={encoded_title}&y={int(year)}&apikey={api_key}" # noqa
+        logging.info(f"Searching OMDB for movie with title {title} without specifying year") # noqa
+        year_param = ''
+
+    if plot == 'full':
+        url = f"http://www.omdbapi.com/?t={encoded_title}{year_param}&apikey={api_key}&plot={plot}" # noqa
+    else:
+        url = f"http://www.omdbapi.com/?t={encoded_title}{year_param}&apikey={api_key}" # noqa
+
     try:
         response = requests.get(url)
         data = response.json()
@@ -321,8 +328,7 @@ def search_movie_by_title(title, year, api_key):
         else:
             return None
     except requests.exceptions.ConnectionError as e:
-        logging.error("ConnectionError occurred while searching "
-                      f"movie by title: {e}")
+        logging.error(f"ConnectionError occurred while searching movie by title: {e}") # noqa
         return None
 
 
@@ -520,7 +526,7 @@ def replace_movie_uuid(original_uuid, new_uuid):
 
 def is_valid_api_key(api_key):
     with get_db_session() as session:
-        print(f'Api key: {api_key}')
+        logging.info(f'Api key request: {api_key}')
         if api_key is not None:
             hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
             key_record = session.query(APIKey).filter(
@@ -640,7 +646,7 @@ def fetch_genre_name_by_id(genre_id):
 #                 set_rec_image(random_movie, rec_uuid)
 #             else:
 #                 logging.info("No random movie found.")
-#         logging.info(f"Finished generating {len(rec_uuids)} rec list images.")
+#         logging.info(f"Finished generating {len(rec_uuids)} rec list images.") # noqa
 
 
 def fetch_recommendations(page=1, items_per_page=10):

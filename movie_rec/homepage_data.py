@@ -10,7 +10,7 @@ from movie_rec.models import (FeaturedContent,
                               MovieRecommendationRelation,
                               MovieRecommendations)
 from movie_rec.models import CastName
-from datetime import datetime, timezone
+from datetime import datetime
 from constants import (
     DIRECTOR_HOMEPAGE_HEADER,
     ACTOR_HOMEPAGE_HEADER,
@@ -177,6 +177,7 @@ def get_movie_recommendations(session: Session, genre, num_items=10):
     ).limit(num_items).all()
 
 
+# TODO Might need to remove this and use a soft delete functionality
 def clear_previous_featured_content(session: Session, genre):
     session.query(FeaturedContent).filter(
         and_(
