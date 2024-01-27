@@ -332,6 +332,7 @@ def generate_movie_recommendation_titles():
         if gen_items is None:
             logging.info("No titles generated")
         else:
+            # TODO: Check that the titles are not used before
             store_search_titles(gen_items)
             total_generated_titles.extend(gen_items)
             logging.info("Total generated titles: "
