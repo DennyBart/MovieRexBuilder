@@ -99,6 +99,25 @@ def landing_page():
         return render_template(f'{device_type}/error.html'), 500
 
 
+@app.route('/v2')
+def landing_page_v2():
+    page = request.args.get('page', default=1, type=int)
+    device_type = get_device_type()
+    if page < 1:
+        page = 1
+    try:
+        recommendations = fetch_recommendations(page=page)
+        recommendations['page'] = page
+
+        return render_template(f'{device_type}/index_v2.html',
+                               recommendations=recommendations)
+    except (SQLAlchemyError, AttributeError, ValueError) as e:
+        # Log the error for debugging purposes
+        logging.debug(f"Error: {e}")
+
+        # Render the error template
+        return render_template(f'{device_type}/error.html'), 500
+
 # Returns a movie recommendation data by uuid
 @app.route('/web/rec/<uuid>')
 def display_recommendation(uuid):
