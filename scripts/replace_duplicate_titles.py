@@ -1,5 +1,5 @@
 import sys
-sys.path.append('C:/Users/denis/Dev/MovieRexBuilder') # noqa
+sys.path.append('/home/dennyb/MovieRexBuilder') # noqa
 import os
 from dotenv import load_dotenv
 import logging
