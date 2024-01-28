@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recommendations Web</title>
+    <title>MovieRec | Movie Recommendations</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -304,14 +304,14 @@
         <h1><a href="/">MovieRec</a></h1>
     </header>
     <div class="centered-search">
-        <div class="search-description">Search for movie recommendations:</div>
+        <div class="search-description">Search for a recommendation</div>
         <div id="searchBar-container">
             <input type="text" id="searchBar" placeholder="Search...">
         </div>
         <!-- Container for search results -->
         <div id="results"></div>
     </div>
-    <h2 class="page-title">Recommendation Lists</h2>
+    <h2 class="page-title">Featured Recommendations</h2>
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>

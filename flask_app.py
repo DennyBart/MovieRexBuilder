@@ -93,7 +93,7 @@ def landing_page():
                                recommendations=recommendations)
     except (SQLAlchemyError, AttributeError, ValueError) as e:
         # Log the error for debugging purposes
-        logging.debug(f"Error: {e}")
+        logging.error(f"Error: {e}")
 
         # Render the error template
         return render_template(f'{device_type}/error.html'), 500
@@ -113,10 +113,11 @@ def landing_page_v2():
                                recommendations=recommendations)
     except (SQLAlchemyError, AttributeError, ValueError) as e:
         # Log the error for debugging purposes
-        logging.debug(f"Error: {e}")
+        logging.error(f"Error: {e}")
 
         # Render the error template
         return render_template(f'{device_type}/error.html'), 500
+
 
 # Returns a movie recommendation data by uuid
 @app.route('/web/rec/<uuid>')
