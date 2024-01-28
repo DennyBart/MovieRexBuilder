@@ -7,7 +7,7 @@ import os
 import re
 from psycopg2 import OperationalError
 import uuid
-from sqlalchemy import create_engine, desc, or_
+from sqlalchemy import create_engine, desc, func, or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 import requests
@@ -334,21 +334,27 @@ def search_movie_by_title(title, year, api_key):
 
 def store_search_titles(titles):
     with get_db_session() as session:
-        existing_titles_query = session.query(
-            MovieRecommendationsSearchList.title)
-        existing_titles = {row[0] for row in existing_titles_query}
         processed_titles = []
         for title in titles:
-            title = title.strip('"').replace('25 ', '')
-            if title not in existing_titles:
-                logging.info(f'Storing movie topic "{title}" in database')
+            # Consistent formatting
+            formatted_title = title.strip('"').replace('25 ', '').lower()
+
+            # Checking existence in the database
+            exists = session.query(
+                session.query(MovieRecommendationsSearchList).filter(
+                    func.lower(MovieRecommendationsSearchList.title) == formatted_title # noqa
+                ).exists()
+            ).scalar()
+
+            if not exists:
+                logging.info(f'Storing movie topic "{formatted_title}" in database') # noqa
                 movie_rec_search = MovieRecommendationsSearchList(
-                    title=title, 
+                    title=formatted_title, 
                     is_generated=False, 
                     generated_at=datetime.now()
                 )
                 session.add(movie_rec_search)
-                processed_titles.append(title)
+                processed_titles.append(formatted_title)
 
         session.commit()
         return processed_titles
