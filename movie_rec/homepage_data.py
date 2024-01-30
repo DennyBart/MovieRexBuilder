@@ -187,11 +187,11 @@ def clear_previous_featured_content(session: Session, genre):
     session.commit()
 
 
-def add_featured_content(session: Session, genre, uuids):
+def add_featured_content(session: Session, title, uuids):
     for u in uuids:
         content = FeaturedContent(
             content_type=ContentType.GENRE.value.upper(),
-            group_title=f"{genre.name}",
+            group_title=f"{title}",
             recommendation_uuid=u,
             replaced_at=datetime.utcnow()
         )

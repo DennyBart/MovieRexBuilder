@@ -604,21 +604,22 @@ def generate_genre_homepage_data():
         with get_db_session() as session:
             recommendations = get_movie_recommendations(session,
                                                         genre_to_search)
+            recommendations_dict = [{'uuid': rec.uuid,
+                                     'topic_name': rec.topic_name} for rec in recommendations] # noqa
             uuid_list = [rec.uuid for rec in recommendations]
-
         retries += 1
 
     if uuid_list:
-        with get_db_session() as session:
-            print(f"Found {len(uuid_list)} recommendations for {genre_to_search}") # noqa
-            if len(uuid_list) > MAX_TITLE_COUNT:
-                uuid_list = random.sample(uuid_list, MAX_TITLE_COUNT)
-            # Ensure you have a session for these operations
-            # clear_previous_featured_content(session, genre_to_search)
-            add_featured_content(session, genre_to_search, uuid_list)
-            # Make a call to mark the old data as idsabled
+        return recommendations_dict, genre_to_search
     else:
-        logging.info(f"No recommendations found after {max_retries} retries")
+        logging.error(f"No recommendations found after {max_retries} retries")
+        return None, None
+
+
+def add_featured_topic_content(uuid_list, title, genre=None):
+    with get_db_session() as session:
+            print(f"Found {len(uuid_list)} recommendations for {title}") # noqa
+            add_featured_content(session, title, uuid_list)
 
 
 def fetch_genre_name_by_id(genre_id):

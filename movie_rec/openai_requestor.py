@@ -200,6 +200,19 @@ def get_existing_recommendations(value=10, movie_type=None, uuid=None) -> str:
         return "Error occurred while fetching recommendations.", 500
 
 
+def get_recommendation_group_title(api_model: str, openai_api_key: str,
+                                   input_message: list) -> str:
+    response = generate_openai_response(api_model=api_model,
+                                        openai_api_key=openai_api_key,
+                                        input_message=input_message
+                                        )
+    logging.info(f"OpenAI Request Message: "
+                 f"{response['choices'][0]['message']}")
+    resp_message = response['choices'][0]['message']['content']
+    # TODO Prevent multiple same movie in list
+    return resp_message
+
+
 def get_new_recommendations(api_model: str, openai_api_key: str,
                             movie_type: str, value: int,
                             input_message: list) -> str:

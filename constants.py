@@ -3,6 +3,7 @@ TOP_MOVIES_FORMAT = 'Top {} {} movies'
 TOP_FORMAT = 'Top {} {}'
 MOVIE_CRITIC_BOT_MESSAGE = 'You are a movie critic bot that responds with ' \
     'popular and hidden gems of movies, with ONLY format Name: name, Year: year.' # noqa
+REC_TITLE_BOT_MESSAGE = 'You give catchy titles for a group of movie lists on a website homepage' # noqa
 
 GENERATE_MOVIE_RECOMMENDATION = 'Generate a list of interesting movie top ' \
     'list title recommendations. Like "Best Comedy Movies". ' \
@@ -17,6 +18,8 @@ GENERATION_REC_QUESTION = "Generate 25 catchy movie recomendation titles. ' \
     'Use these as an example: (Must-Watch Movies of All Time) ' \
         '(Iconic Movies That Define the Genre)"
 
+RENAME_TOPIC = 'Give me a collective title under 5 words for these movie recommendation titles {}' # noqa
+
 CAST_PAGE_LIMIT = 5
 DIRECTOR_HOMEPAGE_HEADER = 'Featured In'
 ACTOR_HOMEPAGE_HEADER = 'Featured In'
@@ -30,4 +33,4 @@ TMDB_API_RATE_TIME = 1
 
 MINIMIUM_MOVIE_GENERATION_SUM = 7
 BLURB_GEN_MAX_TRIES = 3
-MAX_TITLE_COUNT = 6
+MAX_TITLE_COUNT = 3
