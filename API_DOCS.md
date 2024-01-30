@@ -144,8 +144,8 @@
   - `x-api-key` (string): Required API key for authentication.
 - **Request Body:**
   - `blurb` (string, optional): Whether to generate blurbs, default is 'False'.
-  - `generation_title_limit` (int, optional): Limit of recommendation titles to generate, default is 1.
-  - `total_titles` (int, optional): Number of movie titles each recommendation to generate, default is 20.
+  - `lists_to_generate` (int, optional): Limit of recommendation titles to generate, default is 1.
+  - `movies_per_list` (int, optional): Number of movie titles each recommendation to generate, default is 20.
 - **Responses:**
   - **200**: Indicates the start of the recommendation data generation process.
   - **400**: Bad request if input data is invalid or missing.

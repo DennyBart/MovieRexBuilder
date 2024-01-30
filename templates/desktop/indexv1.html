@@ -47,7 +47,6 @@
         /* Add styles for search bar */
         #searchBar {
             padding: 5px;
-            width: 70%;
             border-radius: 5px;
             margin-right: 20px;
         }
@@ -56,47 +55,19 @@
             position: relative;
         }
 
-        .search-description {
-            display: block; /* Ensure it takes up the full width above the search bar */
-            margin-bottom: 10px; /* Add some space below the description */
-            /* Add any additional styling as necessary */
-        }
-
-        .centered-search {
-            display: flex;
-            flex-direction: column; /* Stack children vertically */
-            align-items: center; /* Center children horizontally */
-            padding-top: var(--search-padding-top);
-            padding-bottom: var(--search-padding-bottom);
-            position: relative;
-        }
-
-        #searchBar-container {
-            width: 100%; /* Ensure full width for the search bar */
-            display: flex;
-            justify-content: center; /* Center the search bar */
-        }
-
-        :root {
-            --search-padding-top: 5%;  /* Default value */
-            --search-padding-bottom: 0%;  /* Default value */
-        }
-
         /* Add styles for search results */
         #results {
             position: absolute;
-            top: 100%; /* Position it right below the search bar */
-            left: 0;
-            right: 0;
-            width: 72%; /* This will make the width the same as the search bar */
-            margin-left: auto;
-            margin-right: auto;
+            font-family: 'Roboto', sans-serif;
+            top: 100%;  /* Position it right below the search bar */
+            right: 0;  /* Align it to the right edge of the search container */
             background-color: #333333;
             color: white;
+            width: 200px;
             border-radius: 5px;
             z-index: 99;
-            max-height: 200px;
-            overflow-y: auto;
+            max-height: 200px;  /* Maximum height */
+            overflow-y: auto;   /* Enable vertical scrolling */
         }
 
         #results div {
@@ -231,9 +202,8 @@
             font-family: 'Roboto', sans-serif;
             font-size: 1.5em;
             margin-right: 20px;
-            margin-left: 10px;
+            margin-left: 10px; /* Adjust as needed */
             flex-shrink: 0;
-            margin-top: 4%; /* Adjust this value as needed to move the text down */
         }
 
         .replaced-at {
@@ -302,16 +272,13 @@
 <body>
     <header>
         <h1><a href="/">MovieRec</a></h1>
-    </header>
-    <div class="centered-search">
-        <div class="search-description">Search for a recommendation</div>
-        <div id="searchBar-container">
+        <div class="search-container">
             <input type="text" id="searchBar" placeholder="Search...">
+            <!-- Container for search results -->
+            <div id="results"></div>
         </div>
-        <!-- Container for search results -->
-        <div id="results"></div>
-    </div>
-    <h2 class="page-title">Featured Recommendations</h2>
+    </header>
+    <h2 class="page-title">Recommendation Lists</h2>
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
@@ -378,31 +345,20 @@
         $(document).ready(function() {
             $('#searchBar').on('input', function() {
                 let query = $(this).val();
-                let resultsHeight = 0; // Initialize outside the if-else scope
-
-                if (query.length >= 3) {
+                if (query) {
                     $.getJSON(`/search?query=${query}`, function(data) {
                         $('#results').empty();
                         data.forEach(function(item) {
                             let uuid = item.uuid;
                             let topic_name = item.topic_name;
                             $('#results').append(`<div><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
-                            resultsHeight = $('#results').outerHeight(true);
                         });
-                        // Update margin only if there are results
-                        if(resultsHeight > 0) {
-                            $('.page-title').css('margin-top', resultsHeight + 'px');
-                        }
                     });
                 } else {
-                    $('#results').empty(); // Clear results if the query length is less than 3
-                    // Reset the margin-top for the .page-title to its original value
-                    $('.page-title').css('margin-top', ''); // This will remove the inline style, reverting it to the stylesheet value
+                    $('#results').empty();
                 }
             });
         });
-
-
-    </script>    
+    </script>
 </body>
 </html>

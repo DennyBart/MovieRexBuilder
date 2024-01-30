@@ -93,7 +93,7 @@ def landing_page():
                                recommendations=recommendations)
     except (SQLAlchemyError, AttributeError, ValueError) as e:
         # Log the error for debugging purposes
-        logging.debug(f"Error: {e}")
+        logging.error(f"Error: {e}")
 
         # Render the error template
         return render_template(f'{device_type}/error.html'), 500
@@ -453,29 +453,29 @@ def generate_recs_in_db():
     blurb = blurb_str == 'true'
 
     # Get 'limit' and 'total_titles' with default values and validation
-    limit = data.get('generation_title_limit', 1)
-    value = data.get('total_titles', 20)
+    lst_to_generate = data.get('lists_to_generate', 1)
+    movies_per_lst = data.get('movies_per_list', 20)
 
     try:
-        limit = int(limit) if limit not in [None, ''] else 1
-        value = int(value) if value not in [None, ''] else 20
+        lst_to_generate = int(lst_to_generate) if lst_to_generate not in [None, ''] else 1 # noqa
+        movies_per_lst = int(movies_per_lst) if movies_per_lst not in [None, ''] else 20 # noqa
     except ValueError:
         return jsonify({'error': 'Invalid input for limit or value'}), 400
-    if value > 20:
+    if movies_per_lst > 20:
         return jsonify({'error': 'total_titles cannot be more than 20'}), 400
-    if value < 7:
+    if movies_per_lst < 7:
         return jsonify({'error': 'total_titles cannot be less than 7'}), 400
-    if limit > 20:
+    if lst_to_generate > 20:
         return jsonify({'error': 'generation_title_limit cannot be more than 20'}), 400 # noqa
 
     try:
         titles = get_non_generated_movie_topics()
     except ValueError as e:
         return {'error': str(e)}, 400
-    if limit > len(titles):
+    if lst_to_generate > len(titles):
         return jsonify({'error': 'generation_title_limit cannot be more than total_titles, generate more titles'}), 400 # noqa
 
-    processed = process_data(blurb, limit, value, titles)
+    processed = process_data(blurb, lst_to_generate, movies_per_lst, titles)
     return jsonify(processed), 200 # noqa
 
 
