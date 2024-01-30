@@ -27,6 +27,7 @@ from movie_rec.openai_requestor import (
     process_titles
 )
 from movie_rec.movie_search import (
+    add_featured_uuid_content,
     check_db,
     fetch_recommendations,
     generate_genre_homepage_data,
@@ -156,7 +157,12 @@ def gen_data():
 
     generte_cast_data('actor')
     generte_cast_data('director')
-    generate_genre_homepage_data()
+
+    recommendations_dict, genre = generate_genre_homepage_data()
+    if recommendations_dict:
+        uuid_list = [rec['uuid'] for rec in recommendations_dict]
+        add_featured_uuid_content(uuid_list, genre)
+
 
     return jsonify(message=f"Data generated: {datetime.datetime.now().isoformat()}") # noqa
 
