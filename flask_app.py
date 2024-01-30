@@ -116,6 +116,14 @@ def display_recommendation(uuid):
 
         rec_movie_list = processed_recs.get_json()
 
+        # Check to see how many items are in the list
+        num_items_to_shuffle = 7 if len(rec_movie_list) >= 7 else 3 if len(rec_movie_list) >= 3 else 0 # noqa
+        if num_items_to_shuffle:
+            random.seed(42)  # Use a specific seed to ensure reproducibility
+            # Shuffle the first N items in the list
+            first_part_shuffled = random.sample(rec_movie_list[:num_items_to_shuffle], k=num_items_to_shuffle) # noqa
+            rec_movie_list = first_part_shuffled + rec_movie_list[num_items_to_shuffle:] # noqa
+
         response_blurb = process_recommendation_blurb(uuid)
         if response_blurb is not None:
             rec_blurb = response_blurb.get_json()
