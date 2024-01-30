@@ -160,7 +160,9 @@ def gen_data():
 
     recommendations_dict, genre = generate_genre_homepage_data()
     if recommendations_dict:
+        topic_list = [rec['topic_name'] for rec in recommendations_dict]
         uuid_list = [rec['uuid'] for rec in recommendations_dict]
+        print(topic_list)
         add_featured_uuid_content(uuid_list, genre)
 
 

@@ -606,10 +606,10 @@ def generate_genre_homepage_data():
                                                         genre_to_search)
             recommendations_dict = [{'uuid': rec.uuid,
                                      'topic_name': rec.topic_name} for rec in recommendations] # noqa
-
+            uuid_list = [rec.uuid for rec in recommendations]
         retries += 1
 
-    if recommendations_dict:
+    if uuid_list:
         return recommendations_dict, genre_to_search
     else:
         logging.error(f"No recommendations found after {max_retries} retries")
@@ -621,6 +621,7 @@ def add_featured_uuid_content(uuid_list, genre_to_search):
             print(f"Found {len(uuid_list)} recommendations for {genre_to_search}") # noqa
             if len(uuid_list) > MAX_TITLE_COUNT:
                 uuid_list = random.sample(uuid_list, MAX_TITLE_COUNT)
+                print(f"Processed uuids {uuid_list}")
             add_featured_content(session, genre_to_search, uuid_list)
 
 
