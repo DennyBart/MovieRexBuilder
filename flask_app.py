@@ -1,5 +1,6 @@
 import datetime
 import os
+import random
 import uuid
 import math
 from typing import List
@@ -12,7 +13,10 @@ from flask import (
 from constants import (
     GENERATE_PAGE_BLURB,
     GENERATION_REC_TITLES,
+    MAX_TITLE_COUNT,
     MOVIE_CRITIC_BOT_MESSAGE,
+    REC_TITLE_BOT_MESSAGE,
+    RENAME_TOPIC,
     TOP_FORMAT,
     TOP_MOVIES_FORMAT,
     GENERATION_REC_QUESTION,
@@ -24,10 +28,11 @@ from movie_rec.openai_requestor import (
     generate_openai_response,
     get_chatgpt_movie_rec,
     get_existing_recommendations,
+    get_recommendation_group_title,
     process_titles
 )
 from movie_rec.movie_search import (
-    add_featured_uuid_content,
+    add_featured_topic_content,
     check_db,
     fetch_recommendations,
     generate_genre_homepage_data,
@@ -159,11 +164,26 @@ def gen_data():
     generte_cast_data('director')
 
     recommendations_dict, genre = generate_genre_homepage_data()
+
+    if len(recommendations_dict) > MAX_TITLE_COUNT:
+                sample_recommendations = random.sample(recommendations_dict, MAX_TITLE_COUNT) # noqa
+    else:
+        sample_recommendations = recommendations_dict
     if recommendations_dict:
-        topic_list = [rec['topic_name'] for rec in recommendations_dict]
-        uuid_list = [rec['uuid'] for rec in recommendations_dict]
-        print(topic_list)
-        add_featured_uuid_content(uuid_list, genre)
+        topic_list = [rec['topic_name'] for rec in sample_recommendations]
+        # Get OpenAI title
+        input_message = [{'role': 'system', 'content': REC_TITLE_BOT_MESSAGE}, # noqa
+                     {'role': 'user', 'content': RENAME_TOPIC.format(topic_list)}] # noqa
+        group_title = get_recommendation_group_title(OPENAI_API_MODEL,
+                                                     OPENAI_API_KEY,
+                                                     input_message)
+        if "\n" in group_title:
+            group_title_lines = group_title.strip().split("\n")
+            group_title = group_title_lines[0]
+        group_title = group_title.strip().strip('"')
+        print(group_title)
+        uuid_list = [rec['uuid'] for rec in sample_recommendations]
+        add_featured_topic_content(uuid_list, group_title)
 
 
     return jsonify(message=f"Data generated: {datetime.datetime.now().isoformat()}") # noqa

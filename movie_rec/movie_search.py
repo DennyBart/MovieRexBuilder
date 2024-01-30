@@ -616,13 +616,10 @@ def generate_genre_homepage_data():
         return None, None
 
 
-def add_featured_uuid_content(uuid_list, genre_to_search):
+def add_featured_topic_content(uuid_list, title, genre=None):
     with get_db_session() as session:
-            print(f"Found {len(uuid_list)} recommendations for {genre_to_search}") # noqa
-            if len(uuid_list) > MAX_TITLE_COUNT:
-                uuid_list = random.sample(uuid_list, MAX_TITLE_COUNT)
-                print(f"Processed uuids {uuid_list}")
-            add_featured_content(session, genre_to_search, uuid_list)
+            print(f"Found {len(uuid_list)} recommendations for {title}") # noqa
+            add_featured_content(session, title, uuid_list)
 
 
 def fetch_genre_name_by_id(genre_id):
