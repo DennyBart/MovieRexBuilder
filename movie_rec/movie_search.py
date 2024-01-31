@@ -765,8 +765,8 @@ def get_random_posters(movie_uuids):
         movies = session.query(MovieData).filter(MovieData.uuid.in_(
             movie_uuids)).order_by(desc(MovieData.metascore)).all()
 
-        # If there are fewer than 7 movies, use the available movies
-        top_movies = movies[:7]
+        # If there are fewer than 10 movies, use the available movies
+        top_movies = movies[:10]
 
         # Randomly select three movies from the top_movies
         selected_movies = random.sample(top_movies, min(3, len(top_movies)))
