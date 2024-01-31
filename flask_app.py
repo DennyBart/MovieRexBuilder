@@ -173,26 +173,38 @@ def gen_data():
 
     recommendations_dict, genre = generate_genre_homepage_data()
 
-    if len(recommendations_dict) > MAX_TITLE_COUNT:
-                sample_recommendations = random.sample(recommendations_dict, MAX_TITLE_COUNT) # noqa
+    # Remove duplicates based on topic name prefix
+    prefix_dict = {}
+    for rec in recommendations_dict:
+        topic_name = rec['topic_name']
+        prefix = topic_name.split(':')[0]
+        if prefix not in prefix_dict:
+            prefix_dict[prefix] = []
+        prefix_dict[prefix].append(rec)
+
+    # Randomly select one recommendation for each prefix
+    unique_recommendations = [random.choice(prefix_dict[prefix]) for prefix in prefix_dict] # noqa
+
+    if len(unique_recommendations) > MAX_TITLE_COUNT:
+        sample_recommendations = random.sample(unique_recommendations, MAX_TITLE_COUNT) # noqa
     else:
-        sample_recommendations = recommendations_dict
-    if recommendations_dict:
+        sample_recommendations = unique_recommendations
+
+    if sample_recommendations:
         topic_list = [rec['topic_name'] for rec in sample_recommendations]
         # Get OpenAI title
-        input_message = [{'role': 'system', 'content': REC_TITLE_BOT_MESSAGE}, # noqa
-                     {'role': 'user', 'content': RENAME_TOPIC.format(topic_list)}] # noqa
-        group_title = get_recommendation_group_title(OPENAI_API_MODEL,
-                                                     OPENAI_API_KEY,
-                                                     input_message)
+        input_message = [{'role': 'system', 'content': REC_TITLE_BOT_MESSAGE},
+                         {'role': 'user', 'content': RENAME_TOPIC.format(topic_list)}] # noqa
+        group_title = get_recommendation_group_title(OPENAI_API_MODEL, OPENAI_API_KEY, input_message) # noqa
+        
         if "\n" in group_title:
             group_title_lines = group_title.strip().split("\n")
             group_title = group_title_lines[0]
         group_title = group_title.strip().strip('"')
+
         print(group_title)
         uuid_list = [rec['uuid'] for rec in sample_recommendations]
         add_featured_topic_content(uuid_list, group_title)
-
 
     return jsonify(message=f"Data generated: {datetime.datetime.now().isoformat()}") # noqa
 
