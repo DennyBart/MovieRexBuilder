@@ -6,7 +6,10 @@ This Movie Recommendation API is a Flask-based web application that provides a r
 
 **Intelligent Recommendations:** At the core of this application is its powerful recommendation system. The system uses the user defined OpenAI's GPT model (gpt-3.5-turbo, gpt-4, etc) to generate suggestions based on user-provided parameters. It's able to parse and understand complex requests, such as asking for the best animated films of the last decade or cult classics that deal with specific themes. The application also creates a summary of the movie recomendation and some details about those movies.
 
-**Movie Search:** Users can search for movies by ID or name. This function makes it easy to locate specific movies in the database, streamlining the user's navigation experience.
+### Search
+- **Movie Search:** Allows users to search for movies by ID or name, facilitating the easy location of specific movies in the database and enhancing the user's navigation experience.
+- **Recommendation Search:** Enables users to search for movie recommendations based on specific topics or genres. This feature assists in discovering new movies that align with the user's interests.
+- **Genre Search:** Offers the ability to search movies by genre, aiding users in finding films that fit their preferred style or thematic interest. This function streamlines the process of exploring movies within specific genres.
 
 **Movie Details Retrieval:** The application interfaces with the OMDB API and TMDB to retrieve additional details about the movies. This adds a layer of depth to the recommendations by providing more information about each suggested title, including actors, directors, genre, trailers, images and more.
 
@@ -16,19 +19,7 @@ This Movie Recommendation API is a Flask-based web application that provides a r
 
 - [Requirements](#requirements)
 - [Setup](#setup)
-- [Endpoints](#endpoints)
-    - [Search Movie by ID](#search-movie-by-id)
-    - [Search Movie by Name](#search-movie-by-name)
-    - [Create Movie Recommendation](#create-movie-recommendation)
-    - [Generate Movie Recommendation Titles](#generate-movie-recommendation-titles)
-    - [Generate Blurb for Recommendations](#generate-blurb-for-recommendations)
-    - [Provide Movie Recommendation Titles](#provide-movie-recommendation-titles)
-    - [Generate Recommendations from Database](#generate-recommendations-from-database)
-    - [Recommendations List](#recommendations-list)
-    - [Get Recommendations by UUID](#get-recommendations-by-uuid)
-    - [Get Recommendation Blurb](#get-recommendation-blurb)
-    - [Get Movie Videos](#get-movie-videos)
-    - [Get Movie Images](#get-movie-images)
+- [API Overview](#api-overview)
 - [Logging](#logging)
 - [ToDo](#todo)
 - [License](#license)
@@ -81,7 +72,6 @@ The application logs are stored in the `logs/app.log` file. The log file is rota
 - Add support for other API providers
 - Add caching service to flask
 - Track errors for missing movies
-- Add support for MySql database
 
 ## License
 
