@@ -13,9 +13,7 @@ from sqlalchemy.exc import IntegrityError
 import requests
 import logging
 import urllib.parse
-from constants import (
-    OMDB_PLOT,
-    MAX_TITLE_COUNT)
+from constants import OMDB_PLOT
 from movie_rec.cast_service import CastProcessor
 from movie_rec.database import get_db_session
 from movie_rec.homepage_data import (add_featured_content,

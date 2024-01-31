@@ -311,7 +311,9 @@
         <!-- Container for search results -->
         <div id="results"></div>
     </div>
-    <h2 class="page-title">Featured Recommendations</h2>
+    {% if recommendations['page'] == 1 %}
+        <h2 class="page-title">Featured Recommendations</h2>
+    {% endif %}
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
