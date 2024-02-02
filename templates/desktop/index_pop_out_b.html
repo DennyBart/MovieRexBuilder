@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieRec | Movie Recommendations</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Borel&family=Bungee+Shade&display=swap" rel="stylesheet">
+
+    <style>
+        /* Base styles for the entire page */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #333333e6;
+            margin: 0;
+            color: white;
+        }
+
+        /* Header styles */
+        header {
+            font-family: 'Borel', cursive;
+            padding: 15px;
+            background-color: #333333;
+            display: flex; /* Add flex layout */
+            justify-content: space-between; /* Align content */
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.8em;
+            text-align: left;
+            margin: 0;
+            color: white;
+        }
+
+        header h1 a,
+        header h1 a:visited {
+            color: white;
+            text-decoration: none;
+        }
+        
+        /* Add styles for search bar */
+        #searchBar {
+            padding: 5px;
+            border-radius: 5px;
+            margin-right: 20px;
+            transition: width 0.5s ease-in-out; /* Smooth transition for width change */
+            width: 150px; /* Default width */
+        }
+
+        #searchBar:focus {
+            width: 250px; /* Expanded width */
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        /* Add styles for search results */
+        #results {
+            position: absolute;
+            font-family: 'Roboto', sans-serif;
+            top: 100%;  /* Position it right below the search bar */
+            left: 0;  /* Align it to the right edge of the search container */
+            background-color: #333333;
+            color: white;
+            width: 200px;
+            border-radius: 5px;
+            z-index: 99;
+            max-height: 200px;  /* Maximum height */
+            overflow-y: auto;   /* Enable vertical scrolling */
+        }
+
+        #results div {
+            padding: 5px;
+        }
+
+        #results div:hover {
+            background-color: #555555;
+        }
+
+        #results a,
+        #results a:visited {
+            color: white; /* Set text color */
+            text-decoration: none; /* Remove underlines */
+        }
+
+        #results a:hover {
+            text-decoration: underline; /* Add underline on hover */
+        }
+
+
+        /* Body styles */
+        .recommendation-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            justify-content: flex-start;  /* Changed from 'center' to 'flex-start' */
+        }
+
+
+        .recommendation {
+            background-color: #424242e6;
+            border-radius: 10px;
+            padding: 15px;
+            width: calc(30% - 15px);  /* Adjusted to allow three in a row */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            overflow: hidden;
+        }
+
+        .recommendation a,
+        .recommendation a:visited {
+            color: white;
+            text-decoration: none;
+        }
+
+        .recommendation:hover {
+            transform: scale(1.05);
+        }
+
+        .rec-img a {
+            display: block;
+        }
+
+        .rec-img img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        /* New styles for the image group */
+        .poster-group {
+            display: flex;
+            position: relative; /* Enables absolute positioning for children */
+        }
+
+        .poster-group img {
+            flex: 1; /* Equally distributes the space among the three images */
+            height: auto; 
+            display: block; 
+            width: 33.33%; /* Divide the container width among the three images */
+            vertical-align: middle; 
+            border: none;
+        }
+
+        .topic {
+            font-size: 1.4em;
+            padding: 0 10px; /* Padding added to push text */
+        }
+
+        .count {
+            font-size: 1.1em;
+            text-align: right;
+            padding: 0 10px; /* Padding added to push text */
+        }
+
+        .advertisement {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            background-color: #424242e6;
+            border-radius: 10px;
+            width: 100%;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .recommendation-container,
+            .recommendation {
+                padding: 10px;
+            }
+
+            .recommendation {
+                width: 100%;
+            }
+
+            header h1 {
+                font-size: 1.6em;
+            }
+        }
+
+        /* Additional Styles */
+        .row {
+            display: flex;
+            align-items: center;
+        }
+
+        .row-title {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1.2em;
+            margin-right: 20px;
+            margin-left: 10px; /* Adjust as needed */
+            flex-shrink: 0;
+        }
+
+        .page-title {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1.5em;
+            margin-right: 20px;
+            margin-left: 10px; /* Adjust as needed */
+            flex-shrink: 0;
+        }
+
+        .replaced-at {
+            font-size: 0.8em;
+            margin-left: 20px; /* Adjust as needed */
+            color: grey;  /* Optional: Style it as you see fit */
+        }
+        /* Additional Styles for set-title positioning */
+        .recommendation {
+            position: relative;
+        }
+
+        .set-title {
+            font-family: 'Borel', cursive;
+            position: absolute; 
+            top: 10px; 
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7); 
+            padding: 2px 4px;
+            border-radius: 3px;
+            z-index: 10;
+        }
+
+        /* Additional Styles for Previous and Next buttons */
+        .paging-button {
+            background-color: #424242;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            margin-right: 10px;  /* Added for spacing between buttons */
+        }
+
+        .paging-container {
+            text-align: left; 
+            margin-top: 20px; 
+            padding-left: 15px; 
+            padding-bottom: 20px;
+        }
+
+        /* Footer styles */
+        .footer a,
+        .footer a:visited {
+            color: white;  /* Or any color you prefer */
+            text-decoration: none; /* Removes underlines */
+        }
+        .footer {
+            background-color: #333333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1><a href="/">MovieRec</a></h1>
+        <div class="search-container">
+            <input type="text" id="searchBar" placeholder="Search...">
+            <!-- Container for search results -->
+            <div id="results"></div>
+        </div>
+    </header>
+    {% if recommendations['page'] == 1 %}
+        <h2 class="page-title">Featured Recommendations</h2>
+    {% endif %}
+    <!-- Loop through recommendation groups -->
+    {% for title, rec_group in recommendations.items() if title != 'page' %}
+    <section>
+        <!-- Display title for each group -->
+        <div class="row">
+            <h2 class="row-title">{{ title }}</h2>
+        </div>
+
+        <!-- Display replaced_at date for each group -->
+        <div class="replaced-at">{{ rec_group[0].replaced_at_date }}</div>
+
+        <!-- Display recommendations for the current group -->
+        <div class="recommendation-container">
+            {% for rec in rec_group %}
+            <div class="recommendation">
+                <div class="rec-img">
+                    <a href="/web/rec/{{ rec.topic_uuid }}">
+                        <div class="poster-group">
+                            <!-- Check if poster_1 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_1 or url_for('static', filename='default_poster.png') }}" alt="Poster 1">
+                        
+                            <!-- Check if poster_2 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_2 or url_for('static', filename='site_poster.jpg') }}" alt="Poster 2">
+                        
+                            <!-- Check if poster_3 is None or empty and use default image if it is -->
+                            <img src="{{ rec.poster_3 or url_for('static', filename='default_poster.png') }}" alt="Poster 3">
+                        </div>
+                    </a>
+                </div>
+                <div class="topic">
+                    <a href="/web/rec/{{ rec.topic_uuid }}">{{ rec.topic_name }}</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+    <div class="paging-container">
+        {% if recommendations and 'page' in recommendations %}
+            {% if recommendations['page'] > 1 %}
+                <a href="/?page={{ recommendations['page'] - 1 }}" class="paging-button">Previous</a>
+            {% endif %}
+            <a href="/?page={{ recommendations['page'] + 1 }}" class="paging-button">Next</a>
+        {% endif %}
+    </div>
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2024 MovieRec. All rights reserved.</p>
+        <p>
+            <a href="/about">About Us</a> |
+            <a href="/contact">Contact</a> |
+            <a href="/privacy">Privacy Policy</a> |
+            <a href="/terms">Terms of Service</a>
+        </p>
+        <p>
+            Follow us on
+            <a href="https://facebook.com/MovieRec">Facebook</a>,
+            <a href="https://twitter.com/MovieRec">Twitter</a>,
+            <a href="https://instagram.com/MovieRec">Instagram</a>
+        </p>
+    </div> 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var searchBar = $('#searchBar');
+            var resultsDiv = $('#results');
+            var currentIndex = -1; // To keep track of the currently highlighted item
+    
+            searchBar.on('input', function() {
+                let query = $(this).val();
+                if (query) {
+                    $.getJSON(`/search?query=${query}`, function(data) {
+                        resultsDiv.empty();
+                        currentIndex = -1; // Reset index with each new search
+                        data.forEach(function(item, index) {
+                            let uuid = item.uuid;
+                            let topic_name = item.topic_name;
+                            resultsDiv.append(`<div class="result-item" tabindex="${index}"><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
+                        });
+                    });
+                } else {
+                    resultsDiv.empty();
+                }
+            }).focus(function() {
+                $(this).animate({ width: '50vw' }, 500);
+                resultsDiv.css('width', '50vw');
+            }).blur(function() {
+                if (!$(this).val()) {
+                    $(this).animate({ width: '15vw' }, 500);
+                    resultsDiv.css('width', '15vw');
+                }
+            }).keyup(function(e) {
+                if (e.key === "Escape") {
+                    $(this).val('');
+                    $(this).blur();
+                    $(this).animate({ width: '15vw' }, 500);
+                    resultsDiv.css('width', '15vw');
+                    resultsDiv.empty();
+                } else if (e.key === "ArrowDown") {
+                    if (currentIndex < $('.result-item').length - 1) {
+                        currentIndex++;
+                        $('.result-item').removeClass('highlighted').eq(currentIndex).addClass('highlighted').focus();
+                    }
+                } else if (e.key === "ArrowUp") {
+                    if (currentIndex > 0) {
+                        currentIndex--;
+                        $('.result-item').removeClass('highlighted').eq(currentIndex).addClass('highlighted').focus();
+                    }
+                }
+            });
+        });
+    </script>
+    
+       
+</body>
+</html>
