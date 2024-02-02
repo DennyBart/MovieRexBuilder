@@ -99,7 +99,7 @@ def landing_page():
             return render_template(f'{device_type}/index.html',
                                    recommendations=recommendations)
         else:
-            return render_template(f'{device_type}/index_top_b.html',
+            return render_template(f'{device_type}/index.html',
                                    recommendations=recommendations)
     except (SQLAlchemyError, AttributeError, ValueError) as e:
         # Log the error for debugging purposes
