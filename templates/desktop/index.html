@@ -355,6 +355,7 @@
         $(document).ready(function() {
             var searchBar = $('#searchBar');
             var resultsDiv = $('#results');
+            var searchContainer = $('.search-container');
             var currentIndex = -1; // To keep track of the currently highlighted item
     
             searchBar.on('input', function() {
@@ -380,7 +381,20 @@
                     $(this).animate({ width: '15vw' }, 500);
                     resultsDiv.css('width', '15vw');
                 }
-            }).keyup(function(e) {
+            });
+    
+            // Close the search results when clicking outside the search container
+            $(document).on('click', function(e) {
+                if (!searchContainer.is(e.target) && searchContainer.has(e.target).length === 0) {
+                    resultsDiv.empty();
+                    if (!searchBar.val()) {
+                        searchBar.animate({ width: '15vw' }, 500);
+                        resultsDiv.css('width', '15vw');
+                    }
+                }
+            });
+    
+            searchBar.keyup(function(e) {
                 if (e.key === "Escape") {
                     $(this).val('');
                     $(this).blur();
@@ -400,8 +414,6 @@
                 }
             });
         });
-    </script>
-    
-       
+    </script>    
 </body>
 </html>
