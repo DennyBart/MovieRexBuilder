@@ -249,10 +249,6 @@
             header h1 {
                 font-size: 1.6em;
             }
-        }
-
-        @media (max-width: 768px) {
-            /* ... existing mobile styles ... */
 
             /* Mobile Footer styles */
             .footer a,
@@ -351,6 +347,15 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Close the results when clicking outside
+            $(document).on('mouseup', function(e) {
+                var container = $("#searchBar, #results");
+                // if the target of the click isn't the container nor a descendant of the container
+                if (!container.is(e.target) && container.has(e.target).length === 0) {
+                    $('#results').empty();
+                }
+            });
+    
             $('#searchBar').on('input', function() {
                 let query = $(this).val();
                 if (query) {
@@ -367,6 +372,6 @@
                 }
             });
         });
-    </script>    
+    </script>      
 </body>
 </html>
