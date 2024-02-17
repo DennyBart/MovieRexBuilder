@@ -119,7 +119,7 @@
         .replaced-at {
             font-size: 0.8em;
             margin-left: 20px; /* Adjust as needed */
-            color: whitesmoke;  /* Optional: Style it as you see fit */
+            color: rgba(245, 245, 245, 0.766);  /* Optional: Style it as you see fit */
         }
 
         .recommendation:hover {
@@ -217,6 +217,22 @@
             text-decoration: underline;
         }
 
+        .row-title {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1em;
+            margin-right: 20px;
+            margin-left: 10px; /* Adjust as needed */
+            flex-shrink: 0;
+        }
+
+        .page-title {
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8em;
+            margin-right: 20px;
+            margin-left: 10px; /* Adjust as needed */
+            flex-shrink: 0;
+            color: rgba(255, 255, 255, 0.77);  /* Optional: Style it as you see fit */
+        }
 
         /* Mobile Styles */
         @media (max-width: 768px) {
@@ -281,7 +297,9 @@
             <div id="results"></div>
         </div>        
     </header>
-
+    {% if recommendations['page'] == 1 %}
+        <h2 class="page-title">Featured Recommendations</h2>
+    {% endif %}
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
