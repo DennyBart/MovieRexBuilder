@@ -208,17 +208,23 @@
 
         .page-title {
             font-family: 'Roboto', sans-serif;
-            font-size: 1.2em;
-            margin-right: 20px;
-            margin-left: 10px;
-            flex-shrink: 0;
-            color: rgba(255, 255, 255, 0.77);
-            border: 2px solid #333333;
-            border-radius: 10px; /* Rounded corners */
-            padding: 5px 10px; /* Padding inside the border */
-            background-color: #333333; /* Background color for the text */
+            font-size: 1.5em;
+            margin-top: 0; /* Adjust this to reduce space above the title */
+            margin-right: 20px; /* Right margin */
+            margin-bottom: 1px; /* Bottom margin, reduced from before */
+            flex-shrink: 0; /* Prevent the title from shrinking */
+            color: #E0E0E0; /* Light grey color for differentiation */
+            padding: 0.5em 1em; /* Padding inside the border */
+            background-color: transparent; /* Make background transparent or match the header */
+            border-bottom-right-radius: 10px; /* Only bottom-right corner is rounded */
+            font-weight: 500; /* Less bold than a full bold to not overpower */
+            letter-spacing: 1px; /* Add spacing between letters */
+            font-weight: bold; /* Make the font bold */
+            padding-bottom: 5px; /* Add some space below the text */
+            border-bottom: 2px solid #474747; /* Add a subtle line below the text */
+            text-transform: uppercase; /* Capitalize the text */
+            cursor: default; /* Ensure cursor doesn't change to pointer */
             display: inline-block; /* Only take up as much width as the content */
-            margin-bottom: 1px; /* Reduced from whatever it was before */
         }
 
         .replaced-at {
