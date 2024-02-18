@@ -29,7 +29,7 @@ api_headers = {
 # Data for the requests
 data_recs_in_db = {
     "blurb": "false",
-    "lists_to_generate": 1,
+    "lists_to_generate": 10,
     "movies_per_list": 20
 }
 
