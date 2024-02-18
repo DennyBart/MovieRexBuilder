@@ -299,61 +299,22 @@
             <div id="results"></div>
         </div>
     </header>
-    {% if recommendations['page'] == 1 %}
-        <h2 class="page-title">Featured Recommendations</h2>
-    {% endif %}
-    <!-- Loop through recommendation groups -->
-    {% for title, rec_group in recommendations.items() if title != 'page' %}
-    <section>
-        <!-- Display title for each group -->
-        <div class="row">
-            <h2 class="row-title">{{ title }}</h2>
-        </div>
-
-        <!-- Display replaced_at date for each group -->
-        <div class="replaced-at">{{ rec_group[0].replaced_at_date }}</div>
-
-        <!-- Display recommendations for the current group -->
-        <div class="recommendation-container">
-            {% for rec in rec_group %}
-            <div class="recommendation">
-                <div class="rec-img">
-                    <a href="/web/rec/{{ rec.topic_uuid }}">
-                        <div class="poster-group">
-                            <!-- Check if poster_1 is None or empty and use default image if it is -->
-                            <img src="{{ rec.poster_1 or url_for('static', filename='default_poster.png') }}" alt="Poster 1">
-                        
-                            <!-- Check if poster_2 is None or empty and use default image if it is -->
-                            <img src="{{ rec.poster_2 or url_for('static', filename='site_poster.jpg') }}" alt="Poster 2">
-                        
-                            <!-- Check if poster_3 is None or empty and use default image if it is -->
-                            <img src="{{ rec.poster_3 or url_for('static', filename='default_poster.png') }}" alt="Poster 3">
-                        </div>
-                    </a>
-                </div>
-                <div class="topic">
-                    <a href="/web/rec/{{ rec.topic_uuid }}">{{ rec.topic_name }}</a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+    <section style="text-align: center; padding: 50px; color: #e0e0e0; max-width: 800px; margin: auto;">
+        <h2 style="margin-bottom: 20px; color: #fff;">About Us</h2>
+        <p style="text-align: justify; margin-bottom: 20px;">Welcome to MovieRex, an AI-powered movie recommendation companion. Born from a passion for cinema and cutting-edge technology, MovieRex offers interesting lists of movie suggestions. Our site leverages the advanced capabilities of OpenAI's GPT models to curate lists of movies across various categories, ensuring you're always a click away from discovering your next favorite film.</p>
+        <p style="text-align: justify; margin-bottom: 20px;">Our commitment to enhancing your movie discovery experience is matched by our dedication to user-friendly design. You can also search for keywords in the recommendation title to search through our large database of movie recommendation lists.</p>
+        <p style="text-align: justify; margin-bottom: 20px;">Every recommendation on MovieRex is AI-generated, ensuring a blend of creativity and insight that traditional recommendation systems can't match. Dive into a world where film recommendations come alive.</p>
+        <p style="text-align: justify; margin-bottom: 40px;">Thank you for choosing MovieRex. Let's embark on this cinematic journey together, where every recommendation is a step towards your next film adventure.</p>
+        <a href="/" style="background-color: #424242; padding: 10px 20px; color: white; text-decoration: none; border-radius: 10px; margin-top: 20px;">Discover Now</a>
     </section>
-    {% endfor %}
-    <div class="paging-container">
-        {% if recommendations and 'page' in recommendations %}
-            {% if recommendations['page'] > 1 %}
-                <a href="/?page={{ recommendations['page'] - 1 }}" class="paging-button">Previous</a>
-            {% endif %}
-            <a href="/?page={{ recommendations['page'] + 1 }}" class="paging-button">Next</a>
-        {% endif %}
-    </div>
+
     <!-- Footer -->
     <div class="footer">
         <p>&copy; 2024 MovieRec. All rights reserved.</p>
         <p>
             <a href="/about">About Us</a> |
             <a href="/contact">Contact</a> |
-            <!-- <a href="/privacy">Privacy Policy</a> | -->
+            <a href="/privacy">Privacy Policy</a> |
             <a href="/terms">Terms of Service</a>
         </p>
         <p>

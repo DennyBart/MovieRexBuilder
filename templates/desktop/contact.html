@@ -299,54 +299,18 @@
             <div id="results"></div>
         </div>
     </header>
-    {% if recommendations['page'] == 1 %}
-        <h2 class="page-title">Featured Recommendations</h2>
-    {% endif %}
-    <!-- Loop through recommendation groups -->
-    {% for title, rec_group in recommendations.items() if title != 'page' %}
-    <section>
-        <!-- Display title for each group -->
-        <div class="row">
-            <h2 class="row-title">{{ title }}</h2>
+    <section style="text-align: center; padding: 50px; color: #e0e0e0; max-width: 800px; margin: 50px auto; background-color: #424242; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
+        <h2 style="margin-top: 20px; color: #fff;">Contact Us</h2>
+        <div style="text-align: left; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #333333; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+            <p style="text-align: center; margin-bottom: 20px;">We're here to help and answer any question you might have. We look forward to hearing from you!</p>
+            <p style="margin-bottom: 10px;"><strong>Email:</strong> <a href="mailto:movierec.org@gmail.com" style="color: #e0e0e0;">movierec.org@gmail.com</a></p>
+            <!-- <p style="margin-bottom: 10px;"><strong>Phone:</strong> +1 (555) 123-4567</p> -->
+            <!-- <p style="margin-bottom: 20px;"><strong>Address:</strong> 123 Movie Lane, Film City, FC 12345</p> -->
         </div>
-
-        <!-- Display replaced_at date for each group -->
-        <div class="replaced-at">{{ rec_group[0].replaced_at_date }}</div>
-
-        <!-- Display recommendations for the current group -->
-        <div class="recommendation-container">
-            {% for rec in rec_group %}
-            <div class="recommendation">
-                <div class="rec-img">
-                    <a href="/web/rec/{{ rec.topic_uuid }}">
-                        <div class="poster-group">
-                            <!-- Check if poster_1 is None or empty and use default image if it is -->
-                            <img src="{{ rec.poster_1 or url_for('static', filename='default_poster.png') }}" alt="Poster 1">
-                        
-                            <!-- Check if poster_2 is None or empty and use default image if it is -->
-                            <img src="{{ rec.poster_2 or url_for('static', filename='site_poster.jpg') }}" alt="Poster 2">
-                        
-                            <!-- Check if poster_3 is None or empty and use default image if it is -->
-                            <img src="{{ rec.poster_3 or url_for('static', filename='default_poster.png') }}" alt="Poster 3">
-                        </div>
-                    </a>
-                </div>
-                <div class="topic">
-                    <a href="/web/rec/{{ rec.topic_uuid }}">{{ rec.topic_name }}</a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+        <a href="mailto:movierec.org@gmail.com" style="background-color: #333333; padding: 10px 20px; color: white; text-decoration: none; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">Email Us</a>
     </section>
-    {% endfor %}
-    <div class="paging-container">
-        {% if recommendations and 'page' in recommendations %}
-            {% if recommendations['page'] > 1 %}
-                <a href="/?page={{ recommendations['page'] - 1 }}" class="paging-button">Previous</a>
-            {% endif %}
-            <a href="/?page={{ recommendations['page'] + 1 }}" class="paging-button">Next</a>
-        {% endif %}
-    </div>
+        
+
     <!-- Footer -->
     <div class="footer">
         <p>&copy; 2024 MovieRec. All rights reserved.</p>

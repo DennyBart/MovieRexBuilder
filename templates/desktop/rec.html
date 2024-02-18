@@ -196,6 +196,28 @@
         float: none;
         width: 100%;
     }
+    /* Footer styles */
+    .footer a,
+        .footer a:visited {
+            color: white;  /* Or any color you prefer */
+            text-decoration: none; /* Removes underlines */
+        }
+        .footer {
+            background-color: #333333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
 
     /* Adjustments for Very Small Screens */
     @media (max-width: 480px) {
@@ -306,6 +328,22 @@
         </div>
         {% endfor %}
     </div>
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2024 MovieRec. All rights reserved.</p>
+        <p>
+            <a href="/about">About Us</a> |
+            <a href="/contact">Contact</a> |
+            <!-- <a href="/privacy">Privacy Policy</a> | -->
+            <a href="/terms">Terms of Service</a>
+        </p>
+        <p>
+            Follow us on
+            <!-- <a href="https://facebook.com/MovieRec.org">Facebook</a>, -->
+            <a href="https://twitter.com/MovieRec_org">X - Twitter</a>,
+            <a href="https://instagram.com/MovieRec_org">Instagram</a>
+        </p>
+    </div> 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {

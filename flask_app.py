@@ -105,6 +105,26 @@ def landing_page():
         return render_template(f'{device_type}/error.html'), 500
 
 
+# Loads the about page
+@app.route('/about')
+def about_page():
+    device_type = get_device_type()
+    return render_template(f'{device_type}/about.html')
+
+
+# Loads the contact page
+@app.route('/contact')
+def contact_page():
+    device_type = get_device_type()
+    return render_template(f'{device_type}/contact.html')
+
+
+# Loads the terms page
+@app.route('/terms')
+def terms_page():
+    device_type = get_device_type()
+    return render_template(f'{device_type}/terms.html')
+
 # Returns a movie recommendation data by uuid
 @app.route('/web/rec/<uuid>')
 def display_recommendation(uuid):

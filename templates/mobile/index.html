@@ -246,6 +246,25 @@
             display: inline-block; /* Only take up as much width as the content */
         }
 
+        /* Mobile Footer styles */
+        .footer {
+            text-align: center; /* Center text for mobile view */
+            background-color: #333; /* Footer background color */
+            padding: 20px; /* More padding for better tap targets */
+            color: white; /* Text color */
+        }
+
+        .footer a, .footer a:visited {
+            color: white; /* Link color */
+            text-decoration: none; /* No underlines */
+            display: block; /* Each link is a block for full-width tap targets */
+            margin-bottom: 10px; /* Space between links */
+        }
+
+        .footer p {
+            margin-bottom: 20px; /* Space between paragraphs and blocks */
+        }
+
         /* Mobile Styles */
         @media (max-width: 900px) {
             .recommendation {
@@ -285,23 +304,6 @@
 
             header h1 {
                 font-size: 1.6em;
-            }
-
-            /* Mobile Footer styles */
-            .footer a,
-            .footer a:visited {
-                color: white;  /* Or any color you prefer */
-                text-decoration: none; /* Removes underlines */
-            }
-            .footer {
-                padding: 10px;
-                font-size: 0.9em; /* Reduce font size for mobile */
-            }
-            .footer p {
-                margin: 5px 0; /* Reduce spacing for mobile */
-            }
-            .footer a {
-                margin: 0 5px; /* Reduce spacing for mobile */
             }
         }
 
@@ -363,20 +365,18 @@
         {% endif %}
     </div>
     <!-- Footer -->
-    <div class="footer">
-        <p>&copy; 2023 MovieRec. All rights reserved.</p>
-        <p>
-            <a href="/about">About Us</a> |
-            <a href="/contact">Contact</a> |
-            <a href="/privacy">Privacy Policy</a> |
-            <a href="/terms">Terms of Service</a>
-        </p>
-        <p>
-            Follow us on
-            <a href="https://facebook.com/MovieRec">Facebook</a>,
-            <a href="https://twitter.com/MovieRec">Twitter</a>,
-            <a href="https://instagram.com/MovieRec">Instagram</a>
-        </p>
+    <div class="footer" style="text-align: center; background-color: #333; padding: 20px; color: white;">
+        <p style="margin-bottom: 20px;">&copy; 2023 MovieRec. All rights reserved.</p>
+        <div style="margin-bottom: 20px;">
+            <a href="/about" style="display: block; color: white; margin-bottom: 10px;">About Us</a>
+            <a href="/contact" style="display: block; color: white; margin-bottom: 10px;">Contact</a>
+            <a href="/terms" style="display: block; color: white; margin-bottom: 10px;">Terms of Service</a>
+        </div>
+        <p style="margin-bottom: 10px;">Follow us on</p>
+        <div>
+            <a href="https://twitter.com/MovieRec_org" style="display: block; color: white; margin-bottom: 10px;">Twitter</a>
+            <a href="https://instagram.com/MovieRec_org" style="display: block; color: white;">Instagram</a>
+        </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
