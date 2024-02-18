@@ -164,6 +164,25 @@
             text-decoration: underline;
         }
 
+        /* Mobile Footer styles */
+        .footer {
+            text-align: center; /* Center text for mobile view */
+            background-color: #333; /* Footer background color */
+            padding: 20px; /* More padding for better tap targets */
+            color: white; /* Text color */
+        }
+
+        .footer a, .footer a:visited {
+            color: white; /* Link color */
+            text-decoration: none; /* No underlines */
+            display: block; /* Each link is a block for full-width tap targets */
+            margin-bottom: 10px; /* Space between links */
+        }
+
+        .footer p {
+            margin-bottom: 20px; /* Space between paragraphs and blocks */
+        }
+
         @media (max-width: 767px) {
             img {
                 width: 90%;
@@ -250,6 +269,20 @@
     </div>
     {% endif %}
     {% endfor %}
+    <!-- Footer -->
+    <div class="footer" style="text-align: center; background-color: #333; padding: 20px; color: white;">
+        <p style="margin-bottom: 20px;">&copy; 2023 MovieRec. All rights reserved.</p>
+        <div style="margin-bottom: 20px;">
+            <a href="/about" style="display: block; color: white; margin-bottom: 10px;">About Us</a>
+            <a href="/contact" style="display: block; color: white; margin-bottom: 10px;">Contact</a>
+            <a href="/terms" style="display: block; color: white; margin-bottom: 10px;">Terms of Service</a>
+        </div>
+        <p style="margin-bottom: 10px;">Follow us on</p>
+        <div>
+            <a href="https://twitter.com/MovieRec_org" style="display: block; color: white; margin-bottom: 10px;">Twitter</a>
+            <a href="https://instagram.com/MovieRec_org" style="display: block; color: white;">Instagram</a>
+        </div>
+    </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
