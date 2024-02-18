@@ -159,7 +159,7 @@
         }
 
         .paging-button {
-            background-color: #424242;
+            background-color: #6c757d;
             color: white;
             padding: 10px 20px;
             border-radius: 10px;
@@ -195,7 +195,7 @@
             width: 200px;
             border-radius: 5px;
             z-index: 99;
-            max-height: 200px;  /* Maximum height */
+            max-height: 65vh;  /* Maximum height */
             overflow-y: auto;   /* Enable vertical scrolling */
         }
 
@@ -221,7 +221,7 @@
             font-family: 'Roboto', sans-serif;
             font-size: 1em;
             margin-right: 20px;
-            margin-left: 10px; /* Adjust as needed */
+            margin-left: 10px;
             flex-shrink: 0;
         }
 
@@ -229,13 +229,19 @@
             font-family: 'Roboto', sans-serif;
             font-size: 0.8em;
             margin-right: 20px;
-            margin-left: 10px; /* Adjust as needed */
+            margin-left: 10px;
             flex-shrink: 0;
-            color: rgba(255, 255, 255, 0.77);  /* Optional: Style it as you see fit */
+            color: rgba(255, 255, 255, 0.77);
+            border: 2px solid #333333;
+            border-radius: 10px; /* Rounded corners */
+            padding: 5px 10px; /* Padding inside the border */
+            background-color: #333333; /* Background color for the text */
+            display: inline-block; /* Only take up as much width as the content */
+            margin-bottom: -10px; /* Reduced from whatever it was before */
         }
 
         /* Mobile Styles */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .recommendation {
                 width: 100%;
             }
@@ -247,6 +253,15 @@
 
             .topic, .count {
                 font-size: 1.2em;
+            }
+
+            .rec-content-group {
+                /* Update styles to maintain the overlay text on the image */
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(0, 0, 0, 0.5); /* Example of a semi-transparent background */
             }
 
             .recommendation-container {
@@ -310,7 +325,6 @@
         </div>
         
         <div class="recommendation-container">
-            {% set counter = 0 %}
             {% for rec in rec_group %}
                 <div class="recommendation">
                     <a href="/web/rec/{{ rec.topic_uuid }}">
@@ -330,10 +344,6 @@
                         </div>                        
                     </a>
                 </div>
-                {% set counter = counter + 1 %}
-                {% if counter % 5 == 0 %}
-                    <!-- Your ad code here -->
-                {% endif %}
             {% endfor %}
         </div>
     </section>
