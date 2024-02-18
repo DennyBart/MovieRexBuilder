@@ -1,4 +1,4 @@
-# MovieRex
+# MovieRec
 
 This Movie Recommendation API is a Flask-based web application that provides a range of recomendation services for movies. The application interacts with artificial intelligence (OpenAI's GPT API) to generate movie recommendations based on popular topics such as ***"Best Zombie Movies to Keep You Up at Night"***. The service uses the GPT API to generate the list of recommendation titles, the movies for each title, an introduction to the recommendation title and also query additional APIs to store movie data. After the data is stored any request to the API will server the data from the local DB.
 
