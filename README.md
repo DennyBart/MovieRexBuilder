@@ -44,11 +44,19 @@ To set up and run the Movie Recommendation API locally, follow these steps:
 2. Navigate to the project directory: `cd movie-recommendation-api`
 3. Install the required dependencies: `pip install -r requirements.txt`
 4. Set the required environment variables:
+    - `DATABASE_URL` - Database location
     - `OMDB_API_KEY` - Your API key for the OMDB API
     - `OPENAI_API_KEY` - Your API key for the OpenAI API
-    - `THEMOVIEDB_API_KEY` - Your API ker for TMDB
+    - `OPENAI_API_BLURB_MODEL` - The name or ID of the OpenAI GPT model to use [OpenAI API Models] (https://platform.openai.com/docs/models)
+    - `
     - `OPENAI_API_MODEL` - The name or ID of the OpenAI GPT model to use [OpenAI API Models] (https://platform.openai.com/docs/models)
-    - `DATABASE_URL` - Database location
+    - `OPENAI_API_MODEL_RECOMENDATIONS` - The name or ID of the OpenAI GPT model to use [OpenAI API Models] (https://platform.openai.com/docs/models)
+    - `THEMOVIEDB_API_KEY` - Your API ker for TMDB
+    - `LOG_FILE_LOCATION` - LOG Files location
+    - `SCHEDULED_PAGE_API_KEY` - Internal API key for Scheduled tasks
+    - `IMAGE_DOMAIN` - https://www.themoviedb.org/t/p/w533_and_h300_bestv2/ (Used to fetch image URIs)
+    - `VIDEO_DOMAIN` - https://www.youtube.com/watch?v= (Fetch youtube links)
+
 5. Run the application: `python app.py`
 6. The API will be available at `http://localhost:5000`
 

@@ -96,7 +96,7 @@ def landing_page():
         recommendations['page'] = page
 
         return render_template(f'{device_type}/index.html',
-                                recommendations=recommendations)
+                               recommendations=recommendations)
     except (SQLAlchemyError, AttributeError, ValueError) as e:
         # Log the error for debugging purposes
         logging.error(f"Error: {e}")
@@ -196,7 +196,7 @@ def gen_data():
         input_message = [{'role': 'system', 'content': REC_TITLE_BOT_MESSAGE},
                          {'role': 'user', 'content': RENAME_TOPIC.format(topic_list)}] # noqa
         group_title = get_recommendation_group_title(OPENAI_API_MODEL, OPENAI_API_KEY, input_message) # noqa
-        
+
         if "\n" in group_title:
             group_title_lines = group_title.strip().split("\n")
             group_title = group_title_lines[0]
