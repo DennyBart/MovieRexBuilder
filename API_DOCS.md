@@ -10,7 +10,7 @@
 ### 1. Landing Page
 - **URL:** `/`
 - **Method:** `GET`
-- **Description:** Serves the landing page of the MovieRexDev1 application.
+- **Description:** Serves the landing page of the MovieRec application.
 - **Query Parameters:**
   - `page` (int): Page number for pagination.
 - **Responses:**
