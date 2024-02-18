@@ -12,8 +12,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Borel&family=Bungee+Shade&display=swap" rel="stylesheet">
 
-    <script src="https://unpkg.com/htmx.org"></script>
-
     <style>
         /* Base styles for the entire page */
         body {
@@ -49,33 +47,56 @@
         /* Add styles for search bar */
         #searchBar {
             padding: 5px;
+            width: 70%;
             border-radius: 5px;
             margin-right: 20px;
-            transition: width 0.5s ease-in-out; /* Smooth transition for width change */
-            width: 150px; /* Default width */
-        }
-
-        #searchBar:focus {
-            width: 250px; /* Expanded width */
         }
 
         .search-container {
             position: relative;
         }
 
+        .search-description {
+            display: block; /* Ensure it takes up the full width above the search bar */
+            margin-bottom: 10px; /* Add some space below the description */
+            /* Add any additional styling as necessary */
+        }
+
+        .centered-search {
+            display: flex;
+            flex-direction: column; /* Stack children vertically */
+            align-items: center; /* Center children horizontally */
+            padding-top: var(--search-padding-top);
+            padding-bottom: var(--search-padding-bottom);
+            position: relative;
+        }
+
+        #searchBar-container {
+            width: 100%; /* Ensure full width for the search bar */
+            display: flex;
+            justify-content: center; /* Center the search bar */
+        }
+
+        :root {
+            --search-padding-top: 5%;  /* Default value */
+            --search-padding-bottom: 0%;  /* Default value */
+        }
+
         /* Add styles for search results */
         #results {
             position: absolute;
-            font-family: 'Roboto', sans-serif;
-            top: 100%;  /* Position it right below the search bar */
-            left: 0;  /* Align it to the right edge of the search container */
+            top: 100%; /* Position it right below the search bar */
+            left: 0;
+            right: 0;
+            width: 72%; /* This will make the width the same as the search bar */
+            margin-left: auto;
+            margin-right: auto;
             background-color: #333333;
             color: white;
-            width: 200px;
             border-radius: 5px;
             z-index: 99;
-            max-height: 200px;  /* Maximum height */
-            overflow-y: auto;   /* Enable vertical scrolling */
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         #results div {
@@ -209,22 +230,10 @@
         .page-title {
             font-family: 'Roboto', sans-serif;
             font-size: 1.5em;
-            margin-top: 0; /* Adjust this to reduce space above the title */
-            margin-right: 20px; /* Right margin */
-            margin-bottom: 1px; /* Bottom margin, reduced from before */
-            flex-shrink: 0; /* Prevent the title from shrinking */
-            color: #E0E0E0; /* Light grey color for differentiation */
-            padding: 0.5em 1em; /* Padding inside the border */
-            background-color: transparent; /* Make background transparent or match the header */
-            border-bottom-right-radius: 10px; /* Only bottom-right corner is rounded */
-            font-weight: 500; /* Less bold than a full bold to not overpower */
-            letter-spacing: 1px; /* Add spacing between letters */
-            font-weight: bold; /* Make the font bold */
-            padding-bottom: 5px; /* Add some space below the text */
-            border-bottom: 2px solid #474747; /* Add a subtle line below the text */
-            text-transform: uppercase; /* Capitalize the text */
-            cursor: default; /* Ensure cursor doesn't change to pointer */
-            display: inline-block; /* Only take up as much width as the content */
+            margin-right: 20px;
+            margin-left: 10px;
+            flex-shrink: 0;
+            margin-top: 4%; /* Adjust this value as needed to move the text down */
         }
 
         .replaced-at {
@@ -293,12 +302,15 @@
 <body>
     <header>
         <h1><a href="/">MovieRec</a></h1>
-        <div class="search-container">
-            <input type="text" id="searchBar" placeholder="Search...">
-            <!-- Container for search results -->
-            <div id="results"></div>
-        </div>
     </header>
+    <div class="centered-search">
+        <div class="search-description">Search for a recommendation</div>
+        <div id="searchBar-container">
+            <input type="text" id="searchBar" placeholder="Search...">
+        </div>
+        <!-- Container for search results -->
+        <div id="results"></div>
+    </div>
     {% if recommendations['page'] == 1 %}
         <h2 class="page-title">Featured Recommendations</h2>
     {% endif %}
@@ -366,67 +378,33 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
-            var searchBar = $('#searchBar');
-            var resultsDiv = $('#results');
-            var searchContainer = $('.search-container');
-            var currentIndex = -1; // To keep track of the currently highlighted item
-    
-            searchBar.on('input', function() {
+            $('#searchBar').on('input', function() {
                 let query = $(this).val();
-                if (query) {
+                let resultsHeight = 0; // Initialize outside the if-else scope
+
+                if (query.length >= 3) {
                     $.getJSON(`/search?query=${query}`, function(data) {
-                        resultsDiv.empty();
-                        currentIndex = -1; // Reset index with each new search
-                        data.forEach(function(item, index) {
+                        $('#results').empty();
+                        data.forEach(function(item) {
                             let uuid = item.uuid;
                             let topic_name = item.topic_name;
-                            resultsDiv.append(`<div class="result-item" tabindex="${index}"><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
+                            $('#results').append(`<div><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
+                            resultsHeight = $('#results').outerHeight(true);
                         });
+                        // Update margin only if there are results
+                        if(resultsHeight > 0) {
+                            $('.page-title').css('margin-top', resultsHeight + 'px');
+                        }
                     });
                 } else {
-                    resultsDiv.empty();
-                }
-            }).focus(function() {
-                $(this).animate({ width: '50vw' }, 500);
-                resultsDiv.css('width', '50vw');
-            }).blur(function() {
-                if (!$(this).val()) {
-                    $(this).animate({ width: '15vw' }, 50);
-                    resultsDiv.css('width', '15vw');
-                }
-            });
-    
-            // Close the search results when clicking outside the search container
-            $(document).on('click', function(e) {
-                if (!searchContainer.is(e.target) && searchContainer.has(e.target).length === 0) {
-                    resultsDiv.empty();
-                    if (!searchBar.val()) {
-                        searchBar.animate({ width: '15vw' }, 50);
-                        resultsDiv.css('width', '15vw');
-                    }
-                }
-            });
-    
-            searchBar.keyup(function(e) {
-                if (e.key === "Escape") {
-                    $(this).val('');
-                    $(this).blur();
-                    $(this).animate({ width: '15vw' }, 500);
-                    resultsDiv.css('width', '15vw');
-                    resultsDiv.empty();
-                } else if (e.key === "ArrowDown") {
-                    if (currentIndex < $('.result-item').length - 1) {
-                        currentIndex++;
-                        $('.result-item').removeClass('highlighted').eq(currentIndex).addClass('highlighted').focus();
-                    }
-                } else if (e.key === "ArrowUp") {
-                    if (currentIndex > 0) {
-                        currentIndex--;
-                        $('.result-item').removeClass('highlighted').eq(currentIndex).addClass('highlighted').focus();
-                    }
+                    $('#results').empty(); // Clear results if the query length is less than 3
+                    // Reset the margin-top for the .page-title to its original value
+                    $('.page-title').css('margin-top', ''); // This will remove the inline style, reverting it to the stylesheet value
                 }
             });
         });
+
+
     </script>    
 </body>
 </html>

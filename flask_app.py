@@ -96,7 +96,7 @@ def landing_page():
         recommendations['page'] = page
 
         return render_template(f'{device_type}/index.html',
-                               recommendations=recommendations)
+                                recommendations=recommendations)
     except (SQLAlchemyError, AttributeError, ValueError) as e:
         # Log the error for debugging purposes
         logging.error(f"Error: {e}")

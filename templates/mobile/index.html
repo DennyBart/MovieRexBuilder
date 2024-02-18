@@ -117,9 +117,9 @@
             flex-shrink: 0;
         }
         .replaced-at {
-            font-size: 0.8em;
+            font-size: 0.6em;
             margin-left: 20px; /* Adjust as needed */
-            color: whitesmoke;  /* Optional: Style it as you see fit */
+            color: grey;  /* Optional: Style it as you see fit */
         }
 
         .recommendation:hover {
@@ -159,7 +159,7 @@
         }
 
         .paging-button {
-            background-color: #424242;
+            background-color: #6c757d;
             color: white;
             padding: 10px 20px;
             border-radius: 10px;
@@ -195,7 +195,7 @@
             width: 200px;
             border-radius: 5px;
             z-index: 99;
-            max-height: 200px;  /* Maximum height */
+            max-height: 65vh;  /* Maximum height */
             overflow-y: auto;   /* Enable vertical scrolling */
         }
 
@@ -217,9 +217,37 @@
             text-decoration: underline;
         }
 
+        .row-title {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1em;
+            margin-right: 20px;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+
+        .page-title {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1.0em;
+            margin-top: 0; /* Adjust this to reduce space above the title */
+            margin-right: 20px; /* Right margin */
+            margin-bottom: 1px; /* Bottom margin, reduced from before */
+            flex-shrink: 0; /* Prevent the title from shrinking */
+            color: #E0E0E0; /* Light grey color for differentiation */
+            padding: 0.5em 1em; /* Padding inside the border */
+            background-color: transparent; /* Make background transparent or match the header */
+            border-bottom-right-radius: 10px; /* Only bottom-right corner is rounded */
+            font-weight: 500; /* Less bold than a full bold to not overpower */
+            letter-spacing: 1px; /* Add spacing between letters */
+            font-weight: bold; /* Make the font bold */
+            padding-bottom: 5px; /* Add some space below the text */
+            border-bottom: 2px solid #474747; /* Add a subtle line below the text */
+            text-transform: uppercase; /* Capitalize the text */
+            cursor: default; /* Ensure cursor doesn't change to pointer */
+            display: inline-block; /* Only take up as much width as the content */
+        }
 
         /* Mobile Styles */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .recommendation {
                 width: 100%;
             }
@@ -231,6 +259,15 @@
 
             .topic, .count {
                 font-size: 1.2em;
+            }
+
+            .rec-content-group {
+                /* Update styles to maintain the overlay text on the image */
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(0, 0, 0, 0.5); /* Example of a semi-transparent background */
             }
 
             .recommendation-container {
@@ -249,10 +286,6 @@
             header h1 {
                 font-size: 1.6em;
             }
-        }
-
-        @media (max-width: 768px) {
-            /* ... existing mobile styles ... */
 
             /* Mobile Footer styles */
             .footer a,
@@ -285,18 +318,19 @@
             <div id="results"></div>
         </div>        
     </header>
-
+    {% if recommendations['page'] == 1 %}
+        <h2 class="page-title">Featured Recommendations</h2>
+    {% endif %}
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
         <!-- Display title and replaced_at date for each group -->
         <div class="row">
             <h2 class="row-title">{{ title }}</h2>
-            <div class="replaced-at">Published: {{ rec_group[0].replaced_at_date }}</div>
+            <div class="replaced-at">{{ rec_group[0].replaced_at_date }}</div>
         </div>
         
         <div class="recommendation-container">
-            {% set counter = 0 %}
             {% for rec in rec_group %}
                 <div class="recommendation">
                     <a href="/web/rec/{{ rec.topic_uuid }}">
@@ -316,10 +350,6 @@
                         </div>                        
                     </a>
                 </div>
-                {% set counter = counter + 1 %}
-                {% if counter % 5 == 0 %}
-                    <!-- Your ad code here -->
-                {% endif %}
             {% endfor %}
         </div>
     </section>
@@ -351,6 +381,15 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Close the results when clicking outside
+            $(document).on('mouseup', function(e) {
+                var container = $("#searchBar, #results");
+                // if the target of the click isn't the container nor a descendant of the container
+                if (!container.is(e.target) && container.has(e.target).length === 0) {
+                    $('#results').empty();
+                }
+            });
+    
             $('#searchBar').on('input', function() {
                 let query = $(this).val();
                 if (query) {
@@ -367,6 +406,6 @@
                 }
             });
         });
-    </script>    
+    </script>      
 </body>
 </html>

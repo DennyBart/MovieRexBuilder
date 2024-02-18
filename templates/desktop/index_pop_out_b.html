@@ -49,6 +49,12 @@
             padding: 5px;
             border-radius: 5px;
             margin-right: 20px;
+            transition: width 0.5s ease-in-out; /* Smooth transition for width change */
+            width: 150px; /* Default width */
+        }
+
+        #searchBar:focus {
+            width: 250px; /* Expanded width */
         }
 
         .search-container {
@@ -60,7 +66,7 @@
             position: absolute;
             font-family: 'Roboto', sans-serif;
             top: 100%;  /* Position it right below the search bar */
-            right: 0;  /* Align it to the right edge of the search container */
+            left: 0;  /* Align it to the right edge of the search container */
             background-color: #333333;
             color: white;
             width: 200px;
@@ -278,7 +284,9 @@
             <div id="results"></div>
         </div>
     </header>
-    <h2 class="page-title">Recommendation Lists</h2>
+    {% if recommendations['page'] == 1 %}
+        <h2 class="page-title">Featured Recommendations</h2>
+    {% endif %}
     <!-- Loop through recommendation groups -->
     {% for title, rec_group in recommendations.items() if title != 'page' %}
     <section>
@@ -326,7 +334,7 @@
     </div>
     <!-- Footer -->
     <div class="footer">
-        <p>&copy; 2023 MovieRec. All rights reserved.</p>
+        <p>&copy; 2024 MovieRec. All rights reserved.</p>
         <p>
             <a href="/about">About Us</a> |
             <a href="/contact">Contact</a> |
@@ -343,22 +351,55 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('#searchBar').on('input', function() {
+            var searchBar = $('#searchBar');
+            var resultsDiv = $('#results');
+            var currentIndex = -1; // To keep track of the currently highlighted item
+    
+            searchBar.on('input', function() {
                 let query = $(this).val();
                 if (query) {
                     $.getJSON(`/search?query=${query}`, function(data) {
-                        $('#results').empty();
-                        data.forEach(function(item) {
+                        resultsDiv.empty();
+                        currentIndex = -1; // Reset index with each new search
+                        data.forEach(function(item, index) {
                             let uuid = item.uuid;
                             let topic_name = item.topic_name;
-                            $('#results').append(`<div><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
+                            resultsDiv.append(`<div class="result-item" tabindex="${index}"><a href="/web/rec/${uuid}">${topic_name}</a></div>`);
                         });
                     });
                 } else {
-                    $('#results').empty();
+                    resultsDiv.empty();
+                }
+            }).focus(function() {
+                $(this).animate({ width: '50vw' }, 500);
+                resultsDiv.css('width', '50vw');
+            }).blur(function() {
+                if (!$(this).val()) {
+                    $(this).animate({ width: '15vw' }, 500);
+                    resultsDiv.css('width', '15vw');
+                }
+            }).keyup(function(e) {
+                if (e.key === "Escape") {
+                    $(this).val('');
+                    $(this).blur();
+                    $(this).animate({ width: '15vw' }, 500);
+                    resultsDiv.css('width', '15vw');
+                    resultsDiv.empty();
+                } else if (e.key === "ArrowDown") {
+                    if (currentIndex < $('.result-item').length - 1) {
+                        currentIndex++;
+                        $('.result-item').removeClass('highlighted').eq(currentIndex).addClass('highlighted').focus();
+                    }
+                } else if (e.key === "ArrowUp") {
+                    if (currentIndex > 0) {
+                        currentIndex--;
+                        $('.result-item').removeClass('highlighted').eq(currentIndex).addClass('highlighted').focus();
+                    }
                 }
             });
         });
     </script>
+    
+       
 </body>
 </html>
