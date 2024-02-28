@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greenway Map Example</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body, html, #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+        .sidebar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px; /* Default width */
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            padding: 20px;
+            display: none; /* Initially hide the sidebar */
+            overflow-y: auto; /* Allows scrolling if content is too long */
+        }
+    
+        /* This class is added to the sidebar to make it visible */
+        .active-sidebar {
+            display: block;
+        }
+        .close-button {
+            cursor: pointer;
+        }
+    
+        .sidebar h1 {
+        font-size: 24px; /* Adjust the font size as needed */
+        margin-top: 0;
+        }
+
+        .sidebar img {
+            width: 100%; /* Make the image responsive */
+            height: auto; /* Maintain aspect ratio */
+            margin-top: 15px; /* Add some space above the image */
+        }
+
+        /* Modern close button styling */
+        .close-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60px; /* Increased width */
+            height: 30px;
+            background-color: #13740a; /* Red color for the button */
+            color: white;
+            border: none;
+            border-radius: 15px; /* Makes it a circle */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            outline: none;
+            position: absolute;
+            top: 20px;
+            right: 20px; /* Position it at the top right corner of the sidebar */
+        }
+
+        .close-button:hover {
+            background-color: #09b141; /* Darker red on hover */
+        }
+
+        .close-button:before {
+            content: '×'; /* Using the multiplication sign as the close icon */
+            font-size: 22px; /* Size of the close icon */
+            line-height: 0;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%; /* Full width on smaller screens */
+                height: 75%; /* Sidebar takes 75% of the screen height */
+                bottom: 0; /* Align to the bottom */
+                top: auto; /* Override top positioning */
+                position: fixed; /* Fixed position to stay in place when scrolling */
+                overflow-y: auto; /* Allows scrolling within the sidebar */
+                box-sizing: border-box; /* Include padding in the width and height calculation */
+                padding-top: 20px; /* Add padding at the top */
+                display: none; /* Hide by default, shown when active */
+            }
+
+            .active-sidebar {
+                display: block; /* Show sidebar when active */
+            }
+
+            .sidebar h1 {
+                font-size: 20px; /* Adjust the font size for mobile view */
+            }
+
+            .sidebar img {
+                width: auto; /* Maintain aspect ratio */
+                max-width: 100%; /* Ensure it does not exceed sidebar width */
+                height: auto; /* Maintain aspect ratio */
+            }
+
+            .close-button {
+                top: 10px; /* Adjust as needed for mobile */
+                right: 10px; /* Adjust as needed for mobile */
+                width: 60px; /* Slightly larger for mobile for easier touch */
+                height: 35px; /* Slightly larger for mobile for easier touch */
+            }
+        }
+
+    </style>
+    
+</head>
+<body>
+    <div id="map"></div>
+    <div class="sidebar" id="sidebar">
+        <button class="close-button">Close</button>
+        <!-- Dynamic content will be inserted below the Close button -->
+    </div>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Configuration for the map
+        let config = { minZoom: 7, maxZoom: 18 };
+        let initialBounds; // Variable to store initial bounds
+        const map = L.map('map', config);
+    
+        // Add OpenStreetMap tiles to the map
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map);
+    
+        // Define content for multiple locations
+        const locations = [
+            {
+                latLng: [52.6697654, -8.6281771],
+                content: {
+                    title: "King Johns Castle",
+                    imgSrc: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/King_John%27s_Castle_in_Limerick.jpg/320px-King_John%27s_Castle_in_Limerick.jpg",
+                    imgAlt: "King Johns Castle",
+                    description: "King John's Castle (Irish: Caisleán Luimnigh) also known as Limerick Castle is a 13th-century castle located on King's Island in Limerick, Ireland, next to the River Shannon.[1] Although the site dates back to 922 when the Vikings lived on the Island, the castle itself was built on the orders of King John of England in 1200. One of the best preserved Norman castles in Europe, the walls, towers and fortifications remain today and are visitor attractions.[2] The remains of a Viking settlement were uncovered during archaeological excavations at the site in 1900."
+                }
+            },
+            {
+                latLng: [52.6995682, -8.8144975],
+                content: {
+                    title: "Bunratty Castle",
+                    imgSrc: "https://upload.wikimedia.org/wikipedia/commons/0/07/Bunrattybig.jpg", // Replace with your second image URL
+                    imgAlt: "Bunratty Castle",
+                    description: "Bunratty Castle (Irish: Caisleán Bhun Raithe) is a large 15th-century tower house in County Clare, Ireland. It is located in the centre of Bunratty village, by the N18 road between Limerick and Ennis, near Shannon Town and its airport. The castle and the adjoining folk park are run by Shannon Heritage as tourist attractions.."
+                }
+            },
+            {
+                latLng: [52.6661734, -8.6290852],
+                content: {
+                    title: "Hunt Museum",
+                    imgSrc: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Hunt_Museum_Limerick.jpg/1280px-Hunt_Museum_Limerick.jpg",
+                    imgAlt: "Hunt Museum",
+                    description: "The Hunt Museum (Irish: Iarsmalann Hunt) is a museum in the city of Limerick, Ireland. The Hunt Museum holds a personal collection donated by the Hunt family, it was originally situated in the University of Limerick, before being moved to its present location in Limerick's Georgian custom house in 1997. The Custom House is situated on Rutland Street on the banks of the River Shannon at its confluence with the Abbey River. Among the museum's collection are works by notable artists and designers such as Pablo Picasso, Jack B. Yeats, and Sybil Connolly as well as distinctive historical items such as the O'Dea Mitre and Crozier."
+                }
+            },
+            {
+                latLng: [52.606201, -8.411467],
+                content: {
+                    title: "Brittas Castle",
+                    imgSrc: "https://www.ouririshheritage.org/wp-content/uploads/2023/07/Brittas-Castle-LCD-30-1.jpg", // Replace with your second image URL
+                    imgAlt: "Brittas Castle",
+                    description: "Brittas Castle probably dates from the late 1200s.2 It sits on the left bank of the river Mulcair, and was a chief seat of de Burgh or Burke of Clanwilliam – later lord barons of Brittas. Brittas was described as once being ‘a castle of considerable strength and extent’, with a massive keep with an enclosed courtyard and ‘with flanking towers at the angles’.3 Two towers, one lower to the east of the larger tower, are shown on the 17th-century Down Survey maps.."
+                }
+            },
+            // Add more locations here
+        ];
+    
+        let markers = []; // Declare an array to hold all the L.marker instances
+
+        // Function to show the sidebar with content
+        function showSidebar(content) {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.innerHTML = `
+                <button class="close-button">Close</button>
+                <h1>${content.title}</h1>
+                <img src="${content.imgSrc}" alt="${content.imgAlt}" style="max-width: 100%;">
+                <p>${content.description}</p>
+            `;
+            sidebar.style.display = 'block';
+        }
+    
+        // Function to close the sidebar
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.style.display = 'none';
+        }
+    
+        // Function to create a marker and set click event
+        function createMarker(latLng, content) {
+            const marker = L.marker(latLng).addTo(map);
+            marker.on('click', function() {
+                showSidebar(content);
+                if (window.innerWidth < 768) { // Assuming width less than 768px is mobile
+                    console.log('Mobile view');
+                    // Calculate the offset
+                    const offset = map.getSize().y * -0.30; // Offset for 25% of the map height
+                    const containerPoint = map.latLngToContainerPoint(latLng); // Convert latLng to containerPoint (pixels)
+                    const newContainerPoint = [containerPoint.x, containerPoint.y - offset]; // Calculate the new position
+                    const newLatLng = map.containerPointToLatLng(newContainerPoint); // Convert the new position back to latLng
+                    
+                    map.panTo(newLatLng); // Pan the map with the new center considering the offset
+                } else {
+                    map.setView(latLng, 13); // Zoom to marker's position with a closer zoom level on desktop
+                }
+            });
+            markers.push(marker); // Add the marker to the array of markers
+        }
+
+        // Loop through the locations and create a marker for each
+        locations.forEach(function(location) {
+            createMarker(location.latLng, location.content);
+        });
+
+        // Event listener for the close button
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('close-button')) {
+                closeSidebar();
+            }
+        });
+
+        // Create a feature group with all markers to calculate bounds
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds(), { padding: [50, 50] }); // Add padding to ensure all markers are within the visible area
+
+        // Once all markers are added, fit the map bounds and store the initial bounds
+        window.onload = function() {
+            const group = L.featureGroup(markers); // Create a feature group with all markers
+            initialBounds = group.getBounds(); // Store the initial bounds
+            map.fitBounds(initialBounds, { padding: [50, 50] }); // Fit the map bounds
+        };
+
+        // Function to close the sidebar and reset the map view
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.style.display = 'none';
+            map.fitBounds(initialBounds); // Reset the map to the initial bounds
+        }
+
+    </script>
+    
+</body>
+</html>

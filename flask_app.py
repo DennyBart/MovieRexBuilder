@@ -119,6 +119,13 @@ def contact_page():
     return render_template(f'{device_type}/contact.html')
 
 
+# Loads the contact page
+@app.route('/map')
+def map_page():
+    device_type = get_device_type()
+    return render_template(f'desktop/map.html')
+
+
 # Loads the terms page
 @app.route('/terms')
 def terms_page():
