@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Greenway Map Example</title>
+    <title>Davitt Greenway</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         body, html, #map {
@@ -131,39 +131,39 @@
         // Define content for multiple locations
         const locations = [
             {
-                latLng: [52.6697654, -8.6281771],
+                latLng: [53.812556, -9.028889],
                 content: {
-                    title: "King Johns Castle",
-                    imgSrc: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/King_John%27s_Castle_in_Limerick.jpg/320px-King_John%27s_Castle_in_Limerick.jpg",
-                    imgAlt: "King Johns Castle",
-                    description: "King John's Castle (Irish: Caisleán Luimnigh) also known as Limerick Castle is a 13th-century castle located on King's Island in Limerick, Ireland, next to the River Shannon.[1] Although the site dates back to 922 when the Vikings lived on the Island, the castle itself was built on the orders of King John of England in 1200. One of the best preserved Norman castles in Europe, the walls, towers and fortifications remain today and are visitor attractions.[2] The remains of a Viking settlement were uncovered during archaeological excavations at the site in 1900."
+                    title: "Land League Meeting Site",
+                    imgSrc: "static/images/1.png",
+                    imgAlt: "Ballinamore/Ballintaffy",
+                    description: "On May 3 1881 the Land League meeting was held on this site to protest the abuses suffered by the local tenants by the local landlord \"Black\" Anthony Ormsby of Ballinamore House. Speakers included Rev Mr Corbett, Michael Boyton and john Walsh and called for fair rent, better conditions and the cessation of the tyranical and callous treatment Ormsby inflicted on his tenants"
                 }
             },
             {
-                latLng: [52.6995682, -8.8144975],
+                latLng: [53.828583, -9.041278],
                 content: {
-                    title: "Bunratty Castle",
-                    imgSrc: "https://upload.wikimedia.org/wikipedia/commons/0/07/Bunrattybig.jpg", // Replace with your second image URL
-                    imgAlt: "Bunratty Castle",
-                    description: "Bunratty Castle (Irish: Caisleán Bhun Raithe) is a large 15th-century tower house in County Clare, Ireland. It is located in the centre of Bunratty village, by the N18 road between Limerick and Ennis, near Shannon Town and its airport. The castle and the adjoining folk park are run by Shannon Heritage as tourist attractions.."
+                    title: "Landlord - \"Black\" Anthony Ormsby",
+                    imgSrc: "",
+                    imgAlt: "Ballinamore",
+                    description: "Feared and dispised in equal measure, \"Black\" Anthony Ormsby (1820-1882)remains to day one of the most hated landlords in Mayo history. Built on land granted to the Ormsby family by Quenn Elizabeth 1 in the 16th century, Anthony's cruelty remains legendry in ghost stories to this day. The subject of a Land League meeting in 1881, by 1882 Ormsby was dead and along with him the supremecy of Landlordism in Ireland."
                 }
             },
             {
-                latLng: [52.6661734, -8.6290852],
+                latLng: [53.822722, -9.033278],
                 content: {
-                    title: "Hunt Museum",
-                    imgSrc: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Hunt_Museum_Limerick.jpg/1280px-Hunt_Museum_Limerick.jpg",
-                    imgAlt: "Hunt Museum",
-                    description: "The Hunt Museum (Irish: Iarsmalann Hunt) is a museum in the city of Limerick, Ireland. The Hunt Museum holds a personal collection donated by the Hunt family, it was originally situated in the University of Limerick, before being moved to its present location in Limerick's Georgian custom house in 1997. The Custom House is situated on Rutland Street on the banks of the River Shannon at its confluence with the Abbey River. Among the museum's collection are works by notable artists and designers such as Pablo Picasso, Jack B. Yeats, and Sybil Connolly as well as distinctive historical items such as the O'Dea Mitre and Crozier."
+                    title: "Folklore",
+                    imgSrc: "",
+                    imgAlt: "Ballinamore",
+                    description: "There was once a hare in Ballinmore and it was impossible to catch it. A crowd of men went in search of it one day. They the hare and the the hounds that the men had followed it in. The hare ran into an old house and the hounds followed it in. When they went in there was hare inside but an old woman. There was a man sick in the village and when he heard that all the hounds had failed to catch the hair he set out with hi own two hounds to catch the hare. The hounds followed the hare. The hare ran into a cow-house and the hounds had taken a bite off his leg. When the hounds went in there was nothing inside. The man went in and he lifted a loose and he saw an old woman putting a bandage on her foot."
                 }
             },
             {
-                latLng: [52.606201, -8.411467],
+                latLng: [53.823778, -9.044417],
                 content: {
-                    title: "Brittas Castle",
-                    imgSrc: "https://www.ouririshheritage.org/wp-content/uploads/2023/07/Brittas-Castle-LCD-30-1.jpg", // Replace with your second image URL
-                    imgAlt: "Brittas Castle",
-                    description: "Brittas Castle probably dates from the late 1200s.2 It sits on the left bank of the river Mulcair, and was a chief seat of de Burgh or Burke of Clanwilliam – later lord barons of Brittas. Brittas was described as once being ‘a castle of considerable strength and extent’, with a massive keep with an enclosed courtyard and ‘with flanking towers at the angles’.3 Two towers, one lower to the east of the larger tower, are shown on the 17th-century Down Survey maps.."
+                    title: "Archeology - Ringfort",
+                    imgSrc: "",
+                    imgAlt: "Ballinamore",
+                    description: "Ringforts or ring forts are small circular fortified settlements built during the Bronze Age, Iron Age and early Middle Ages up to about the year 1000 AD. They are known at local community level under a variety of names such as, rath, lios, dan, caher and cashel. Though officially referred to as ringforts these monuments are not military forts but instead should be seen as enclosed farmsteads with some functioning as animal stockades."
                 }
             },
             // Add more locations here
@@ -176,6 +176,8 @@
             const sidebar = document.getElementById('sidebar');
             sidebar.innerHTML = `
                 <button class="close-button">Close</button>
+                <br>
+                <br>
                 <h1>${content.title}</h1>
                 <img src="${content.imgSrc}" alt="${content.imgAlt}" style="max-width: 100%;">
                 <p>${content.description}</p>
@@ -224,7 +226,8 @@
 
         // Create a feature group with all markers to calculate bounds
         const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds(), { padding: [50, 50] }); // Add padding to ensure all markers are within the visible area
+        map.fitBounds(group.getBounds(), { padding: [50, 50] });
+        initialBounds = group.getBounds(); // Set the initial bounds here after fitBounds
 
         // Once all markers are added, fit the map bounds and store the initial bounds
         window.onload = function() {
@@ -237,7 +240,7 @@
         function closeSidebar() {
             const sidebar = document.getElementById('sidebar');
             sidebar.style.display = 'none';
-            map.fitBounds(initialBounds); // Reset the map to the initial bounds
+            map.fitBounds(initialBounds, { padding: [50, 50] }); // Use initialBounds to reset the map view
         }
 
     </script>
